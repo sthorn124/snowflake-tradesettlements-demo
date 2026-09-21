@@ -64,9 +64,9 @@ Do this once per persona, after the build's persona accounts exist and before th
 
    Repeat for the next persona with its own `~/.sail-<persona>` directory. Leave the default `~/.sail` empty. A command that forgets `--data-dir` then fails with "no session found" instead of quietly running as someone (`reference/patterns.md` §12).
 
-4. **Record which persona uses which directory** in `BUILD_PLAN.md`'s Personas section, for example "`alex.analyst` → `~/.sail-alex.analyst`". sail never prints which account a session belongs to, and the username stored in the directory is only the name typed at login. The recorded mapping is what Claude Code states each observation against.
+4. **That's all.** Nothing needs to be written down and nothing needs to be reported to Claude Code. The next session's preflight finds every `~/.sail-*` directory on this machine and reports each persona as live or expired (`CLAUDE.md` §2, step 9).
 
-5. **When to redo a login.** A persona check that fails with an authentication error (HTTP 401, a refused session, or "no session found" on a directory that used to work) means that persona's session has expired or was logged out. Re-run step 3 for that persona only. The others are unaffected.
+5. **When to redo a login.** A persona check that fails with an authentication error (HTTP 401, a refused session, or "no session found" on a directory that used to work) means that persona's session has expired or was logged out. The preflight reports it as expired, and a session that hits it mid-run reports "no live session for `<persona>`, run the login" and skips that check. Re-run step 3 for that persona only. The others are unaffected.
 
 6. **What never to do.**
    - Don't use `--from-devmcp` for persona checks. It imports the designer's session, so everything read through it has the design account's scope.
