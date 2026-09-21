@@ -27,7 +27,12 @@
 
 ## Step 0 — Bundle (operator step; the session walks them through it)
 
-The bundle downloads from the operator's own Appian site and versions with the site's plugin: `https://SITE/suite/plugins/servlet/stateless/downloads`. The session prints that URL with `SITE` filled in, tells the operator to sign in and download the bundle to `~/Downloads`, and waits for confirmation before proceeding.
+The bundle downloads from the operator's own Appian site and versions with the site's plugin. Both paths sit behind the site's login. There are two, and the session prints both with `SITE` filled in:
+
+- **`https://SITE/suite/plugins/servlet/stateless/downloads`** is the documented downloads page and the operator-facing entry. Give it first.
+- **`https://SITE/suite/plugins/servlet/stateless/lcp-mcp-bundle`** is the direct bundle link that `getDevMcpVersionInfo` prints in its recommendations. It was observed in the tool's output; its download behaviour has not been measured. Offer it as a shortcut, and fall back to the downloads page if it does not produce the bundle.
+
+The session tells the operator to sign in and download the bundle to `~/Downloads`, and waits for confirmation before proceeding.
 
 **Ordering rule.** Run `getDevMcpVersionInfo` first and read its recommendations. If the site's plugin is behind the App Market, the site administrator must update the plugin before anyone downloads — a download taken before that just reinstalls the current generation. If the plugin and the local bundle already carry the same build stamp, there is nothing to update; say so and stop.
 
