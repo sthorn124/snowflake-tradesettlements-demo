@@ -3,11 +3,13 @@
 
 ## Demo Narrative
 
-Positioning, the three-act structure and the talk track live in `pre-settlement-fail-prevention-one-pager.md`; the Phase 5 packet stories (hero and two seeded stories) in `hero-trade-spec.md` and `packet-spec.md`. Not duplicated here.
+Domain and use case: capital-markets settlement operations — **Pre-Settlement Fail Prevention**. Snowflake predicts which trades will fail at trade date, Appian turns each prediction into governed remediation before cutoff, and resolved outcomes close the learning loop. Positioning, the three-act structure and the talk track live in `pre-settlement-fail-prevention-one-pager.md`; the Phase 5 packet stories (hero and two seeded stories) in `hero-trade-spec.md` and `packet-spec.md`. Not duplicated here.
 
 ## Personas and What Each Sees
 
 `alex.analyst` (SO Analysts, desk EQ_FLOW — watchlist, Case Detail, record actions) and `sam.supervisor` (SO Supervisors — Supervisor Command, all desks); the presenting SC's own account in `SO Demo Admins` for the separate Demo Admin site. Scope, groups and display vocabulary: `CLAUDE.md` project sections (Appian application; Display vocabulary; Demo Admin site). Whether the two personas are local-password accounts that sail can log in is not yet recorded (TODO).
+
+The claude.ai Project reads this section when it authors the verification section of each build prompt, so this is where each persona's should and should-not see and do is written. Keep it current at close-out like the rest of the plan: when a build changes what a persona sees or can do, update this section in the same close-out.
 
 ## Data Model (entity level)
 
