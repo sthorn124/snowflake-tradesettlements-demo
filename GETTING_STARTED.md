@@ -43,15 +43,34 @@ k. **Confirm, then start Phase 0.** Before the first Claude Code session, confir
 
    Then read the rest of this manual and start Phase 0 (§3). `Closeout.md` is not in the template; it appears after your first session's close-out, and from then on the Project reads it at the start of every conversation.
 
-**Later, once per persona: log it in for sail.** When the build's persona accounts exist (the local-password accounts `BUILD_PLAN.md` names), log each one in yourself, once, into its own data directory. The session persists there, and Claude Code uses it without ever seeing a password. Claude Code will not handle passwords: when a persona's session is missing or rejected, it stops and asks you. From your own terminal:
+### Persona sail logins — step by step
 
-```
-printf 'Password: '; read -rs SAIL_PASSWORD; echo; export SAIL_PASSWORD
-SAIL_USERNAME=<persona> sail --data-dir ~/.sail-<persona> login <host>
-unset SAIL_PASSWORD
-```
+Do this once per persona, after the build's persona accounts exist and before the first build prompt that ends with persona-scoped sail steps.
 
-Keep the default `~/.sail` empty, so that a command that forgets `--data-dir` fails instead of running as someone (`reference/patterns.md` §12).
+1. **Why this is needed.** A persona check means something only when sail is logged in as that demo persona, not as the designer. The design account usually sees everything, so a check run as the designer proves nothing about what a persona sees (`CLAUDE.md` §4, §6). Claude Code will not type, ask for, or store a password, so these logins are yours to do.
+
+2. **Prerequisite: each persona is a local-password Appian account.** sail's password login works only for local accounts. An SSO-only identity cannot log in this way. In the Admin Console, create each persona that `BUILD_PLAN.md` names as a local user with a password, or confirm that it already is one. Sign in as each one once in a browser to clear any first-login password change.
+
+3. **Log in, one persona at a time, each into its own data directory.** Separate directories keep the sessions from overwriting each other. Run these in your own terminal, not in a Claude Code prompt, so the password never enters a prompt or a transcript:
+
+   ```
+   export SAIL_USERNAME=<persona>
+   printf 'Password: '; read -rs SAIL_PASSWORD; echo; export SAIL_PASSWORD
+   sail --data-dir ~/.sail-<persona> login <site host>
+   unset SAIL_USERNAME SAIL_PASSWORD
+   ```
+
+   `read -rs` keeps the password off the screen and out of shell history. If you would rather set it inline, as `export SAIL_USERNAME=<persona> SAIL_PASSWORD='<password>'`, single-quote the password so the shell does not expand characters like `$` or `!`. Be aware that the line then lands in your shell history.
+
+   Repeat for the next persona with its own `~/.sail-<persona>` directory. Leave the default `~/.sail` empty. A command that forgets `--data-dir` then fails with "no session found" instead of quietly running as someone (`reference/patterns.md` §12).
+
+4. **Record which persona uses which directory** in `BUILD_PLAN.md`'s Personas section, for example "`alex.analyst` → `~/.sail-alex.analyst`". sail never prints which account a session belongs to, and the username stored in the directory is only the name typed at login. The recorded mapping is what Claude Code states each observation against.
+
+5. **When to redo a login.** A persona check that fails with an authentication error (HTTP 401, a refused session, or "no session found" on a directory that used to work) means that persona's session has expired or was logged out. Re-run step 3 for that persona only. The others are unaffected.
+
+6. **What never to do.**
+   - Don't use `--from-devmcp` for persona checks. It imports the designer's session, so everything read through it has the design account's scope.
+   - Never run `sail logout` on a `--from-devmcp` session. The import shares the Dev MCP's own server session, so logging it out also kills the Dev MCP session. Throw an import away by deleting its directory (`reference/patterns.md` §12, step 4).
 
 ## 2. The standard project-instruction block
 
@@ -115,7 +134,7 @@ The recurring cycle for all build work:
 
 Multiple prompts can run within one session. The close-out belongs to the work block, not to each prompt.
 
-**Persona verification belongs in the prompt.** A build prompt can end with persona-scoped steps — "as `<persona>` via sail: these pages resolve, this band renders, this action appears only when …". Claude Code runs them against the persona sessions you logged in and reports each result with its account (`CLAUDE.md` §4); geometry still lands on the browser checklist. Before a showing, the dry-run is a sail sweep of every persona through every page and action path, checked against the plan's Personas section (`reference/patterns.md` §13).
+**Persona verification belongs in the prompt.** A build prompt can end with persona-scoped steps — "as `<persona>` via sail: these pages resolve, this band renders, this action appears only when …". Claude Code runs them against the persona sessions you logged in (§1, *Persona sail logins — step by step*) and reports each result with its account (`CLAUDE.md` §4); geometry still lands on the browser checklist. Before a showing, the dry-run is a sail sweep of every persona through every page and action path, checked against the plan's Personas section (`reference/patterns.md` §13).
 
 ## 5. Mockup rule
 

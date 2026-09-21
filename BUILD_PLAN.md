@@ -9,6 +9,10 @@ Positioning, the three-act structure and the talk track live in `pre-settlement-
 
 `alex.analyst` (SO Analysts, desk EQ_FLOW — watchlist, Case Detail, record actions) and `sam.supervisor` (SO Supervisors — Supervisor Command, all desks); the presenting SC's own account in `SO Demo Admins` for the separate Demo Admin site. Scope, groups and display vocabulary: `CLAUDE.md` project sections (Appian application; Display vocabulary; Demo Admin site). Whether the two personas are local-password accounts that sail can log in is not yet recorded (TODO).
 
+*sail data directories.* The operator logs each persona in once (`GETTING_STARTED.md` §1, *Persona sail logins — step by step*) and records each persona's sail data directory here, e.g. `<persona>` → `~/.sail-<persona>`. sail never prints which account a session belongs to, so this record is what every "as `<persona>` via sail" observation is stated against.
+- `alex.analyst` → *not yet recorded*
+- `sam.supervisor` → *not yet recorded*
+
 ## Data Model (entity level)
 
 Snowflake, direct access, never synced: TRADES, TRADE_PREDICTIONS (1:1), COUNTERPARTIES (N:1), plus INSTRUMENTS and SETTLEMENT_HISTORY. Appian-native: SO Settlement Case (N:1 Trade, session-tagged), SO Case Comment, and record events. Field-level detail: `CLAUDE.md` project sections (Snowflake environment; Appian application).
