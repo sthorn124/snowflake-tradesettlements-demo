@@ -422,6 +422,7 @@ Template-convention files (contracts in the operating core):
 - `agent/`: SO Triage Agent design — `instructions.md` (deployed v6 verbatim), `tools.md`, `eval.md`, `v6-step3-draft.md` (not applied).
 - `GETTING_STARTED.md`, `reference/`, `examples/`, `maintenance/`, `skills/appian-supplemental/SKILL.md`: template-owned, copied unchanged from appian-devmcp-method on 2026-09-21. Edit them in the template, not here; the skill copy is compared with the installed one at preflight (§2.6).
 - `.work/`: deployed-source copies and harness generators (template convention).
+- `PROJECT_INSTRUCTIONS.md`: the claude.ai Project instructions, generated from `GETTING_STARTED.md` §2 and this build's files. Build-owned and never synced from the template; regenerated only when the build's context changes (`GETTING_STARTED.md` §1, step j).
 
 Project files:
 - `pre-settlement-fail-prevention-one-pager.md`: positioning; the talk track's source.
