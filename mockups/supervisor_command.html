@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settlement Operations — Supervisor Command</title>
+<style>
+  :root{
+    --ink:#1B2330; --sec:#454F5C; --meta:#6E7885;
+    --page:#F3F5F8; --card:#FFFFFF; --line:#D9DFE7;
+    --header:#16233A;
+    --action:#2E5A88;
+    --red:#B3261E; --red-bg:#FBEDEC;
+    --amber:#96590A; --amber-bg:#FCF3E3;
+    --green:#17715B; --green-bg:#E9F5F1;
+    --slate:#4A5462; --slate-bg:#EEF1F5;
+    --snow:#3E7396; --sel:#EEF4FA;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Segoe UI",-apple-system,"Helvetica Neue",Arial,sans-serif;background:var(--page);color:var(--ink);font-size:13.5px}
+  .num{font-variant-numeric:tabular-nums}
+
+  .appbar{background:var(--header);color:#E8EDF4;display:flex;align-items:center;height:46px;padding:0 20px;gap:24px}
+  .appbar .product{font-size:14px;font-weight:600}
+  .appbar nav{display:flex;gap:18px;font-size:13px}
+  .appbar nav a{color:#B6C2D2;text-decoration:none;padding:14px 2px 12px;border-bottom:2px solid transparent}
+  .appbar nav a.active{color:#fff;border-bottom-color:#7FA3C4}
+  .appbar .spacer{flex:1}
+  .appbar .user{font-size:12.5px;color:#B6C2D2}
+  .appbar .user b{color:#fff;font-weight:600}
+
+  .wrap{max-width:1400px;margin:0 auto;padding:18px 20px 40px}
+
+  .pagehead{display:flex;align-items:baseline;gap:14px;margin-bottom:4px}
+  .pagehead h1{font-size:19px;font-weight:650}
+  .pagehead .book{font-size:13px;color:var(--sec)}
+  .sourceline{display:flex;align-items:center;gap:8px;color:var(--sec);font-size:12.5px;margin-bottom:16px}
+  .snowchip{display:inline-flex;align-items:center;gap:5px;color:var(--snow);font-weight:600;cursor:default}
+  .snowchip svg{width:12px;height:12px}
+
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:14px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-left-width:3px;border-radius:4px;padding:12px 14px 11px}
+  .kpi.a-ink{border-left-color:#9AA6B3}
+  .kpi.a-snow{border-left-color:var(--snow)}
+  .kpi.a-red{border-left-color:var(--red)}
+  .kpi.a-amber{border-left-color:#C98A2B}
+  .kpi.a-green{border-left-color:var(--green)}
+  .kpi.good .value{color:var(--green)}
+  .kpi .label{font-size:12.5px;color:var(--sec);display:flex;align-items:center;gap:5px;font-weight:600}
+  .kpi .value{font-size:25px;font-weight:650;margin-top:3px;line-height:1.15}
+  .kpi .sub{font-size:12px;color:var(--sec);margin-top:2px}
+  .kpi .value .unit{font-size:13px;font-weight:600;color:var(--sec);margin-left:2px}
+  .kpi.alert .value{color:var(--red)}
+  .kpi.warn .value{color:var(--amber)}
+  .kpi .delta-up{color:var(--red);font-weight:600}
+  .kpi .spark{margin-top:6px;display:block}
+  .kpi .spark polyline{fill:none;stroke:#9AB4CC;stroke-width:1.6}
+  .kpi.good .spark polyline{stroke:#6FAE9A}
+
+  /* Trend band */
+  .trendband{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+  .chartbody{padding:12px 14px 10px}
+  .rwsvg{padding:12px 14px 4px}
+  .rwsvg svg{width:100%;height:188px;display:block}
+  .rw-val{font-size:10.5px;fill:#6E7885;font-weight:600;text-anchor:middle}
+  .rw-ax{font-size:11px;fill:#6E7885;text-anchor:middle}
+  .rw-ax.hot{fill:#1B2330;font-weight:650}
+  .rw-now{stroke:#1B2330;stroke-width:1.6}
+  .rw-nowlab{font-size:10px;fill:#1B2330;font-weight:700}
+  .rw-legend{display:flex;gap:16px;padding:2px 14px 12px;font-size:11.5px;color:var(--sec)}
+  .rw-legend .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+  .stchart{padding:14px 14px 8px}
+  .stchart svg{width:100%;height:132px;display:block}
+  .st-axis{font-size:10.5px;fill:#6E7885}
+  .st-line{fill:none;stroke:#2E5A88;stroke-width:2}
+  .st-dot{fill:#2E5A88}
+  .st-ref{stroke:#B3261E;stroke-width:1;stroke-dasharray:4 3}
+  .st-reflab{font-size:10px;fill:#B3261E;font-weight:600}
+  .st-area{fill:#2E5A88;opacity:.07}
+  .st-cap{font-size:11.5px;color:var(--sec);padding:0 14px 12px}
+  .st-cap b{color:var(--green)}
+
+  .cmd{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:stretch;margin-bottom:14px}
+  .leftcol{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .midrow{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px;flex:1}
+  .midrow .reasons{flex:1}
+  .midrow .team{flex:1}
+
+  .gridcard{background:var(--card);border:1px solid var(--line);border-radius:4px;overflow:hidden;display:flex;flex-direction:column}
+  .cardhead{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);background:#FAFBFC}
+  .cardhead .t{font-size:13px;font-weight:650}
+  .cardhead .when{margin-left:auto;font-size:11.5px;color:var(--meta);font-weight:400}
+  .cardhead .srctag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--snow);font-weight:600}
+
+  table{width:100%;border-collapse:collapse}
+  thead th{font-size:11.5px;font-weight:650;color:var(--sec);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);background:#FAFBFC;white-space:nowrap}
+  thead th.r, td.r{text-align:right}
+  thead th .snow{color:var(--snow);margin-left:3px;cursor:default}
+  tbody td{padding:8px 12px;border-bottom:1px solid #ECF0F4;white-space:nowrap;vertical-align:middle}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:#F6F9FC}
+  tbody tr.total{cursor:default;background:#FAFBFC;font-weight:650}
+  tbody tr.total:hover{background:#FAFBFC}
+  tbody tr.total td{border-top:1px solid var(--line);border-bottom:none}
+
+  .desk{font-weight:650;color:var(--action)}
+  .varcell{display:flex;align-items:center;gap:9px;justify-content:flex-end}
+  .varbar{width:90px;height:7px;border-radius:2px;background:#EEF1F5;position:relative;overflow:hidden;flex:none}
+  .varbar i{position:absolute;left:0;top:0;bottom:0;background:#7FA3C4;border-radius:2px}
+  .cellnum{font-weight:650}
+  .cellnum.crit{color:var(--red)}
+  .cellnum.hot{color:var(--amber)}
+  .cellnum.zero{color:var(--meta);font-weight:400}
+  .stpct{font-weight:650}
+  .stpct.good{color:var(--green)}
+  .stpct.low{color:var(--amber)}
+
+  /* Fails by reason */
+  .reasons{padding:6px 14px 12px}
+  .rrow{display:grid;grid-template-columns:150px 1fr 158px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #F1F4F7}
+  .rrow:last-child{border-bottom:none}
+  .rrow .rname{font-size:12.5px;font-weight:600;color:var(--ink)}
+  .rrow .rtrack{height:9px;border-radius:2px;background:#EEF1F5;position:relative;overflow:hidden}
+  .rrow .rtrack i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:#54759B}
+  .rrow.r-red .rtrack i{background:#A8574F}
+  .rrow .rnum{font-size:12.5px;text-align:right;color:var(--sec)}
+  .rrow .rnum b{color:var(--ink);font-weight:650}
+  .rrow .rnum .d-up{color:var(--red);font-weight:600;margin-left:6px}
+  .rrow .rnum .d-dn{color:var(--green);font-weight:600;margin-left:6px}
+
+  /* Team load */
+  .team{padding:4px 0 6px}
+  .trow{display:grid;grid-template-columns:118px 1fr auto;gap:12px;align-items:center;padding:8px 14px;border-bottom:1px solid #F1F4F7}
+  .trow:last-child{border-bottom:none}
+  .trow .aname{font-size:12.5px;font-weight:650}
+  .trow .aname .adesk{display:block;font-weight:400;font-size:11px;color:var(--meta)}
+  .trow.unassigned .aname{color:var(--amber);font-style:italic;font-weight:600}
+  .ttrack{height:9px;border-radius:2px;background:#EEF1F5;position:relative;overflow:hidden}
+  .ttrack i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:#7FA3C4}
+  .ttrack i.seg-urgent{background:#A8574F}
+  .tcount{font-size:12.5px;color:var(--sec);text-align:right;white-space:nowrap}
+  .tcount b{font-weight:650;color:var(--ink)}
+  .tcount .old{color:var(--amber);font-weight:600}
+  .cardfoot{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-size:12.5px;color:var(--sec);border-top:1px solid var(--line);background:#FAFBFC}
+  .cardfoot a{color:var(--action);font-weight:600;text-decoration:none}
+
+  /* Escalations */
+  .esc-reason{font-size:12.5px;color:var(--ink)}
+  .esc-reason .why{display:block;font-size:11px;color:var(--meta)}
+  .wait{font-weight:650}
+  .wait.hot{color:var(--amber)}
+  .wait.crit{color:var(--red)}
+  .pill{display:inline-block;font-size:11px;font-weight:650;border-radius:3px;padding:2px 8px}
+  .p-fund{background:var(--amber-bg);color:var(--amber)}
+  .p-sec{background:var(--red-bg);color:var(--red)}
+  .p-ops{background:var(--slate-bg);color:var(--slate)}
+  .p-cpty{background:#EFEAF7;color:#5B4489}
+  .tid{font-weight:600;color:var(--action)}
+  .inst .tick{font-weight:650}
+  .inst .name{color:var(--sec);margin-left:6px}
+
+  /* Ask panel */
+  .ask{border:1px solid var(--line);border-top:3px solid var(--snow);border-radius:4px;background:var(--card);display:flex;flex-direction:column}
+  .ask-head{padding:12px 14px 10px;border-bottom:1px solid var(--line)}
+  .ask-head .t{font-size:13px;font-weight:650;display:flex;align-items:center;gap:7px}
+  .ask-head .sub{font-size:11.5px;color:var(--sec);margin-top:3px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid #ECF0F4;background:#FAFBFC}
+  .chip{font-size:12px;font-weight:600;color:var(--action);border:1px solid #C7D5E2;border-radius:12px;padding:4px 11px;cursor:pointer;background:var(--card)}
+  .chip.active{background:var(--sel);border-color:var(--action)}
+  .thread{padding:12px 14px;display:flex;flex-direction:column;gap:10px;flex:1}
+  .q{align-self:flex-end;background:var(--sel);border:1px solid #D5E1EC;border-radius:8px 8px 2px 8px;padding:7px 11px;font-size:12.5px;max-width:88%}
+  .a{background:#FFFFFF;border:1px solid var(--line);border-radius:2px 8px 8px 8px;padding:10px 12px;font-size:12.5px;line-height:1.5}
+  .a p{margin-bottom:8px}
+  .a table{margin:2px 0 4px}
+  .a thead th{padding:5px 8px;font-size:11px;background:#FAFBFC}
+  .a tbody td{padding:5px 8px;border-bottom:1px solid #F1F4F7;font-size:12px}
+  .a tbody tr{cursor:default}
+  .a tbody tr:hover{background:transparent}
+  .a .rate{font-weight:650;color:var(--amber)}
+  .a .rate.crit{color:var(--red)}
+  .ground{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--snow);font-weight:600;margin-top:6px}
+  .ground .vq{color:var(--meta);font-weight:400}
+  .askrow{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);background:#FAFBFC}
+  .askrow input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:3px;padding:8px 11px;font-size:12.5px;color:var(--ink)}
+  .askrow input::placeholder{color:var(--meta)}
+  .askrow .send{background:var(--action);color:#fff;border:none;border-radius:3px;padding:0 16px;font-size:12.5px;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="product">Settlement Operations</div>
+  <nav>
+    <a href="#">Watchlist</a>
+    <a href="#">Cases</a>
+    <a class="active" href="#">Supervisor</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="user"><b>S. Morgan</b> · Settlement Supervisor · NY</div>
+</div>
+
+<div class="wrap">
+  <div class="pagehead">
+    <h1>Supervisor Command</h1>
+    <div class="book">All desks · Settlement cycle Tue 1 Sep · T+1</div>
+  </div>
+  <div class="sourceline">
+    <span class="snowchip" title="Live from Snowflake">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg>
+      Predictions live from Snowflake
+    </span>
+    <span>· house view across 5 desks · last read 09:41:22</span>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi a-ink">
+      <div class="label">Predicted fails — open</div>
+      <div class="value num">142</div>
+      <div class="sub num"><span class="delta-up">▲ 12</span> vs yesterday · 31 carried over · 10-day avg 128</div>
+      <svg class="spark" width="100%" height="16" viewBox="0 0 100 16" preserveAspectRatio="none"><polyline points="0,9 11,10 22,7 33,11 44,8 56,9 67,6 78,8 89,5 100,3"/></svg>
+    </div>
+    <div class="kpi a-snow">
+      <div class="label">Value at risk
+        <span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span>
+      </div>
+      <div class="value num">486.2<span class="unit">M USD eq.</span></div>
+      <div class="sub num">across 142 open items</div>
+    </div>
+    <div class="kpi warn a-amber">
+      <div class="label">Inside critical window</div>
+      <div class="value num">11</div>
+      <div class="sub num">cutoff within 4h · 96.4M USD eq.</div>
+    </div>
+    <div class="kpi alert a-red">
+      <div class="label">Escalations awaiting action</div>
+      <div class="value num">6</div>
+      <div class="sub num">oldest waiting 2h 10m · SLA 1h</div>
+    </div>
+    <div class="kpi good a-green">
+      <div class="label">Straight-through today</div>
+      <div class="value num">61<span class="unit">%</span></div>
+      <div class="sub num">34 of 56 · 7-day avg 58%</div>
+      <svg class="spark" width="100%" height="16" viewBox="0 0 100 16" preserveAspectRatio="none"><polyline points="0,13 11,12 22,12 33,10 44,11 56,8 67,9 78,6 89,7 100,4"/></svg>
+    </div>
+    <div class="kpi good a-green">
+      <div class="label">Penalties avoided (est.)</div>
+      <div class="value num">41.2<span class="unit">K EUR eq.</span></div>
+      <div class="sub num">12 fails prevented this week · CSDR est.</div>
+    </div>
+  </div>
+
+
+  <div class="trendband">
+    <div class="gridcard">
+      <div class="cardhead">
+        <span class="t">Cutoff runway — today</span>
+        <span class="when">USD eq. settling per hour · at-risk portion from live predictions <span class="srctag"><span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span></span></span>
+      </div>
+      <div class="rwsvg">
+        <svg viewBox="0 0 720 184" preserveAspectRatio="none"><line class="rw-now" x1="16" y1="16" x2="16" y2="156"/><text class="rw-nowlab" x="22" y="20">NOW 09:41</text><rect x="34" y="115.3" width="56" height="23.8" fill="#C7D3DF"/><rect x="34" y="139.0" width="56" height="7.6" fill="#DDA94E"/><rect x="34" y="146.7" width="56" height="9.3" fill="#B3564E"/><text class="rw-val" x="62.0" y="109.3">96M</text><text class="rw-ax" x="62.0" y="174">10:00</text><rect x="110" y="77.9" width="56" height="50.9" fill="#C7D3DF"/><rect x="110" y="128.8" width="56" height="12.7" fill="#DDA94E"/><rect x="110" y="141.6" width="56" height="14.4" fill="#B3564E"/><text class="rw-val" x="138.0" y="71.9">184M</text><text class="rw-ax" x="138.0" y="174">11:00</text><rect x="186" y="95.7" width="56" height="39.0" fill="#C7D3DF"/><rect x="186" y="134.8" width="56" height="10.2" fill="#DDA94E"/><rect x="186" y="145.0" width="56" height="11.0" fill="#B3564E"/><text class="rw-val" x="214.0" y="89.7">142M</text><text class="rw-ax" x="214.0" y="174">12:00</text><rect x="262" y="123.7" width="56" height="21.2" fill="#C7D3DF"/><rect x="262" y="145.0" width="56" height="5.1" fill="#DDA94E"/><rect x="262" y="150.1" width="56" height="5.9" fill="#B3564E"/><text class="rw-val" x="290.0" y="117.7">76M</text><text class="rw-ax" x="290.0" y="174">13:00</text><rect x="338" y="51.2" width="56" height="70.9" fill="#C7D3DF"/><rect x="338" y="122.0" width="56" height="17.0" fill="#DDA94E"/><rect x="338" y="139.0" width="56" height="17.0" fill="#B3564E"/><text class="rw-val" x="366.0" y="45.2">247M</text><text class="rw-ax" x="366.0" y="174">14:00</text><rect x="414" y="24.0" width="56" height="78.5" fill="#C7D3DF"/><rect x="414" y="102.5" width="56" height="25.5" fill="#DDA94E"/><rect x="414" y="128.0" width="56" height="28.0" fill="#B3564E"/><text class="rw-val" x="442.0" y="18.0">311M</text><text class="rw-ax hot" x="442.0" y="174">15:00</text><rect x="490" y="69.0" width="56" height="59.8" fill="#C7D3DF"/><rect x="490" y="128.8" width="56" height="11.0" fill="#DDA94E"/><rect x="490" y="139.9" width="56" height="16.1" fill="#B3564E"/><text class="rw-val" x="518.0" y="63.0">205M</text><text class="rw-ax hot" x="518.0" y="174">16:00</text><rect x="566" y="118.6" width="56" height="26.3" fill="#C7D3DF"/><rect x="566" y="145.0" width="56" height="5.9" fill="#DDA94E"/><rect x="566" y="150.9" width="56" height="5.1" fill="#B3564E"/><text class="rw-val" x="594.0" y="112.6">88M</text><text class="rw-ax" x="594.0" y="174">17:00</text><rect x="642" y="142.4" width="56" height="9.3" fill="#C7D3DF"/><rect x="642" y="151.8" width="56" height="2.5" fill="#DDA94E"/><rect x="642" y="154.3" width="56" height="1.7" fill="#B3564E"/><text class="rw-val" x="670.0" y="136.4">32M</text><text class="rw-ax" x="670.0" y="174">18:00</text></svg>
+      </div>
+      <div class="rw-legend">
+        <span><span class="sw" style="background:#B3564E"></span>Predicted fail, unresolved</span>
+        <span><span class="sw" style="background:#DDA94E"></span>In remediation</span>
+        <span><span class="sw" style="background:#C7D3DF"></span>On track</span>
+        <span style="margin-left:auto;color:var(--meta)">heaviest hours: 15:00–16:00 EU venue cutoffs</span>
+      </div>
+    </div>
+
+    <div class="gridcard">
+      <div class="cardhead">
+        <span class="t">Straight-through rate — last 10 cycles</span>
+      </div>
+      <div class="stchart">
+        <svg viewBox="0 0 340 132" preserveAspectRatio="none">
+          <line class="st-ref" x1="34" y1="52" x2="332" y2="52"/>
+          <text class="st-reflab" x="36" y="47">target 60%</text>
+          <text class="st-axis" x="6" y="26">70%</text>
+          <text class="st-axis" x="6" y="72">50%</text>
+          <text class="st-axis" x="6" y="118">30%</text>
+          <polygon class="st-area" points="34,96 67,90 100,92 133,80 166,84 199,68 232,72 265,58 298,60 332,49 332,128 34,128"/>
+          <polyline class="st-line" points="34,96 67,90 100,92 133,80 166,84 199,68 232,72 265,58 298,60 332,49"/>
+          <circle class="st-dot" cx="332" cy="49" r="3.2"/>
+        </svg>
+        <div class="st-cap num">Trending up since agent go-live · today <b>61%</b> vs 44% two weeks ago · gate held at 80 throughout</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cmd">
+    <div class="leftcol">
+
+      <!-- Exposure by desk -->
+      <div class="gridcard">
+        <div class="cardhead">
+          <span class="t">Exposure by desk</span>
+          <span class="when">click a desk to open its watchlist</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Desk</th>
+              <th class="r">Open</th>
+              <th class="r">Value at risk<span class="snow" title="Live from Snowflake">❄</span></th>
+              <th class="r">Inside 4h</th>
+              <th class="r">Escalated</th>
+              <th class="r">Straight-through</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desk">CREDIT</td>
+              <td class="r num cellnum">41</td>
+              <td class="r num"><span class="varcell"><span class="varbar"><i style="width:100%"></i></span>168.4M</span></td>
+              <td class="r num cellnum crit">3</td>
+              <td class="r num cellnum hot">2</td>
+              <td class="r num"><span class="stpct low">57%</span></td>
+            </tr>
+            <tr>
+              <td class="desk">EQ_FLOW</td>
+              <td class="r num cellnum">37</td>
+              <td class="r num"><span class="varcell"><span class="varbar"><i style="width:85%"></i></span>142.6M</span></td>
+              <td class="r num cellnum crit">4</td>
+              <td class="r num cellnum hot">1</td>
+              <td class="r num"><span class="stpct good">64%</span></td>
+            </tr>
+            <tr>
+              <td class="desk">FI_TRADING</td>
+              <td class="r num cellnum">28</td>
+              <td class="r num"><span class="varcell"><span class="varbar"><i style="width:56%"></i></span>94.7M</span></td>
+              <td class="r num cellnum crit">2</td>
+              <td class="r num cellnum hot">1</td>
+              <td class="r num"><span class="stpct good">63%</span></td>
+            </tr>
+            <tr>
+              <td class="desk">FX_DESK</td>
+              <td class="r num cellnum">21</td>
+              <td class="r num"><span class="varcell"><span class="varbar"><i style="width:35%"></i></span>58.3M</span></td>
+              <td class="r num cellnum hot">1</td>
+              <td class="r num cellnum hot">2</td>
+              <td class="r num"><span class="stpct low">58%</span></td>
+            </tr>
+            <tr>
+              <td class="desk">ETF_MM</td>
+              <td class="r num cellnum">15</td>
+              <td class="r num"><span class="varcell"><span class="varbar"><i style="width:13%"></i></span>22.2M</span></td>
+              <td class="r num cellnum hot">1</td>
+              <td class="r num cellnum zero">0</td>
+              <td class="r num"><span class="stpct good">66%</span></td>
+            </tr>
+            <tr class="total">
+              <td>House</td>
+              <td class="r num">142</td>
+              <td class="r num">486.2M</td>
+              <td class="r num">11</td>
+              <td class="r num">6</td>
+              <td class="r num">61%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Fails by reason + Team load -->
+      <div class="midrow">
+        <div class="gridcard">
+          <div class="cardhead">
+            <span class="t">Open fails by predicted reason</span>
+            <span class="when"><span class="srctag"><span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span> predicted reasons</span></span>
+          </div>
+          <div class="reasons">
+            <div class="rrow r-red">
+              <div class="rname">Insufficient securities</div>
+              <div class="rtrack"><i style="width:100%"></i></div>
+              <div class="rnum num"><b>58</b> · 197.3M<span class="d-up">▲ 7</span></div>
+            </div>
+            <div class="rrow">
+              <div class="rname">Funding gap</div>
+              <div class="rtrack"><i style="width:74%"></i></div>
+              <div class="rnum num"><b>43</b> · 152.8M<span class="d-up">▲ 4</span></div>
+            </div>
+            <div class="rrow">
+              <div class="rname">Operational error</div>
+              <div class="rtrack"><i style="width:47%"></i></div>
+              <div class="rnum num"><b>27</b> · 84.6M<span class="d-dn">▼ 2</span></div>
+            </div>
+            <div class="rrow">
+              <div class="rname">Counterparty default</div>
+              <div class="rtrack"><i style="width:24%"></i></div>
+              <div class="rnum num"><b>14</b> · 51.5M<span class="d-up">▲ 3</span></div>
+            </div>
+          </div>
+          <div class="cardfoot"><span>Insufficient securities driving today's rise — borrow-desk capacity is the constraint</span><a href="#">Open in watchlist</a></div>
+        </div>
+
+        <div class="gridcard">
+          <div class="cardhead">
+            <span class="t">Analyst queues</span>
+            <span class="when">awaiting review + in remediation</span>
+          </div>
+          <div class="team">
+            <div class="trow">
+              <div class="aname">A. Chen<span class="adesk">Equity Flow</span></div>
+              <div class="ttrack"><i style="width:88%"></i><i class="seg-urgent" style="width:19%"></i></div>
+              <div class="tcount num"><b>14</b> open · <span class="old">oldest 6.2h</span></div>
+            </div>
+            <div class="trow">
+              <div class="aname">M. Osei<span class="adesk">Credit</span></div>
+              <div class="ttrack"><i style="width:69%"></i><i class="seg-urgent" style="width:13%"></i></div>
+              <div class="tcount num"><b>11</b> open · oldest 3.4h</div>
+            </div>
+            <div class="trow">
+              <div class="aname">R. Patel<span class="adesk">FI Trading</span></div>
+              <div class="ttrack"><i style="width:56%"></i></div>
+              <div class="tcount num"><b>9</b> open · oldest 2.1h</div>
+            </div>
+            <div class="trow">
+              <div class="aname">D. Fujita<span class="adesk">FX / ETF</span></div>
+              <div class="ttrack"><i style="width:50%"></i></div>
+              <div class="tcount num"><b>8</b> open · oldest 1.8h</div>
+            </div>
+            <div class="trow unassigned">
+              <div class="aname">Unassigned</div>
+              <div class="ttrack"><i style="width:25%;background:#C98A2B"></i></div>
+              <div class="tcount num"><b>4</b> open · <span class="old">oldest 1.1h</span></div>
+            </div>
+          </div>
+          <div class="cardfoot"><span class="num">46 in queue across 4 analysts</span><a href="#">Manage assignments</a></div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- Ask rail -->
+    <div class="ask">
+      <div class="ask-head">
+        <div class="t">
+          <span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span>
+          Ask across the book
+        </div>
+        <div class="sub">Answers computed in Snowflake over all 50,000 trades — nothing copied, nothing synced</div>
+      </div>
+      <div class="chips">
+        <span class="chip">Fail rate trend</span>
+        <span class="chip active">Top failing counterparties</span>
+        <span class="chip">Notional at risk</span>
+      </div>
+      <div class="thread">
+        <div class="q">Which counterparties are driving fails?</div>
+        <div class="a">
+          <p>Five counterparties account for 31% of predicted fails in the current book. All five sit in the high risk tier:</p>
+          <table>
+            <thead><tr><th>Counterparty</th><th class="r">Open fails</th><th class="r">12-mo fail rate</th></tr></thead>
+            <tbody>
+              <tr><td>Liberty Trust</td><td class="r num">11</td><td class="r num rate crit">21.6%</td></tr>
+              <tr><td>Jade Capital</td><td class="r num">9</td><td class="r num rate crit">21.2%</td></tr>
+              <tr><td>Delta Securities</td><td class="r num">8</td><td class="r num rate">20.5%</td></tr>
+              <tr><td>Beacon Finance</td><td class="r num">8</td><td class="r num rate">20.5%</td></tr>
+              <tr><td>Diamond Trust</td><td class="r num">8</td><td class="r num rate">19.9%</td></tr>
+            </tbody>
+          </table>
+          <p style="margin-bottom:0">Liberty Trust's open exposure is concentrated in FX forwards on the funding-gap reason — consistent with its recent settlement history.</p>
+          <div class="ground">
+            <span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span>
+            Answered by Snowflake Cortex Analyst
+            <span class="vq">· verified query · 09:42:10</span>
+          </div>
+        </div>
+      </div>
+      <div class="askrow">
+        <input placeholder="Ask about the book — fails, exposure, counterparties, trends…">
+        <button class="send">Ask</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Escalations — full width -->
+  <div class="gridcard">
+    <div class="cardhead">
+      <span class="t">Escalations awaiting supervisor</span>
+      <span class="when">held by the agent or referred by an analyst · oldest first</span>
+    </div>
+    <table>
+      <thead>
+    <tr>
+      <th>Case</th>
+      <th>Instrument</th>
+      <th>Desk</th>
+      <th>Fail reason<span class="snow" title="Live from Snowflake">❄</span></th>
+      <th class="r">Value</th>
+      <th>Why escalated</th>
+      <th class="r">Waiting</th>
+    </tr>
+      </thead>
+      <tbody>
+    <tr>
+      <td class="tid num">SO-118</td>
+      <td class="inst"><span class="tick">EURUSD 3M FWD</span><span class="name">EUR/USD 3-Month Forward</span></td>
+      <td>ETF_MM</td>
+      <td><span class="pill p-fund">Funding gap</span></td>
+      <td class="r num">30.4M EUR</td>
+      <td class="esc-reason">Confirmation lag exceeds window<span class="why">26.1h lag · 23h to cutoff — cannot complete straight-through</span></td>
+      <td class="r num"><span class="wait crit">2h 10m</span></td>
+    </tr>
+    <tr>
+      <td class="tid num">SO-124</td>
+      <td class="inst"><span class="tick">RWE 2.75 09/30</span><span class="name">RWE AG EUR notes</span></td>
+      <td>CREDIT</td>
+      <td><span class="pill p-cpty">Cpty default</span></td>
+      <td class="r num">12.8M EUR</td>
+      <td class="esc-reason">Credit decision required<span class="why">counterparty-default cases always route to review</span></td>
+      <td class="r num"><span class="wait hot">1h 05m</span></td>
+    </tr>
+    <tr>
+      <td class="tid num">SO-127</td>
+      <td class="inst"><span class="tick">AZN LN</span><span class="name">AstraZeneca PLC</span></td>
+      <td>EQ_FLOW</td>
+      <td><span class="pill p-sec">Insuff. securities</span></td>
+      <td class="r num">17.9M GBP</td>
+      <td class="esc-reason">Borrow desk declined cover<span class="why">analyst referred after remediation failed</span></td>
+      <td class="r num"><span class="wait">42m</span></td>
+    </tr>
+    <tr>
+      <td class="tid num">SO-135</td>
+      <td class="inst"><span class="tick">UST 4.25 05/35</span><span class="name">US Treasury notes</span></td>
+      <td>FI_TRADING</td>
+      <td><span class="pill p-ops">Operational</span></td>
+      <td class="r num">9.6M USD</td>
+      <td class="esc-reason">SSI mismatch beyond auto-correct<span class="why">instruction repair needs ops sign-off</span></td>
+      <td class="r num"><span class="wait">18m</span></td>
+    </tr>
+      </tbody>
+    </table>
+    <div class="cardfoot"><span class="num">6 open · showing the 4 oldest</span><a href="#">All escalations</a></div>
+  </div>
+
+</div>
+
+</body>
+</html>

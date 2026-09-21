@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settlement Operations — Case SO-121</title>
+<style>
+  :root{
+    --ink:#1B2330; --sec:#454F5C; --meta:#6E7885;
+    --page:#F3F5F8; --card:#FFFFFF; --line:#D9DFE7;
+    --header:#16233A;
+    --action:#2E5A88;
+    --red:#B3261E; --red-bg:#FBEDEC;
+    --amber:#96590A; --amber-bg:#FCF3E3;
+    --green:#17715B; --green-bg:#E9F5F1;
+    --slate:#4A5462; --slate-bg:#EEF1F5;
+    --snow:#3E7396; --sel:#EEF4FA;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Segoe UI",-apple-system,"Helvetica Neue",Arial,sans-serif;background:var(--page);color:var(--ink);font-size:13.5px}
+  .num{font-variant-numeric:tabular-nums}
+
+  .appbar{background:var(--header);color:#E8EDF4;display:flex;align-items:center;height:46px;padding:0 20px;gap:24px}
+  .appbar .product{font-size:14px;font-weight:600}
+  .appbar nav{display:flex;gap:18px;font-size:13px}
+  .appbar nav a{color:#B6C2D2;text-decoration:none;padding:14px 2px 12px;border-bottom:2px solid transparent}
+  .appbar nav a.active{color:#fff;border-bottom-color:#7FA3C4}
+  .appbar .spacer{flex:1}
+  .appbar .user{font-size:12.5px;color:#B6C2D2}
+  .appbar .user b{color:#fff;font-weight:600}
+
+  .wrap{max-width:1280px;margin:0 auto;padding:14px 20px 40px}
+  .crumb{font-size:12.5px;color:var(--sec);margin-bottom:10px}
+  .crumb a{color:var(--action);text-decoration:none;font-weight:600}
+
+  .titlerow{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .instid{display:flex;align-items:center}
+  .instid .side{display:inline-block;font-size:11px;font-weight:700;border-radius:2px;padding:2px 6px;margin-right:9px;background:var(--green-bg);color:var(--green)}
+  .instid .tick{font-size:20px;font-weight:700}
+  .instid .name{font-size:14px;color:var(--sec);margin-left:8px}
+  .ids{font-size:12.5px;color:var(--sec)}
+  .stpill{font-size:11.5px;font-weight:700;border-radius:3px;padding:3px 10px;background:#DCE4ED;color:#33404E}
+  .titlerow .spacer{flex:1}
+  .btn{border-radius:3px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--sec)}
+  .btn.primary{background:var(--action);color:#fff;border-color:var(--action)}
+  .btn.outline{color:var(--action);border-color:var(--action)}
+
+  .banner{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:4px;padding:14px 18px;display:grid;grid-template-columns:auto auto auto auto 1fr auto;gap:30px;align-items:center;margin-bottom:14px}
+  .bcell .k{font-size:11.5px;color:var(--sec);font-weight:600;margin-bottom:2px;display:flex;align-items:center;gap:5px}
+  .bcell .v{font-size:21px;font-weight:700;line-height:1.1}
+  .bcell .s{font-size:12px;color:var(--sec);margin-top:1px}
+  .v.crit{color:var(--red)}
+  .v.warn{color:var(--amber)}
+  .snowchip{display:inline-flex;align-items:center;gap:4px;color:var(--snow);cursor:default}
+  .snowchip svg{width:11px;height:11px}
+  .bprio{justify-self:end}
+  .pill{display:inline-block;font-size:12px;font-weight:650;border-radius:3px;padding:4px 12px}
+  .p-urgent{background:var(--red-bg);color:var(--red)}
+
+  .cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;align-items:start}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:4px;margin-bottom:14px}
+  .card .chead{padding:11px 16px;border-bottom:1px solid var(--line);font-size:13px;font-weight:650;display:flex;align-items:center;gap:8px}
+  .card .cbody{padding:13px 16px}
+  .chead .aichip{width:30px;height:20px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:#E7F0F6;color:var(--snow)}
+  .chead .when{margin-left:auto;font-weight:400;font-size:12px;color:var(--meta)}
+  .srctag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--snow);background:#EDF4F8;border-radius:3px;padding:2px 7px}
+  .cluster{margin-bottom:12px}
+  .cluster:last-child{margin-bottom:0}
+  .clab{font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--meta);margin-bottom:7px;text-transform:uppercase}
+  a.rlink{color:var(--action);text-decoration:none;font-weight:650}
+  a.rlink:hover{text-decoration:underline}
+
+  .facts2{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 18px}
+  .hf .k{color:var(--meta);font-size:11.5px;margin-bottom:2px;display:flex;gap:4px;align-items:center}
+  .hf .v{font-weight:650;font-size:13.5px}
+  .hf .v.warn{color:var(--amber)}
+  .hf .v.crit{color:var(--red)}
+
+  /* history mini-table */
+  .mini{width:100%;border-collapse:collapse}
+  .mini th{font-size:11px;font-weight:650;color:var(--sec);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .mini td{font-size:12.5px;padding:7px 8px;border-bottom:1px solid #ECF0F4;white-space:nowrap}
+  .mini tr:last-child td{border-bottom:none}
+  .mini .r{text-align:right}
+  .mini .sum{font-size:12px;color:var(--sec);padding-top:9px}
+  .mini .sum b{color:var(--red)}
+
+  .tl{list-style:none}
+  .tl li{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #ECF0F4}
+  .tl li:last-child{border-bottom:none}
+  .tl .who{width:34px;height:26px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;flex-shrink:0}
+  .who.ai{background:#E7F0F6;color:var(--snow)}
+  .who.sys{background:var(--slate-bg);color:var(--slate)}
+  .who.usr{background:var(--green-bg);color:var(--green)}
+  .tl .what{flex:1}
+  .tl .ev{font-weight:650;font-size:13px}
+  .tl .ev .t{color:var(--meta);font-weight:400;font-size:12px;margin-left:8px}
+  .tl .detail{font-size:12.5px;color:var(--sec);margin-top:3px;line-height:1.45}
+  .comment{padding:10px 0;border-top:1px solid #ECF0F4;font-size:12.5px}
+  .comment .who{font-weight:650}
+  .comment .t{color:var(--meta);font-size:11.5px;margin-left:7px}
+  .comment p{margin-top:3px;color:var(--sec);line-height:1.45}
+  .askrow{display:flex;gap:8px;margin-top:10px}
+  .askrow input{flex:1;border:1px solid var(--line);border-radius:3px;padding:8px 10px;font-size:12.5px;color:var(--meta)}
+  .askrow .btn{padding:8px 12px}
+
+  /* Agent panel */
+  .assess{font-size:13px;line-height:1.55;color:var(--ink)}
+  .assess p{margin-bottom:8px}
+  .agfacts{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:12px 0}
+  .rec{font-size:14.5px;font-weight:650}
+  .hold{display:flex;align-items:center;gap:8px;margin:10px 0 8px}
+  .holdpill{font-size:11px;font-weight:650;border-radius:3px;padding:2px 8px;background:var(--amber-bg);color:var(--amber)}
+  .holdwhy{font-size:12.5px}
+  .score .slab{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:4px}
+  .score .slab .sv{font-weight:700;font-size:14px}
+  .score .slab .gl{color:var(--sec)}
+  .score .track{height:10px;border-radius:2px;background:#E9EDF2;position:relative}
+  .score .fillc{position:absolute;left:0;top:0;bottom:0;width:68%;background:var(--amber);border-radius:2px}
+  .score .gate{position:absolute;left:80%;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
+  .seclab{font-size:11.5px;font-weight:650;color:var(--sec);margin:12px 0 6px}
+  .ground{margin-top:12px;padding-top:10px;border-top:1px solid #ECF0F4;font-size:11.5px;color:var(--sec);display:flex;align-items:center;gap:6px}
+
+  .tbar{margin-bottom:8px}
+  .tbar .tlab{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px}
+  .tbar .tlab .v{font-weight:650}
+  .track{height:8px;border-radius:2px;background:#EEF1F5;position:relative;overflow:hidden}
+  .fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px}
+  .fill.remain{width:58%;background:var(--action)}
+  .fill.lag{width:22%;background:var(--amber)}
+  .verdict{font-size:12.5px}
+  .verdict b{color:var(--green)}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="product">Settlement Operations</div>
+  <nav>
+    <a href="#">Watchlist</a>
+    <a class="active" href="#">Cases</a>
+    <a href="#">Analytics</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="user"><b>A. Chen</b> · Equity Flow · NY</div>
+</div>
+
+<div class="wrap">
+  <div class="crumb"><a href="#">← Watchlist</a> · Case SO-121</div>
+
+  <div class="titlerow">
+    <div class="instid"><span class="side">B</span><span class="tick"><a class="rlink" href="#" style="color:inherit">SAP GY</a></span><span class="name">SAP SE · Buy 210,000 · 18.7M USD</span></div>
+    <span class="ids num">TRD031208 · Case SO-121</span>
+    <span class="stpill">Awaiting review</span>
+    <div class="spacer"></div>
+    <div class="btn outline">Assign to me</div>
+    <div class="btn">Add comment</div>
+    <div class="btn">Escalate</div>
+    <div class="btn primary">Record disposition</div>
+  </div>
+
+  <div class="banner">
+    <div class="bcell">
+      <div class="k">Fail probability
+        <span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span>
+      </div>
+      <div class="v crit num">83%</div>
+      <div class="s">Critical tier</div>
+    </div>
+    <div class="bcell">
+      <div class="k">Predicted reason
+        <span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span>
+      </div>
+      <div class="v" style="font-size:16px;padding-top:4px">Insufficient securities</div>
+      <div class="s">deliver-side shortfall</div>
+    </div>
+    <div class="bcell">
+      <div class="k">Cutoff</div>
+      <div class="v warn num">3h 05m</div>
+      <div class="s num">12:46 today</div>
+    </div>
+    <div class="bcell">
+      <div class="k">Value at stake</div>
+      <div class="v num" style="font-size:18px;padding-top:2px">18.7M USD</div>
+      <div class="s">210,000 shares</div>
+    </div>
+    <div class="bcell">
+      <div class="k">Auto-release</div>
+      <div class="v warn" style="font-size:16px;padding-top:3px">Held for review</div>
+      <div class="s num">score 68 · releases at 80</div>
+    </div>
+    <div class="bprio"><span class="pill p-urgent">Urgent</span></div>
+  </div>
+
+  <div class="cols">
+    <div class="colmain">
+
+      <div class="card">
+        <div class="chead">Trade &amp; counterparty<span class="when"><span class="srctag"><span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span> live read</span></span></div>
+        <div class="cbody">
+          <div class="cluster">
+            <div class="clab">Trade</div>
+            <div class="facts2">
+              <div class="hf"><div class="k">Trade date</div><div class="v num">Mon 31 Aug</div></div>
+              <div class="hf"><div class="k">Settles</div><div class="v num">Wed 2 Sep · T+1</div></div>
+              <div class="hf"><div class="k">Desk</div><div class="v">EQ_FLOW</div></div>
+              <div class="hf"><div class="k">Broker confirmation lag</div><div class="v num warn">1h 09m</div></div>
+            </div>
+          </div>
+          <div class="cluster">
+            <div class="clab">Settlement</div>
+            <div class="facts2">
+              <div class="hf"><div class="k">ISIN</div><div class="v num">DE0007164600</div></div>
+              <div class="hf"><div class="k">Settles at</div><div class="v">Clearstream (CBF)</div></div>
+              <div class="hf"><div class="k">Matched</div><div class="v" style="color:var(--green)">Yes · <span class="num">31 Aug 18:12</span></div></div>
+              <div class="hf"><div class="k">Instrument</div><div class="v"><a class="rlink" href="#">SAP GY · SAP SE</a></div></div>
+            </div>
+          </div>
+          <div class="cluster">
+            <div class="clab">Counterparty</div>
+            <div class="facts2">
+              <div class="hf"><div class="k">Name</div><div class="v"><a class="rlink" href="#">Diamond Trust</a> · APAC</div></div>
+              <div class="hf"><div class="k">Risk tier</div><div class="v crit">High</div></div>
+              <div class="hf"><div class="k">12-mo fail rate <span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span></div><div class="v num crit">19.9%</div></div>
+              <div class="hf"><div class="k">Ops contact</div><div class="v num">DT Settlements · +65 6014 2210</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chead">Exposure if fail</div>
+        <div class="cbody">
+          <div class="facts2" style="grid-template-columns:repeat(3,1fr)">
+            <div class="hf"><div class="k">Penalty accrual (CSDR)</div><div class="v num warn">~1.9K EUR / day</div></div>
+            <div class="hf"><div class="k">5-day fail cost</div><div class="v num">~9.4K EUR excl. funding</div></div>
+            <div class="hf"><div class="k">Onward deliveries <span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span></div><div class="v" style="color:var(--green)">None next 2 cycles — contained</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chead"><a class="rlink" href="#">Diamond Trust</a>&nbsp;— recent fails
+          <span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span>
+          <span class="when num">last 30 days · settlement history</span>
+        </div>
+        <div class="cbody">
+          <table class="mini">
+            <thead><tr><th>Date</th><th>Trade</th><th>Instrument</th><th>Reason</th><th class="r">Value</th></tr></thead>
+            <tbody>
+              <tr><td class="num">28 Aug</td><td class="num"><a class="rlink" href="#">TRD029917</a></td><td>SIE GY</td><td>Insufficient securities</td><td class="r num">4.1M EUR</td></tr>
+              <tr><td class="num">21 Aug</td><td class="num"><a class="rlink" href="#">TRD024403</a></td><td>NESN SW</td><td>Insufficient securities</td><td class="r num">2.8M CHF</td></tr>
+              <tr><td class="num">19 Aug</td><td class="num"><a class="rlink" href="#">TRD023381</a></td><td>SAP GY</td><td>Funding gap</td><td class="r num">6.3M USD</td></tr>
+              <tr><td class="num">12 Aug</td><td class="num"><a class="rlink" href="#">TRD019556</a></td><td>AZN LN</td><td>Insufficient securities</td><td class="r num">1.2M GBP</td></tr>
+              <tr><td class="num">05 Aug</td><td class="num"><a class="rlink" href="#">TRD016102</a></td><td>MSFT US</td><td>Operational error</td><td class="r num">3.5M USD</td></tr>
+            </tbody>
+          </table>
+          <div class="mini sum num">5 fails in 30 days · <b>3 of 5 deliver-side</b> — consistent with the predicted reason on this case</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chead">Activity</div>
+        <div class="cbody">
+          <ul class="tl">
+            <li>
+              <span class="who ai">AI</span>
+              <div class="what">
+                <div class="ev">Agent triage complete<span class="t num">Today 05:03</span></div>
+                <div class="detail">Held for review: auto-release score 68 vs 80 — proposed cover borrow / partial release; position size needs desk judgment.</div>
+              </div>
+            </li>
+            <li>
+              <span class="who sys">SYS</span>
+              <div class="what">
+                <div class="ev">Case created<span class="t num">Today 05:02</span></div>
+                <div class="detail">Overnight scoring flagged TRD031208 at 83% fail probability — case opened from the prediction feed.</div>
+              </div>
+            </li>
+          </ul>
+          <div class="comment">
+            <span class="who">R. Okafor</span><span class="t num">Yesterday 16:20</span>
+            <p>Diamond Trust flagged on two other EQ_FLOW names this week — worth checking their deliver-side ops before release terms are set.</p>
+          </div>
+          <div class="askrow">
+            <input value="" placeholder="Add a comment…">
+            <div class="btn">Post</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <aside class="colrail">
+
+      <div class="card">
+        <div class="chead"><span class="aichip">AI</span>Agent assessment — SO Triage Agent<span class="when num">Today 05:03</span></div>
+        <div class="cbody">
+          <div class="assess">
+            <p>TRD031208 is a buy of 210,000 SAP GY due to settle 2 Sep, predicted to fail on insufficient securities at 83% probability. Broker confirmation lag is 1h 09m against 3h 05m remaining to the 12:46 cutoff — the confirmation completes inside the window with roughly two hours to spare.</p>
+            <p>Diamond Trust carries a high risk tier and has failed 19.9% of settlements over twelve months, several recently on the deliver side, which supports the predicted reason. The trade matched at Clearstream on 31 Aug and there are no onward deliveries of SAP GY in the next two cycles, so a fail would be contained to this settlement. A borrow with partial release is the standard remediation for a deliver-side shortfall, but release terms on a position of this size warrant desk judgment rather than automatic release.</p>
+          </div>
+          <div class="seclab">Proposed remediation</div>
+          <div class="rec">Arrange cover borrow / partial release</div>
+          <div class="agfacts">
+            <div class="hf"><div class="k">Urgency</div><div class="v warn">High</div></div>
+            <div class="hf"><div class="k">Escalation</div><div class="v">Not required</div></div>
+          </div>
+          <div class="hold">
+            <span class="holdpill">Held for review</span>
+            <span class="holdwhy">Position size needs desk judgment</span>
+          </div>
+          <div class="score">
+            <div class="slab"><span class="sv num">Auto-release score 68</span><span class="gl num">releases at 80</span></div>
+            <div class="track"><div class="fillc"></div><div class="gate"></div></div>
+          </div>
+          <div class="ground"><span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span> Grounded in live Snowflake reads — trade · prediction · counterparty history</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chead">Timing</div>
+        <div class="cbody">
+          <div class="tbar">
+            <div class="tlab"><span>Remaining to cutoff</span><span class="v num">3h 05m</span></div>
+            <div class="track"><div class="fill remain"></div></div>
+          </div>
+          <div class="tbar">
+            <div class="tlab"><span>Broker confirmation lag</span><span class="v num">1h 09m</span></div>
+            <div class="track"><div class="fill lag"></div></div>
+          </div>
+          <div class="verdict num"><b>Fits the window</b> — confirmation completes ~1h 56m before cutoff</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chead">Ask about this case</div>
+        <div class="cbody">
+          <div class="askrow" style="margin-top:0">
+            <input value="" placeholder="e.g. How often has Diamond Trust failed on buys this size?">
+            <div class="btn primary">Ask</div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+</div>
+
+</body>
+</html>
