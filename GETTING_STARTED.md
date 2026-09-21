@@ -39,7 +39,8 @@ k. **Confirm, then start Phase 0.** Before the first Claude Code session, confir
    - `gh auth status` succeeds;
    - `git config --global user.email` prints your address;
    - `claude mcp list` shows `appian`;
-   - `sail --version` prints a version, which the session preflight compares with the pin.
+   - `sail --version` prints a version, which the session preflight compares with the pin;
+   - the **Build parameters** block at the top of `CLAUDE.md`'s project sections is filled in (`CLAUDE.md` §13). The preflight reads its values by name: application UUID, design account, security groups, per-session ritual, and persona site stub. Write `unset` with the reason for anything that does not exist yet, such as an application Phase 1 will create.
 
    Then read the rest of this manual and start Phase 0 (§3). `Closeout.md` is not in the template; it appears after your first session's close-out, and from then on the Project reads it at the start of every conversation.
 

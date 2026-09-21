@@ -18,20 +18,20 @@ Then run the preflight (§2). Nothing is designed, written, or run before all fo
 ## 2. Session preflight (before any work)
 
 1. **Confirm the build is planned.** `BUILD_PLAN.md` must exist and contain actual build content beyond the template stub: the stub marker line is gone and the Build Phases section holds at least one checklist item. If it does not, **STOP**: report that the build is not yet planned and that Phase 0 — the build plan, the demo narrative, the personas, and the entity-level data model — happens in the claude.ai Project before build sessions begin (see `GETTING_STARTED.md` §3). In this state do not create objects, seed data, or accept build prompts; the only permitted work is reading the environment.
-2. **Verify the Dev MCP is connected AND the full design-object tool surface is present.** List the tools available in the session and confirm the design CRUD families are loaded — record types, fields, relationships, expression rules, interfaces, process models and nodes, sites, constants, documents, `testRule`, `testInterface`, `testProcessModel`, `validateDesignObject` — not merely `ping` or a runtime subset. Then make one trivial design read (`listRecordTypes`) and confirm it returns the application's types.
+2. **Verify the Dev MCP is connected AND the full design-object tool surface is present.** List the tools available in the session and confirm the design CRUD families are loaded — record types, fields, relationships, expression rules, interfaces, process models and nodes, sites, constants, documents, `testRule`, `testInterface`, `testProcessModel`, `validateDesignObject` — not merely `ping` or a runtime subset. Then make one trivial design read, `listRecordTypes` scoped to the **Application UUID** build parameter (§13), and confirm it returns the application's types.
 3. **If the design tools are missing or the read fails: STOP.** Report the tool count and which families are present. Do not diagnose the cause, do not improvise a reduced-scope pass, do not substitute runtime tools, do not proceed degraded. A missing design surface has been measured as transient (it returned on its own the next session), so treat it as retry-next-session, not as something to work around. The one exception is a name collision, which does not clear on retry: if the tools that are present under `appian` are the runtime family (snake_case `appian_*` plus `ping`), report that a runtime server shares the Dev MCP's name (§6, `reference/toolchain.md` §2) [S34]. Note that `claude mcp list` reporting the server connected and `ping` returning 200 prove transport, not that the design surface loaded — in a collision, the `ping` that answers is the runtime server's.
 4. **Check the Dev MCP and sail versions against their pins — a flag, not a gate.** Call `getDevMcpVersionInfo` and compare the reported plugin version and build stamp with the version pin at the top of `reference/toolchain.md` §1. On a mismatch: report that the server has updated and that `toolchain.md` §1 describes the previous generation; offer to walk the operator through the update procedure (they say "run the update procedure" and the session executes `maintenance/dev-mcp-update.md`); print both bundle download paths for the current site, with `<site>` taken from the registration's `LCP_URL`: the documented downloads page `https://<site>/suite/plugins/servlet/stateless/downloads` (the operator-facing entry), and the direct bundle link the version tool itself prints, `https://<site>/suite/plugins/servlet/stateless/lcp-mcp-bundle` (`maintenance/dev-mcp-update.md` Step 0); and note the drift in `BUILD_LOG.md`. Also surface the tool's own recommendations: if the site's plugin is behind the App Market, say so and note that the site admin updates the plugin before a bundle download is worthwhile, because the bundle versions with the site's plugin. Then run `sail --version` and report it beside the Dev MCP's version, compared with the sail pin in `reference/toolchain.md` §12. sail ships in the same bundle and reported the bundle's own version on the verified machine [S1]. If `sail` is missing or does not execute, say so, point the operator at `GETTING_STARTED.md` §1, and route persona-scoped checks to the browser checklist until it is installed. Unlike the plan gate, the session proceeds after reporting.
 5. **Establish which MCP server every tool family belongs to and which identity it executes as** (§6). Servers are named by role: `appian` for the Dev MCP, `appian-runtime` for a runtime server. Two servers under one name shadow or merge silently [S34]:
    - **Merge:** snake_case `appian_*` tools under `mcp__appian__`.
    - **Shadow:** a connected `appian` missing the design families.
 6. **Compare the repo's `skills/appian-supplemental/SKILL.md` with the installed user-level copy at `~/.claude/skills/appian-supplemental/SKILL.md`.** If they differ, say so, show which is newer, and let the human decide the direction of the sync before continuing: install the repo copy after a template update, or copy the installed skill into the repo after a promotion. Never overwrite either silently.
-7. **Run any per-session ritual the project declares** before rendering anything — for example re-dating time-anchored fixtures with the project's idempotent script, so a stale book is not mistaken for a broken screen.
-8. State the executing identity and its group scope at the top of the session's work, because every readback that follows is interpreted under it (§4). For sail, the persona sessions available on this machine are the ones step 9 reports; no sail command reports the acting identity (§6) [S2]. Verify by readback, not from the plan, that the groups the session will gate on exist, are nested as believed, and have members — a plan has recorded groups as nested that were siblings, and as created when they were not.
+7. **Run the per-session ritual named in the Per-session ritual build parameter** (§13) before rendering anything — for example re-dating time-anchored fixtures with the project's idempotent script, so a stale book is not mistaken for a broken screen.
+8. State the executing identity and its group scope at the top of the session's work, because every readback that follows is interpreted under it (§4). For sail, the persona sessions available on this machine are the ones step 9 reports; no sail command reports the acting identity (§6) [S2]. Compare the executing identity with the **Design account** build parameter and report a mismatch. Verify by readback, not from the plan, that the groups named in the **Security groups** build parameter exist, are nested as believed, and have members — a plan has recorded groups as nested that were siblings, and as created when they were not.
 
 9. **Report the persona sail sessions on this machine.** Persona sessions are machine-local state. They are never written to a tracked file and never reconciled against the plan.
    - **Discover.** Take every directory matching `~/.sail-*`, plus the default `~/.sail` if it holds a `session.json`.
    - **Read each `session.json` for its `username` and `host` fields only.** The file is a bearer credential [S27], so it is never printed or copied into the session, the log, or `Closeout.md`. Read the two fields with a one-line extractor, never with `cat`. Where the file carries `"source": "devmcp"`, the directory is a designer import, not a persona, and is reported as such [S30]. A directory without a `session.json` is reported as holding no session.
-   - **Check liveness, read-only:** `sail --data-dir <dir> pages <site>`, where `<site>` is the build's persona-facing site URL stub, named in the project sections.
+   - **Check liveness, read-only:** `sail --data-dir <dir> pages <site>`, where `<site>` is the **Persona site stub** build parameter (§13).
    - **Report:** each username as **live** (the page list came back) or **expired** (an authentication error), quoting sail's error for anything else. Name the directory beside each result. If the default `~/.sail` holds a session, say so, because it should stay empty (§6).
    - **That is the whole step.** Nothing is logged in, repaired, or recorded.
    - **The username is only a claim.** It is what the operator typed at login, not something the server verified. Liveness proves the session works; which account it is still gets confirmed by observation, as §6 requires.
@@ -171,11 +171,40 @@ Worked examples: `examples/agent-eval-walkthrough.md` (the specimen discipline) 
 
 ## 13. Project sections (added per build, below this line)
 
+**Build parameters.** The project sections open with this block. It holds the build-specific values that core steps read by name. Copy it to the top of the project sections and fill it in before the first build session.
+
+- **Rule for an unset value.** A value the build cannot have yet — for example an application that Phase 1 has not created — is written `unset` with the reason. A step that needs an unset or blank parameter reports "build parameter `<name>` is unset" and skips the check that needs it. It never guesses a value.
+- **Changing a value.** Values change only through an edit to this block. A preflight report never writes one.
+
+```
+## Build parameters
+
+| Parameter | Value | Read by |
+|---|---|---|
+| Application UUID | <uuid of the build's Appian application> | §2 step 2 (design read) |
+| App prefix | <object-name prefix, e.g. ABC> | §13 naming; no preflight step reads it |
+| Design account | <account the Dev MCP signs in as> | §2 step 8 (identity check) |
+| Security groups | <groups the build gates on, with nesting> | §2 step 8 (group readback) |
+| Per-session ritual | <script and trigger, or "none"> | §2 step 7 |
+| Persona site stub | <URL stub of the site personas use> | §2 step 9 (sail liveness) |
+```
+
 Add, in the build's own words: vocabulary canon (exact stored values and display labels); data model and relationships; naming prefix and groups; business rules implemented once as shared rules; demo repeatability rules (session tagging, reset and verify-ready actions, reserved id ranges); known data artifacts that are deliberately not fixed, each with what shows, why, and what to say; the files in the repo and what each is for.
 
 ---
 
 # Project sections — Settlement Operations Demo (Appian + Snowflake)
+
+## Build parameters
+
+| Parameter | Value | Read by |
+|---|---|---|
+| Application UUID | `80384196-bed7-4692-b86b-e7be596fd0bb` (Settlement Operations) | §2 step 2 (design read) |
+| App prefix | `SO` | §13 naming; no preflight step reads it |
+| Design account | `scott.thorn` (member of `SO Supervisors`, so readbacks are full-scope) | §2 step 8 (identity check) |
+| Security groups | `SO Users` > `SO Analysts`, `SO Supervisors` (supervisors also members of analysts); `SO Demo Admins` outside the tree | §2 step 8 (group readback) |
+| Per-session ritual | `fixtures/p4-verify-redate.py`, applying all three CSVs, in any session that renders a Phase 4 screen (Repeatability, below) | §2 step 7 |
+| Persona site stub | `settlement-ops` (the Demo Admin site `settlement-ops-admin` is not a persona site) | §2 step 9 (sail liveness) |
 
 Reusable joint demo: **Pre-Settlement Fail Prevention** — Snowflake predicts which trades will fail at trade date; Appian turns the prediction into governed remediation before cutoff; resolved outcomes close the learning loop. Everything user-facing must read like it was written by someone who has worked a settlements desk. Positioning, act structure, and phasing live in `pre-settlement-fail-prevention-one-pager.md` and `BUILD_PLAN.md`; this file governs data model, vocabulary, and business rules for the build.
 
