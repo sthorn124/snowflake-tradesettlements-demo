@@ -3092,3 +3092,32 @@ NTZ-as-UTC and chart-type stay staged.
   - (e) "One door": one link per record per panel, with excerpts cut at the second sentence. → `patterns.md` §8.
   - Trigger for all five: the next template-maintenance pass on appian-devmcp-method, where each is checked against the noun test and a second instance.
 - The header checkpoint line is not moved (TODO, Blocking).
+
+## 2026-09-22 — INVESTIGATION: intake created 1 case where Snowflake counted 3 (read-only; run left loaded)
+
+*Scope:* Dev MCP as `scott.thorn` (SO Supervisors) — every readback full-scope, so absences are real. No `appian_*` / `ping`; no Snowflake execution; no sail. **No object, process or row created, changed or deleted.** Tools: `testRule` (existing `SO_intakePlan`), `listRecordData`, `getRecordType`, `getProcessModel`, `listProcessModelNodes`, `getInterface`. The B2-TEST run stays loaded for the fix session.
+
+*Trigger:* Scott's B2 live pass. Load of `b2-test` returned `OK run=B2TEST trades=15 predictions=15 high_or_critical=3`; one case existed afterwards. A second Load produced no further case.
+
+*Measured*
+- **The case:** `caseID 55`, `TRD9B2TEST01`, sessionID **`B2-TEST`** (dash kept — the console passes `upper(local!runName)`), `Pending Analyst`, confidence `0.62`, desk `EQ_FLOW`, `cutoffTs 2026-09-23 00:42:01` = created + 185 min, so story lookup and cutoff arithmetic both worked. It is **story 01 and the first item of `toCreate`**. Children: comment id 55; audit 127 (`21:37:05`, created), 128 (`21:38:02`, assessed 0.62), 129 (`21:38:07`, referred). No case carries `B2TEST`.
+- **Plan, live, `runName: "B2-TEST"`:** `atRiskTradeIds` all three; `alreadyCased [TRD9B2TEST01]`; `noStory []`; `toCreate` = 02 (Critical 0.81, funding_gap, 150) and 03 (High 0.72, operational_error, 540). With `"B2TEST"`: all three in `toCreate`. **The plan is healthy; the loop is the suspect.**
+- **Data:** all 15 predictions and 15 trades present; 01/02/03 = Critical 0.83 / Critical 0.81 / High 0.72, the other twelve Low or Medium 0.10–0.45. `SO Trade Predictions` is `sourceType: SNOWFLAKE`, live, not synced.
+- **One load, not two:** every prediction row carries `scoredAt 2026-09-22 21:36:53`. `SIMULATE_FEED` re-stamps `SCORED_AT` on each successful call, so **the second Load never reached the insert** — it returned something other than `OK run=` and node 6 stopped without starting intake. The second Load is therefore not evidence about the loop; its message is unknown and is a question for Scott.
+- **Timing:** insert `21:36:53` → case created `21:37:05` (12 s later, ~1 min after the click) → assessment `21:38:02` → referral `21:38:07`. No later case-creation event: trades 02 and 03 were never attempted.
+- **Unexplained:** case ids `53, 54`, comment ids `53, 54` and audit ids `125, 126` are missing from otherwise contiguous sequences immediately before the B2-TEST rows — two case-shaped sets of ids consumed and absent. Either an earlier load-and-reset today, or two rolled-back inserts. Question for Scott.
+- **Deployed graphs re-read** and unchanged from the 2026-09-11 build: `SO_intakeRun` nodes 3→4→5→6→7→8→9→10→11→5; `SO_simulateRun` nodes 3→5→6→7.
+
+*Not verified (and why)*
+- **The intake process instance's state** — completed, running or paused by exception. The Dev MCP design surface exposes no instance listing, history or status tool, and `testProcessModel` starts a new instance rather than reading one. The only instance-status tool in the session belongs to `appian-runtime`, banned by CLAUDE.md and needing a process id not in hand. Not worked around. This is the fact that separates the two candidates.
+- **Whether a list of maps survives a Map-typed PV** — the 2026-09-11 shape probe ran inside an expression rule, never through a PV.
+
+*Candidates, ranked — inference, not measurement*
+1. **`count` evaluated to 1 inside the process.** `pv!plan` is a Map PV holding `toCreate` as a list of maps; node 4's count and node 6's extraction both depend on that nesting surviving storage. Collapse to the first element gives count 1, one case written — **trade 01, the case that exists** — then idx 2 exits. The surviving case being the *first list item* rather than a random one is what ranks this first.
+2. **The loop stalled after iteration 1** — node 7's synchronous Start Process pausing on the second pass, or the flow back to node 5. Nodes 10 and 11 worked at least once (triage ran), so the failure would have to be second-pass specific.
+
+*Promotion checkpoint* — current through this entry. **2 candidates, both STAGED, neither promoted:**
+- **(a)** A list of maps stored in a **Map-typed process variable** may not survive as a list (gate 1 not met: inferred from one run's outcome). *Trigger: the fix session's PV round-trip probe.*
+- **(b)** **Process instances are not readable over the Dev MCP** — no listing, history or status tool. Rule-shaped as "plan verification that never depends on reading an instance", but taken from one session's tool surface. *Trigger: the next session that needs instance state.*
+
+NTZ-as-UTC and chart-type remain staged.
