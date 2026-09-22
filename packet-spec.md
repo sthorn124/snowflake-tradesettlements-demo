@@ -285,9 +285,18 @@ The TRD044567 shape, authored rather than adopted.
 | `SCORED_AT` | call time |
 | `TOP_RISK_FACTORS` | Counterparty Risk 0.475 · Slow Confirmation 0.05 · Large Notional 0.05 |
 
-**Why it escalates:** 26.07h of confirmation lag against ~2.5h remaining. Canon
-says lag at or near the remaining hours goes to a human at confidence 0.5 or
-lower. A funding gap on an equity BUY is coherent: our cash is not in place to pay.
+**Why it escalates — BY POLICY, not by the agent's judgment (ruled 2026-09-22).**
+26.07h of confirmation lag against ~2.5h remaining. `SO_triageCase` computes the breach
+itself at triage time — broker confirmation lag read from the trade, hours remaining read
+from the case's cutoff — and a breached window escalates **ahead of both the
+straight-through gate and the analyst lane**, because once the window is gone, releasing
+and referring are both wrong. The agent's score is recorded, shown and audited (0.35 and
+0.40 on the two live runs of this story) but does not decide the lane.
+
+**This replaced a coin-flip.** Two runs of this same story at the SAME score routed
+differently — Pending Analyst once, Escalated once — because the agent's `escalate` flag
+is not deterministic. A narrated beat cannot depend on it. A funding gap on an equity BUY
+is coherent: our cash is not in place to pay.
 
 ### Story 3 — STRAIGHT-THROUGH · clean facts (seq `03`)
 

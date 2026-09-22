@@ -1,127 +1,116 @@
-# Closeout — 2026-09-22 — Intake loop fixed: a flow back into an XOR gateway never re-fires
+# Closeout — 2026-09-22 — Deterministic escalation policy + console simplified to one fixed run
 
-The intake loop created one case per run because the flow returning to its XOR gateway never re-activated it. The loop was restructured, measured in isolation, and verified on the live B2-TEST run: **all three cases now exist**, one per story, with the two missing ones created this session.
+Two closing fixes for Phase 5. Story 02 now escalates because the process computes a breached window, not because the agent happened to flag it; and the console has nothing left to type. Environment verified clean before work and left clean after: 17 fixture cases, 12 comments, 14 audit rows, 0 demo trades.
 
-## (a) The probe measurement, quoted
+## (a) Changes, with readback
 
-Three throwaway objects, all deleted at the end. Every run below is `testProcessModel` output.
+**`SO_triageCase`** (`0000f04e-ff8f-8000-2381-7f0000014e7a`) — modified exactly as ruled, nothing else touched:
 
-**1. Does a list of maps survive a Map-typed PV? Yes — a literal list, read back in a later node:**
+- **Three new process variables:** `lagHrs`, `hoursRemaining` (both Decimal), `windowBreached` (Boolean).
+- **Node 11** (unpack) gained two reads, both self-contained: broker confirmation lag through the case→trade relationship, and hours-to-cutoff through **`SO_cutoffDisplay`'s** signed `hoursRemaining` — the measured clock rule reused rather than re-derived.
+- **New node 13, "Escalation policy: window breached?"**, sits between node 11 and the status write: `lagHrs > 0 and hoursRemaining <= lagHrs`. It is a separate node so both inputs are committed before the comparison reads them.
+- **Node 12 "Route"** — the escalate condition is now `windowBreached OR counterparty_default OR the agent's escalate flag`, evaluated first, so a breach outranks straight-through and the analyst lane by the XOR's first-match ordering. The `counterparty_default` override is unchanged. Straight-through and analyst conditions are untouched.
+- **Node 23 "ESC: Event Escalated"** now composes three branches — breach, reason override, agent flag — and **every one renders the fail reason through `SO_failReasonDisplay`, lower-cased into the sentence**, closing the standing TODO.
+
+Readback: each `updateProcessModelNode` returned the node as sent; `validateDesignObject` → `hasErrors: false`.
+
+**`SO_demoAdminConsole`** (`…_564828`, v5 → v8) and new constant **`SO_DEMO_RUN_NAME`** (TEXT, `DEMO`, `…_571667`):
+
+- Both run-name text fields removed; both buttons pass the constant. Panel 2 is **Load the demo**, panel 3 is **Reset the demo**.
+- **Status line above the buttons**, derived from panel 1's existing queries — no new state: `No demo data loaded.` / `Demo loaded — 15 trades, 3 cases.`, with the existing in-progress copy after a Load press.
+- **Panel 1 legend:** "green checks = ready · grey dots are reference counts, not problems · nothing here changes anything"; the top line now reads "You need nothing but this page. The demo run is called DEMO."
+- **Snowflake message labelled and demoted:** prefixed "Snowflake's response:" and rendered SMALL muted on success; full prominence (STANDARD, ink, bold) on refused or failed.
+- **Grammar:** "Will delete 1 case" — and the same bug was found live in panel 1's leftover line ("1 cases from run DEMO") and fixed too.
+- Run-name upper-casing removed as pointless with a single literal; the concept card now explains the fixed name and its consequence.
+
+Readback: `validateDesignObject` → `hasErrors: false`; both states rendered (below).
+
+**Unchanged, as required:** `SO_intakeRun`, `SO_intakePlan`, `SO_createTriageCase`, both integrations, the connected system, everything Snowflake-side.
+
+## (b) Break-test results, quoted
+
+Six throwaway cases created, triaged live, read back, deleted. Every quoted value is from `testProcessModel` output or a row readback.
+
+**1. Breached window, mid score → Escalated.** Case 61, `TRD049998`, lag 15.74h, cutoff +2h.
 ```
-countInline: 3     countFromPv: 3
-item1: "T01"       item2: "T02"      item3: "T03"
-toCreateText: "[tradeId:T01,...]; [tradeId:T02,...]; [tradeId:T03,...]"
+lagHrs: 15.74   hoursRemaining: 1.97   windowBreached: true   confidence: 0.40
+status: Escalated
 ```
+Event 146, verbatim:
+> "Escalated by policy: funding gap — broker confirmation lag 15.7h against 1.9h remaining, so the remediation cannot complete inside the window. Agent confidence 0.40; the breached window decides this case whatever the score."
 
-**2. Does the real rule's output survive it? Yes — `rule!SO_intakePlan("B2TEST")` stored in the same Map PV, read back in a later node:**
+Note the fail reason reads **"funding gap"**, not `funding_gap` — the display rule, lower-cased into the sentence.
+
+**2. Non-breached, mid score → Pending Analyst, unchanged.** Case 65, `TRD026800` (Vanguard Prime, high tier, 11.8M EUR), lag 10.24h, cutoff +14h.
 ```
-ruleCountInline: 3   ruleCountFromPv: 3
-ruleItem1: "TRD9B2TEST01"   ruleItem2: "TRD9B2TEST02"   ruleItem3: "TRD9B2TEST03"
+lagHrs: 10.24   hoursRemaining: 14.00   windowBreached: false   confidence: 0.65
+status: Pending Analyst
 ```
-**Candidate 1 is dead in both forms.** The plan reaches the loop intact.
+Event 154: "Referred to analyst: confidence 0.65 below threshold 0.80 | proposed Arrange cover borrow / partial release".
 
-**3. The loop shape mirrored, with Start Process children standing in for case creation and triage:** hung past 60 s, exactly like production.
-
-**4. The same loop with the Start Process nodes removed — no records, no agent, no integrations:**
+**3. Non-breached, high score → straight-through, unchanged.** Case 63, `TRD049996`, lag 0.5h, cutoff +10h.
 ```
-status: "ACTIVE"   (timed out at 45s)
-idx: 2   count: 3   trace: "seed;take1=A;mid1;inc;"
+lagHrs: 0.5   hoursRemaining: 9.95   windowBreached: false   confidence: 0.90
+status: Resolved - Straight Through   disposition: Settled - Corrected
 ```
-One pass ran, the increment ran, and the token then sat at the gateway. **The smart services were never involved.**
+(Case 62 also landed here at 0.87 — it was meant to be the mid-score test, but the agent scored it high; case 65 was added to cover the analyst lane.)
 
-**5. The same loop with the gateway moved downstream of the increment, loop-back into the script node:**
+**4. `counterparty_default` → escalates on reason, unchanged path.** Case 64, `TRD049997`, not breached, confidence 0.92.
 ```
-status: "COMPLETED"   (6.5s)
-idx: 3   trace: "seed;take1=A;mid1;inc;take2=B;mid2;inc;take3=C;mid3;"
+windowBreached: false   confidence: 0.92   status: Escalated
 ```
+Event 152, verbatim:
+> "Escalated by policy: counterparty default requires a human credit decision; straight-through not permitted for this reason."
 
-## (b) Root cause, two sentences
+**Residue:** all six deleted; cases back to 52, comments to 52, events to 124 — the exact pre-session baseline, cascade confirmed again.
 
-A flow returning to an XOR gateway that has already fired does not re-activate it, so the loop completed its first pass, incremented the index, and then sat forever at the gateway with no error, no pause and no alert. The plan, the count, the item extraction and both Start Process nodes were always correct — the loop-back target was the whole defect.
+**What I could not isolate, stated plainly.** I tried twice (cases 61 and 66) to prove the policy overriding a *high* score on a breached window. Both times the agent set `escalate: true` itself — with a blown window it reliably does. So precedence over straight-through rests on the gateway's first-match ordering, visible in the readback, not on a measured case. The stochasticity that caused this work shows up in the other direction: story 02 twice produced the same score and different lanes.
 
-## (c) Changes, with readback
+## (c) P4-VERIFY dead code removed
 
-**`SO_intakeRun`** (`0000f060-f4bd-8000-2419-7f0000014e7a`) — the only production object changed. New flow:
+The name is now a constant that can never equal `P4-VERIFY`, so three things on the console were unreachable and were deleted:
 
-```
-3 plan (+idx=1) → 4 count → 12 XOR "Anything to create?" → 6 take next trade (LOOP TARGET, script)
-  → 7 create case (sync) → 8 find the case → 9 XOR "Case written?" → 10 triage (async)
-  → 11 increment → 13 XOR "Another trade to create?" → back to 6
-```
+1. the `local!simProtected` local and panel 2's red "that's the built-in test data's name" warning;
+2. the `local!isProtected` local and the protected branch of the delete preview;
+3. the `P4-VERIFY` short-circuit inside the `resetRows` query, which returned `{}` for the fixture name.
 
-- **Removed** node 5, the XOR that the loop used to return to.
-- **Added** node 12 (`count >= 1 and idx <= 15`) and node 13 (`idx <= count and idx <= 15`).
-- **Node 6 is now the loop target**, entered from 12 and from 13; it is a script node, which re-fires correctly.
-- **Every gateway now has exactly one incoming flow** — 12 from 4, 9 from 8, 13 from 11.
-- The hard 15 bound is kept on both gateways; nodes 6, 7, 8, 9, 10 are otherwise unchanged.
+**Still in force, untouched:** both process models keep their own `P4-VERIFY` guard, and the Snowflake procedures keep theirs. Nothing that actually protects the fixtures was removed — only the console's now-unreachable copy of it. `ri!sessionPrefill` is left declared but unused, so the site page's configuration does not have to change.
 
-Readback: `updateProcessModel` returned every node, expression and flow as sent, and `validateDesignObject` returns `hasErrors: false`.
+## (d) Your browser pass
 
-**Unchanged, as required:** `SO_intakePlan`, `SO_createTriageCase`, `SO_triageCase`, `SO_simulateRun`, `SO_resetRun`, both integrations, the connected system, the console, and everything Snowflake-side.
+1. Open the Demo Admin site. Panel 1 all green; status line reads **"No demo data loaded."**; **Reset the demo** is greyed out.
+2. Press **Load the demo**. Expect "Feed loaded", then in small grey type: `Snowflake's response: OK run=DEMO trades=15 predictions=15 high_or_critical=3`.
+3. Reload after ~2 minutes. Status line should read **"Demo loaded — 15 trades, 3 cases."**
+4. Watchlist as `sam.supervisor`: exactly three cases — 01 **Awaiting review** ~62, 02 **Escalated**, 03 **Resolved · straight through**.
+5. Open case 02's event history. Expect the escalation line to state the arithmetic: broker confirmation lag ~26.1h against the hours remaining, "the breached window decides this case whatever the score", with the reason reading "funding gap".
+6. As `alex.analyst` (EQ_FLOW): all three stories are EQ_FLOW, so the same three cases appear; confirm no other desk's work is visible.
+7. Press **Reset the demo**. Expect "Cleaned up", `Snowflake's response: OK run=DEMO trades_deleted=15 predictions_deleted=15`, "Appian was: 3 cases · 3 comments · 9 audit rows", "Appian now: 0 · 0 · 0".
+8. Reload: panel 1 back to demo-run 0, leftover 0, built-in 17, comments 12, audit 14; status line back to "No demo data loaded."; Reset greyed out again.
 
-**Throwaways created and deleted this session** (all confirmed deleted): `SO_zzPlanShapeProbe`, `SO_zzLoopProbe`, `SO_zzLoopProbeChild`, constant `SO_zzPM_LOOP_CHILD`.
+**Browser-only checks (geometry and paint, which no render can settle):** where the status line sits relative to the button and whether it reads as a heading or a caption; whether the demoted "Snowflake's response:" line is legible at SMALL grey or too quiet; whether the panel-3 preview line wraps at your window width; and the greyed-out Reset button's contrast.
 
-## (d) Verification on the live run
+## (e) TODO / BUILD_LOG / packet-spec updates
 
-`testProcessModel` on the fixed `SO_intakeRun` with `runName: "B2-TEST"` returned **`status: "COMPLETED"`** in 14 s, `createdCaseId: 57`, `idx: 2` against `count: 1` — the loop exited through node 13 instead of hanging.
-
-**The run's three cases, by readback:**
-
-| case | trade | status | reason | score | disposition |
-|---|---|---|---|---|---|
-| 55 | `TRD9B2TEST01` | Pending Analyst | `insufficient_securities` | 0.62 | — |
-| 56 | `TRD9B2TEST02` | Pending Analyst | `funding_gap` | 0.35 | — |
-| 57 | `TRD9B2TEST03` | Resolved - Straight Through | `operational_error` | 0.90 | Settled - Corrected |
-
-- **No duplicate for trade 01**, and no case for any of the twelve background trades.
-- **Desks and fail reasons** match the plan on all three.
-- **Audit and comments arrived**: events 133/134/135 on case 57 — created, assessed at 0.90, then "Straight-through: Correct & resubmit | confidence 0.90 >= threshold 0.80 | disposition Settled - Corrected | resolved before cutoff without analyst review".
-- **Idempotency re-checked after the run:** `SO_intakePlan("B2-TEST")` now returns `alreadyCased` = all three and **`toCreate: []`**.
-
-**One delta, recorded not forced:** packet-spec expects story 02 to **escalate**; it landed in the analyst lane at 0.35. The agent did not set escalate and `funding_gap` is not a reason override, so a sub-threshold score routes to a human — the lane is defensible, but it is not what the packet promises. Story 03 behaved exactly as specified.
-
-**What this run did not prove:** the multi-iteration path on the *production* model with real data, because only one trade remained to create. The three-iteration proof is the isolated probe (measurement 5), and Scott's clean re-run after a reset will exercise it end to end on the real path.
-
-## (e) Scott's remaining live-pass steps, renumbered against the current state
-
-The run is loaded and all three cases exist, so the earlier steps 1–5 are done. What is left:
-
-1. **Look at the three cases** on the analyst watchlist as `sam.supervisor` (all three are EQ_FLOW): 01 *Awaiting review*, auto-release score 62; 02 *Awaiting review*, score 35; 03 *Resolved · straight through*, Settled - Corrected. Confirm the hero reads as expected and tell me if story 02's analyst lane is acceptable or if the packet should be re-authored to force the escalation.
-2. **Refused path:** console panel 2, type `1012-ACME-EXTRA` (15 characters), press Load. Expect red "Not loaded — refused" and verbatim `REFUSED: a run name is 1 to 13 letters, digits or dashes, e.g. 1012-ACME.` Then type `p4-verify` and confirm Load is disabled with the red built-in-test-data line.
-3. **Repeat-press observation (not a fix target):** type `b2-test` again and press Load a second time. **Write down verbatim what the panel displays**, and whether it looks like a fresh answer or the previous one redisplayed. Last time the console read green while Snowflake's `SCORED_AT` proved the procedure ran only once. This feeds the queued console rework.
-4. **Reset:** panel 3, type `b2-test`, press Delete. Expect "Cleaned up: B2-TEST", the verbatim `OK run=… trades_deleted=15 predictions_deleted=15`, "Appian was: 3 cases · 3 comments · 9 audit rows" and "Appian now: 0 cases · 0 comments · 0 audit rows".
-5. **Both sides clean:** reload the console. Panel 1 should read demo-run trades 0, leftover 0, built-in 17, case comments 12, audit rows 14.
-6. **The real three-iteration proof, if you want it in one pass:** after the reset, Load `b2-test` once more and confirm **three** cases appear from a single press. That is the loop fix exercised through the console rather than from a session.
-
-## (f) The id gap, explained
-
-Bracket: the missing ids sit after the P4-VERIFY fixture rows (case ids ≤ 52, comment ids ≤ 52, event ids ≤ 124) and before the first B2-TEST row on 2026-09-22 21:37, so they were consumed between 2026-09-10 and 2026-09-22.
-
-Within that window CLAUDE.md records the matching event exactly: the 2026-09-09 cascade measurement on the Demo Admin site — **"two throwaway cases plus two comments and two events, deleted by case alone, took comments 14→12 and events 16→14"**. Two cases, two comments, two events, created and then deleted. That is case ids 53–54, comment ids 53–54 and event ids 125–126. **Explained, not a defect**, and consistent with Scott's answer that nothing ran in the eleven days before the live pass.
+- **packet-spec §5, story 2** now says it escalates **by policy**, names the mechanism, and records that two runs at the same score routed differently.
+- **CLAUDE.md business rules** gained the policy as a standing rule, including why it is not left to the agent.
+- **BUILD_PLAN**: console wiring closed as simplified; the escalation policy added as a completed item; Part C still ahead.
+- **TODO**: story-02 ruling closed. Added — the fixed name removes multi-SC concurrency (decide before another SC takes the asset); no integration test screen exists, so REFUSED is exercised from the integration object; and a stale throwaway interface from an earlier session, `SO_zz_probeQuery`, which I did **not** delete because §12 says another session's throwaway goes on the owner's word.
+- **BUILD_LOG**: full entry with the quoted break-tests and the readbacks.
 
 ## Verified / not verified
 
-**Verified** (Dev MCP as `scott.thorn`, SO Supervisors, full scope): the five probe runs quoted above; the fixed model's readback and validation; the completed live run; the three cases, their comments and their audit rows; idempotency after the run; the deletion of all four throwaways.
+**Verified** (Dev MCP as `scott.thorn`, SO Supervisors, full scope): environment clean before and after; the four lanes by live triage and row readback; the escalation event text; `validateDesignObject` clean on both changed objects; console rendered in both states with `diagnostics.error: null` — no-data (status line, Reset disabled, no text fields) and loaded (status line, "Will delete 1 case", Reset enabled).
 
 **Not verified:**
-- Multi-iteration on the production model with live data — see (d); the console re-run covers it.
-- **Parked instances.** The two intake instances started before the fix (the console's live run, and this session's first attempt) are still `ACTIVE` at the old gateway and will sit there. They cannot be cancelled over the Dev MCP; they are harmless but should be cleaned up from the Admin Console when convenient.
-- Whether the console redisplays a stale result on a second press — deliberately left as an observation for step (e) 3, since the console is out of scope this session.
+- The console's loaded state was rendered with a throwaway case, **not** a real Snowflake load — reaching the true loaded state needs the integrations, which this session does not call.
+- Everything geometric, listed in (d).
+- **Canon deviation, deliberate and disclosed:** I did not run the P4-VERIFY re-date ritual before rendering the console. The ritual exists so time-anchored fixtures do not render as a book past cutoff; the admin console shows counts only and no cutoff-derived value. Flag it if you would rather it ran unconditionally.
+- The two parked intake instances from 2026-09-22 are still `ACTIVE` and still not cancellable over the Dev MCP.
 
 ## Promotion
 
-**1 candidate, PROMOTED** to appian-supplemental §9, and it **corrects that file's own explicit-loop recipe**, which prescribed the flow back to the XOR:
+**1 candidate, promoted to CLAUDE.md** (project rule, not portable): escalation for a breached window is a process-layer policy, not an agent judgment. It fails the supplemental's noun test — it is about this build's triage lanes — but it is exactly the kind of ruling CLAUDE.md exists to hold.
 
-> A flow returning to an XOR gateway that has already fired does not re-activate it; the instance sits `ACTIVE` with no error, no pause and no alert, which in production reads as "the loop did one item and stopped". Working form: loop back to the script node and put the continue/stop gateway downstream of the increment, so every gateway has one incoming flow. Isolate before blaming the work nodes — the same loop hung identically with Start Process nodes in it, which reads like a smart-service fault.
+The general form behind it — *a demo beat that must land cannot depend on a model's boolean; compute it in the process from data the model also sees* — is **staged, not promoted**: it is method rather than platform, and one project's experience. *Trigger: the next build that wires an agent's flag to a branch.*
 
-Measured, reproduced in both directions, zero project nouns, contradiction named. The installed skill and the repo copy are in sync.
-
-The investigation session's two staged candidates: **(a) the Map-PV collapse is DISCARDED** — measured false in both forms, and the discard is recorded rather than the history rewritten. **(b) process instances are not readable over the Dev MCP** stays staged, and it cost real time again today: the only way to see where the loop stopped was to rebuild it as a probe.
-
-## TODO changes
-
-Closed the blocking intake-loop item and both investigation questions. Added: the story-02 lane ruling, cleanup of the two parked instances, and the console repeat-press observation folded into Scott's step 3.
-
-## BUILD_PLAN changes
-
-The intake item is now done, with the defect and fix recorded; the console item points at the remaining live-pass steps; Part C stays behind Scott's clean console run.
+Carried forward unchanged: the Dev MCP's blindness to process instances stays staged; NTZ-as-UTC and chart-type stay staged.

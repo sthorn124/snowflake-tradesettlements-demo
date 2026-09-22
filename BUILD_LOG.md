@@ -3163,3 +3163,44 @@ Bracket: after the fixture rows (case ≤ 52, comment ≤ 52, event ≤ 124) and
 - **PROMOTED to appian-supplemental §9:** a flow returning to an already-fired XOR gateway does not re-activate it (instance sits `ACTIVE`, silent); working form is to loop back to the script node with the continue/stop gateway downstream of the increment, every gateway single-incoming; isolate before blaming the work nodes. **This corrects that file's own explicit-loop recipe**, which prescribed the flow back to the XOR. Installed skill and repo copy synced.
 - **DISCARDED:** the staged Map-PV collapse candidate — measured false in both forms (probes 1 and 2). Recorded as a reversal, not rewritten.
 - **Still staged:** process instances are not readable over the Dev MCP — it cost real time again today, since rebuilding the loop as a probe was the only way to see where it stopped. NTZ-as-UTC and chart-type unchanged.
+
+## 2026-09-22 (cont.) — PHASE 5 CLOSING FIXES: deterministic escalation policy + console simplified to one fixed run
+
+*Scope:* Dev MCP as `scott.thorn` (SO Supervisors) — full scope. No `appian_*` / `ping`; no Snowflake execution; no sail. Changed: `SO_triageCase` (as ruled, precisely), `SO_demoAdminConsole` (v5 → v8), new constant `SO_DEMO_RUN_NAME`. Untouched: `SO_intakeRun`, `SO_intakePlan`, `SO_createTriageCase`, both integrations, the connected system, Snowflake.
+
+*Gate check first.* The prompt's stop condition was exercised: on the first read the environment still held Scott's clean B2-TEST run (3 cases, 15 Snowflake trades, comments 15, audit 23). **Stopped and reported rather than starting.** After his reset, re-verified independently — cases end at 52 (17 fixtures), trades end at `TRD050000`, events end at 124, comments end at 52 — and only then began.
+
+*Changed — `SO_triageCase`*
+- PVs added: `lagHrs`, `hoursRemaining` (Decimal), `windowBreached` (Boolean).
+- Node 11 gained two self-contained reads: broker confirmation lag through the case→trade relationship (`…relationships.{1507a3f2}trade.fields.{1fc597a6}brokerConfirmationLagHrs`), and hours-to-cutoff via **`rule!SO_cutoffDisplay(...).hoursRemaining`** — reusing the measured clock rule instead of re-deriving it.
+- **New node 13 "Escalation policy: window breached?"** between node 11 and the status write: `lagHrs > 0 and hoursRemaining <= lagHrs`. Separate node so both inputs are committed before the comparison.
+- Node 12 "Route": escalate condition is now `windowBreached OR counterparty_default OR agent escalate`, first in order, so a breach outranks straight-through and analyst by XOR first-match. Other conditions untouched.
+- Node 23: three-branch text (breach / reason override / agent), **all rendering the fail reason through `SO_failReasonDisplay` lower-cased** — closes the standing TODO.
+- Readback: every `updateProcessModelNode` returned as sent; `validateDesignObject` → `hasErrors: false`.
+
+*Break-tests — six throwaway cases, live triage, deleted after*
+1. **Breached, mid score → Escalated.** Case 61 (`TRD049998`, lag 15.74h, cutoff +2h): `lagHrs 15.74 / hoursRemaining 1.97 / windowBreached true / confidence 0.40` → `Escalated`. Event 146: *"Escalated by policy: funding gap — broker confirmation lag 15.7h against 1.9h remaining, so the remediation cannot complete inside the window. Agent confidence 0.40; the breached window decides this case whatever the score."*
+2. **Non-breached, mid score → Pending Analyst (unchanged).** Case 65 (`TRD026800`, lag 10.24h, cutoff +14h): `windowBreached false / confidence 0.65` → `Pending Analyst`, event 154 the usual referral line.
+3. **Non-breached, high score → straight-through (unchanged).** Case 63 (`TRD049996`, lag 0.5h): `confidence 0.90` → `Resolved - Straight Through`, disposition `Settled - Corrected`. Case 62 also landed here at 0.87 — it was intended as the mid-score test and the agent scored it high, which is why 65 was added.
+4. **`counterparty_default` → escalates on reason (unchanged path).** Case 64: `windowBreached false / confidence 0.92` → `Escalated`, event 152: *"Escalated by policy: counterparty default requires a human credit decision; straight-through not permitted for this reason."*
+- **Residue zero:** all six deleted; cases back to 52, comments 52, events 124 — cascade reconfirmed.
+- **Could not isolate:** policy overriding a HIGH score on a breached window. Two attempts (61, 66) both had the agent set `escalate: true` itself — with a blown window it reliably does. Precedence therefore rests on the gateway's first-match ordering (visible in readback), not on a measured case. Recorded as such.
+
+*Changed — console (v5 → v8) and `SO_DEMO_RUN_NAME` (TEXT `DEMO`, `…_571667`)*
+- Both name fields removed; both buttons pass the constant. Panel 2 "Load the demo", panel 3 "Reset the demo".
+- Status line above the buttons, derived from panel 1's existing queries (`tradeReserved`, `otherCases`) — no new state.
+- Panel 1 legend reworded; **grammar bug fixed in two places** — "Will delete 1 case", and panel 1's "1 cases from run DEMO", the second found only by rendering the loaded state.
+- Snowflake message labelled "Snowflake's response:" and demoted to SMALL muted on success; full prominence on refused/failed.
+- Upper-casing dropped (pointless with one literal). Concept card rewritten; consequence stated on screen: one environment, one demo at a time.
+- **P4-VERIFY dead code removed** (console only): `simProtected` + its panel-2 warning, `isProtected` + the preview's protected branch, and the fixture short-circuit in `resetRows`. Both process models and both procedures keep their own guards. `ri!sessionPrefill` left declared but unused so the site page needs no change.
+- **Header comment corrected before saving:** it first claimed name-guard testing "lives on the integration test screen". No such screen exists (`listInterfaces`, 16 objects, checked) — reworded to say a REFUSED message is exercised from the integration object in Designer.
+- Renders: no-data and loaded, both `diagnostics.error: null`; `validateDesignObject` clean. The loaded render used a throwaway case, not a real Snowflake load.
+
+*Deviation, disclosed:* the P4-VERIFY re-date ritual (CLAUDE.md §2.7) was **not** run before rendering the console. The ritual protects time-anchored fixture rendering; the admin console shows counts only, no cutoff-derived value. Flagged for Scott to rule if he wants it unconditional.
+
+*Also noted:* stale throwaway interface `SO_zz_probeQuery` (`…_562148`) from an earlier session. Not deleted — §12 says another session's throwaway goes on the owner's word. In TODO.
+
+*Promotion checkpoint* — current through this entry.
+- **PROMOTED to CLAUDE.md** (project rule): escalation for a breached window is a process-layer policy, not an agent judgment; the score is recorded and audited but does not decide that lane. Fails the supplemental's noun test on purpose — it is about this build's lanes.
+- **STAGED:** the general form — *a demo beat that must land cannot depend on a model's boolean; compute it in the process from data the model also sees.* Method, not platform, and one project's experience. *Trigger: the next build that wires an agent flag to a branch.*
+- Unchanged: Dev MCP process-instance blindness staged; NTZ-as-UTC and chart-type staged.
