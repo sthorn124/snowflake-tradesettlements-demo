@@ -1,75 +1,127 @@
-# Closeout — 2026-09-22 — Investigation: intake created 1 case where Snowflake counted 3
+# Closeout — 2026-09-22 — Intake loop fixed: a flow back into an XOR gateway never re-fires
 
-Read-only investigation of the B2 live pass. **No Appian object, process or row was created, changed or deleted, and the B2-TEST run is still loaded** so the fix session can work on the live evidence.
+The intake loop created one case per run because the flow returning to its XOR gateway never re-activated it. The loop was restructured, measured in isolation, and verified on the live B2-TEST run: **all three cases now exist**, one per story, with the two missing ones created this session.
 
-## Scope and identity
+## (a) The probe measurement, quoted
 
-- Dev MCP as `scott.thorn` (member of `SO Supervisors`), so every readback below is full-scope and an absence is a real absence.
-- No `appian_*` / `ping` — the runtime server stayed banned, including for the one question it could have answered (process-instance status).
-- No Snowflake execution, no sail run, no persona check.
-- Tools used: `testRule` on the existing `SO_intakePlan`, `listRecordData`, `getRecordType`, `getProcessModel` / `listProcessModelNodes`, `getInterface`.
+Three throwaway objects, all deleted at the end. Every run below is `testProcessModel` output.
 
-## What changed
-
-**Nothing in Appian.** Files only: this close-out, `BUILD_LOG.md`, `BUILD_PLAN.md`, `TODO.md`.
-
-## What the evidence says
-
-**The case that exists.** `caseID 55`, trade `TRD9B2TEST01`, session tag **`B2-TEST`** (with the dash), `Pending Analyst`, `confidenceScore 0.62`, desk `EQ_FLOW`, `cutoffTs 2026-09-23 00:42:01`. That is **story 01, the hero — and the first item of the plan's `toCreate` list**. Comment id 55 and audit rows 127, 128, 129 all belong to it. No case carries `B2TEST` without the dash.
-
-**The plan is healthy; the loop is the suspect.** `SO_intakePlan("B2-TEST")`, evaluated live this session:
-
+**1. Does a list of maps survive a Map-typed PV? Yes — a literal list, read back in a later node:**
 ```
-atRiskTradeIds: [TRD9B2TEST01, TRD9B2TEST02, TRD9B2TEST03]
-alreadyCased:   [TRD9B2TEST01]
-noStory:        []
-toCreate:       TRD9B2TEST02 (Critical 0.81, funding_gap, 150)
-                TRD9B2TEST03 (High 0.72, operational_error, 540)
+countInline: 3     countFromPv: 3
+item1: "T01"       item2: "T02"      item3: "T03"
+toCreateText: "[tradeId:T01,...]; [tradeId:T02,...]; [tradeId:T03,...]"
 ```
 
-The two missing trades are sitting in `toCreate` right now. Tier reading and id derivation are not broken.
+**2. Does the real rule's output survive it? Yes — `rule!SO_intakePlan("B2TEST")` stored in the same Map PV, read back in a later node:**
+```
+ruleCountInline: 3   ruleCountFromPv: 3
+ruleItem1: "TRD9B2TEST01"   ruleItem2: "TRD9B2TEST02"   ruleItem3: "TRD9B2TEST03"
+```
+**Candidate 1 is dead in both forms.** The plan reaches the loop intact.
 
-**The data is all there.** All 15 predictions and all 15 trades exist. `01` Critical 0.83, `02` Critical 0.81, `03` High 0.72; the other twelve are Low or Medium, 0.10–0.45. `SO Trade Predictions` is `sourceType: SNOWFLAKE`, read live, not synced.
+**3. The loop shape mirrored, with Start Process children standing in for case creation and triage:** hung past 60 s, exactly like production.
 
-**The second Load never reached Snowflake.** Every prediction row carries `scoredAt 2026-09-22 21:36:53` — one stamp, one load. `SIMULATE_FEED` re-stamps `SCORED_AT` on every successful call, so a second successful load would have moved all fifteen. It did not, which means the second Load returned something other than `OK run=` and node 6 stopped without starting intake. **The second Load is not evidence about the loop.**
+**4. The same loop with the Start Process nodes removed — no records, no agent, no integrations:**
+```
+status: "ACTIVE"   (timed out at 45s)
+idx: 2   count: 3   trace: "seed;take1=A;mid1;inc;"
+```
+One pass ran, the increment ran, and the token then sat at the gateway. **The smart services were never involved.**
 
-**Timing.** Insert 21:36:53 UTC → case created 21:37:05 (12 seconds later, ~1 minute after the button) → assessment 21:38:02 → referral 21:38:07. One case, 62 seconds end to end. No later case-creation event exists, so trades 02 and 03 were never attempted — not attempted and failed.
+**5. The same loop with the gateway moved downstream of the increment, loop-back into the script node:**
+```
+status: "COMPLETED"   (6.5s)
+idx: 3   trace: "seed;take1=A;mid1;inc;take2=B;mid2;inc;take3=C;mid3;"
+```
 
-**An unexplained gap.** Case ids **53, 54**, comment ids **53, 54** and audit ids **125, 126** are missing from otherwise contiguous sequences, immediately before the B2-TEST rows. Two case-shaped sets of ids were consumed and are not in the tables.
+## (b) Root cause, two sentences
+
+A flow returning to an XOR gateway that has already fired does not re-activate it, so the loop completed its first pass, incremented the index, and then sat forever at the gateway with no error, no pause and no alert. The plan, the count, the item extraction and both Start Process nodes were always correct — the loop-back target was the whole defect.
+
+## (c) Changes, with readback
+
+**`SO_intakeRun`** (`0000f060-f4bd-8000-2419-7f0000014e7a`) — the only production object changed. New flow:
+
+```
+3 plan (+idx=1) → 4 count → 12 XOR "Anything to create?" → 6 take next trade (LOOP TARGET, script)
+  → 7 create case (sync) → 8 find the case → 9 XOR "Case written?" → 10 triage (async)
+  → 11 increment → 13 XOR "Another trade to create?" → back to 6
+```
+
+- **Removed** node 5, the XOR that the loop used to return to.
+- **Added** node 12 (`count >= 1 and idx <= 15`) and node 13 (`idx <= count and idx <= 15`).
+- **Node 6 is now the loop target**, entered from 12 and from 13; it is a script node, which re-fires correctly.
+- **Every gateway now has exactly one incoming flow** — 12 from 4, 9 from 8, 13 from 11.
+- The hard 15 bound is kept on both gateways; nodes 6, 7, 8, 9, 10 are otherwise unchanged.
+
+Readback: `updateProcessModel` returned every node, expression and flow as sent, and `validateDesignObject` returns `hasErrors: false`.
+
+**Unchanged, as required:** `SO_intakePlan`, `SO_createTriageCase`, `SO_triageCase`, `SO_simulateRun`, `SO_resetRun`, both integrations, the connected system, the console, and everything Snowflake-side.
+
+**Throwaways created and deleted this session** (all confirmed deleted): `SO_zzPlanShapeProbe`, `SO_zzLoopProbe`, `SO_zzLoopProbeChild`, constant `SO_zzPM_LOOP_CHILD`.
+
+## (d) Verification on the live run
+
+`testProcessModel` on the fixed `SO_intakeRun` with `runName: "B2-TEST"` returned **`status: "COMPLETED"`** in 14 s, `createdCaseId: 57`, `idx: 2` against `count: 1` — the loop exited through node 13 instead of hanging.
+
+**The run's three cases, by readback:**
+
+| case | trade | status | reason | score | disposition |
+|---|---|---|---|---|---|
+| 55 | `TRD9B2TEST01` | Pending Analyst | `insufficient_securities` | 0.62 | — |
+| 56 | `TRD9B2TEST02` | Pending Analyst | `funding_gap` | 0.35 | — |
+| 57 | `TRD9B2TEST03` | Resolved - Straight Through | `operational_error` | 0.90 | Settled - Corrected |
+
+- **No duplicate for trade 01**, and no case for any of the twelve background trades.
+- **Desks and fail reasons** match the plan on all three.
+- **Audit and comments arrived**: events 133/134/135 on case 57 — created, assessed at 0.90, then "Straight-through: Correct & resubmit | confidence 0.90 >= threshold 0.80 | disposition Settled - Corrected | resolved before cutoff without analyst review".
+- **Idempotency re-checked after the run:** `SO_intakePlan("B2-TEST")` now returns `alreadyCased` = all three and **`toCreate: []`**.
+
+**One delta, recorded not forced:** packet-spec expects story 02 to **escalate**; it landed in the analyst lane at 0.35. The agent did not set escalate and `funding_gap` is not a reason override, so a sub-threshold score routes to a human — the lane is defensible, but it is not what the packet promises. Story 03 behaved exactly as specified.
+
+**What this run did not prove:** the multi-iteration path on the *production* model with real data, because only one trade remained to create. The three-iteration proof is the isolated probe (measurement 5), and Scott's clean re-run after a reset will exercise it end to end on the real path.
+
+## (e) Scott's remaining live-pass steps, renumbered against the current state
+
+The run is loaded and all three cases exist, so the earlier steps 1–5 are done. What is left:
+
+1. **Look at the three cases** on the analyst watchlist as `sam.supervisor` (all three are EQ_FLOW): 01 *Awaiting review*, auto-release score 62; 02 *Awaiting review*, score 35; 03 *Resolved · straight through*, Settled - Corrected. Confirm the hero reads as expected and tell me if story 02's analyst lane is acceptable or if the packet should be re-authored to force the escalation.
+2. **Refused path:** console panel 2, type `1012-ACME-EXTRA` (15 characters), press Load. Expect red "Not loaded — refused" and verbatim `REFUSED: a run name is 1 to 13 letters, digits or dashes, e.g. 1012-ACME.` Then type `p4-verify` and confirm Load is disabled with the red built-in-test-data line.
+3. **Repeat-press observation (not a fix target):** type `b2-test` again and press Load a second time. **Write down verbatim what the panel displays**, and whether it looks like a fresh answer or the previous one redisplayed. Last time the console read green while Snowflake's `SCORED_AT` proved the procedure ran only once. This feeds the queued console rework.
+4. **Reset:** panel 3, type `b2-test`, press Delete. Expect "Cleaned up: B2-TEST", the verbatim `OK run=… trades_deleted=15 predictions_deleted=15`, "Appian was: 3 cases · 3 comments · 9 audit rows" and "Appian now: 0 cases · 0 comments · 0 audit rows".
+5. **Both sides clean:** reload the console. Panel 1 should read demo-run trades 0, leftover 0, built-in 17, case comments 12, audit rows 14.
+6. **The real three-iteration proof, if you want it in one pass:** after the reset, Load `b2-test` once more and confirm **three** cases appear from a single press. That is the loop fix exercised through the console rather than from a session.
+
+## (f) The id gap, explained
+
+Bracket: the missing ids sit after the P4-VERIFY fixture rows (case ids ≤ 52, comment ids ≤ 52, event ids ≤ 124) and before the first B2-TEST row on 2026-09-22 21:37, so they were consumed between 2026-09-10 and 2026-09-22.
+
+Within that window CLAUDE.md records the matching event exactly: the 2026-09-09 cascade measurement on the Demo Admin site — **"two throwaway cases plus two comments and two events, deleted by case alone, took comments 14→12 and events 16→14"**. Two cases, two comments, two events, created and then deleted. That is case ids 53–54, comment ids 53–54 and event ids 125–126. **Explained, not a defect**, and consistent with Scott's answer that nothing ran in the eleven days before the live pass.
 
 ## Verified / not verified
 
-**Verified** (Dev MCP, as `scott.thorn`, full scope): the case row and its children; the plan rule's live output in both run-name forms; all 30 packet rows; the predictions record type's source; the deployed node graphs of `SO_intakeRun` and `SO_simulateRun`; the console's stored `upper(local!runName)`.
+**Verified** (Dev MCP as `scott.thorn`, SO Supervisors, full scope): the five probe runs quoted above; the fixed model's readback and validation; the completed live run; the three cases, their comments and their audit rows; idempotency after the run; the deletion of all four throwaways.
 
-**Not verified, and why:**
-- **The intake process instance — whether it completed, is still running, or is paused by exception.** The Dev MCP design surface has no instance listing, history or status tool; `testProcessModel` starts a new instance instead of reading one. The only instance-status tool in the session is on `appian-runtime`, which CLAUDE.md bans and which needs a process id I do not have. Not worked around. **This is the fact that would separate the two candidates below.**
-- Whether a list of maps survives storage in a Map-typed process variable — the 2026-09-11 shape probe ran inside an expression rule, never through a PV.
-- Nothing browser-only arose; no geometry or persona question was in scope.
+**Not verified:**
+- Multi-iteration on the production model with live data — see (d); the console re-run covers it.
+- **Parked instances.** The two intake instances started before the fix (the console's live run, and this session's first attempt) are still `ACTIVE` at the old gateway and will sit there. They cannot be cancelled over the Dev MCP; they are harmless but should be cleaned up from the Admin Console when convenient.
+- Whether the console redisplays a stale result on a second press — deliberately left as an observation for step (e) 3, since the console is out of scope this session.
 
-## Two candidate causes, ranked — inference, not measurement
+## Promotion
 
-1. **The loop ran one iteration because `count` evaluated to 1 inside the process.** `pv!plan` is a **Map** PV holding `toCreate` as a list of maps, and both node 4's count and node 6's item extraction depend on that nesting surviving PV storage. If it collapses to its first element, count is 1, iteration 1 writes the first item — **trade 01, exactly the case that exists** — and idx 2 exits to End. Supporting: the surviving case is the first list item, not a random one; the rule is healthy standalone; the PV round-trip is the one step in this path never measured.
-2. **The loop stalled after iteration 1** — node 7's synchronous Start Process pausing by exception on the second pass, or the flow back to node 5. Consistent with one case plus a completed triage. Slightly against: nodes 10 and 11 demonstrably worked once, so the failure must be specific to the second pass.
+**1 candidate, PROMOTED** to appian-supplemental §9, and it **corrects that file's own explicit-loop recipe**, which prescribed the flow back to the XOR:
 
-## Rulings and answers needed from Scott
+> A flow returning to an XOR gateway that has already fired does not re-activate it; the instance sits `ACTIVE` with no error, no pause and no alert, which in production reads as "the loop did one item and stopped". Working form: loop back to the script node and put the continue/stop gateway downstream of the increment, so every gateway has one incoming flow. Isolate before blaming the work nodes — the same loop hung identically with Start Process nodes in it, which reads like a smart-service fault.
 
-1. **What did the second Load show?** The message text decides whether anything is wrong with `SO_simulateRun` at all, or only with the loop.
-2. **Was there an earlier load-and-reset today?** That would explain the id gaps; if not, two case inserts were rolled back and that is a second defect.
-3. **Fix-session scope:** measure candidate 1 first with a PV round-trip probe (cheap, decisive), and keep the B2-TEST run loaded until it is.
+Measured, reproduced in both directions, zero project nouns, contradiction named. The installed skill and the repo copy are in sync.
 
-## Promotion candidates
-
-**2 found; both STAGED, neither promoted.**
-
-- **(a) A list of maps stored in a Map-typed process variable may not survive as a list.** Gate 1 not met — the mechanism is inferred from one run's outcome, not measured. *Trigger: the fix session's PV round-trip probe.*
-- **(b) Process instances are not readable over the Dev MCP** — no listing, history or status tool; `testProcessModel` only starts one. Rule-shaped as "plan verification that never depends on reading an instance", but stated from one session's tool surface. *Trigger: the next session that needs instance state; confirm against the tool list then.*
-
-NTZ-as-UTC and chart-type remain staged from earlier sessions.
+The investigation session's two staged candidates: **(a) the Map-PV collapse is DISCARDED** — measured false in both forms, and the discard is recorded rather than the history rewritten. **(b) process instances are not readable over the Dev MCP** stays staged, and it cost real time again today: the only way to see where the loop stopped was to rebuild it as a probe.
 
 ## TODO changes
 
-Added: fix the intake loop (blocking, with both candidates and the "leave the run loaded" note); the second-Load message question; the id-gap question; process-instance observability as a standing tooling limit. Updated: the live-pass item now records that steps 1–5 ran and 6–9 did not.
+Closed the blocking intake-loop item and both investigation questions. Added: the story-02 lane ruling, cleanup of the two parked instances, and the console repeat-press observation folded into Scott's step 3.
 
 ## BUILD_PLAN changes
 
-The intake and console-wiring items now record that the live pass ran on 2026-09-22 and found the defect; Part C stays closed behind it.
+The intake item is now done, with the defect and fix recorded; the console item points at the remaining live-pass steps; Part C stays behind Scott's clean console run.

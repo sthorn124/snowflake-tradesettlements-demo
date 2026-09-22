@@ -3121,3 +3121,45 @@ NTZ-as-UTC and chart-type stay staged.
 - **(b)** **Process instances are not readable over the Dev MCP** — no listing, history or status tool. Rule-shaped as "plan verification that never depends on reading an instance", but taken from one session's tool surface. *Trigger: the next session that needs instance state.*
 
 NTZ-as-UTC and chart-type remain staged.
+
+## 2026-09-22 (cont.) — FIX: the intake loop created one case per run — a flow back into an XOR gateway never re-fires
+
+*Scope:* Dev MCP as `scott.thorn` (SO Supervisors) — full scope. No `appian_*` / `ping`; no Snowflake execution; no console change; no change to `SO_intakePlan`, `SO_createTriageCase`, `SO_triageCase`, `SO_simulateRun`, `SO_resetRun`, the integrations or the connected system. One production object changed: `SO_intakeRun`. Four throwaways created and deleted. The B2-TEST run stayed loaded throughout and now holds its full three cases.
+
+*Measured first, per the prompt — all `testProcessModel` output*
+1. **Literal list of maps through a Map PV, read in a later node:** `countFromPv: 3`, `item1/2/3` = `T01/T02/T03`. Survives.
+2. **The real rule's output through the same PV:** `rule!SO_intakePlan("B2TEST")` stored, then `ruleCountFromPv: 3`, `ruleItem1/2/3` = `TRD9B2TEST01/02/03`. Survives. **Candidate 1 (Map-PV collapse) is DEAD in both forms.**
+3. **Loop shape mirrored with Start Process children** (trivial child, no rows, no agent): hung past 60 s — identical to production.
+4. **Same loop with the Start Process nodes removed:** `status: "ACTIVE"` at timeout, `idx: 2`, `count: 3`, `trace: "seed;take1=A;mid1;inc;"`. One pass, increment done, then the token sits at the gateway. **The smart services were never involved.**
+5. **Same loop with the gateway moved downstream of the increment and the loop-back into the script node:** `status: "COMPLETED"` in 6.5 s, `idx: 3`, `trace: "seed;take1=A;mid1;inc;take2=B;mid2;inc;take3=C;mid3;"`.
+
+*Root cause*
+A flow returning to an XOR gateway that has already fired does not re-activate it. The loop ran its first pass, incremented, and then sat at node 5 forever — `ACTIVE`, never errored, never paused, so no alert and nothing in the audit trail. Plan, count, item extraction and both Start Process nodes were correct all along.
+
+*Changed — `SO_intakeRun` (`0000f060-f4bd-8000-2419-7f0000014e7a`)*
+- **Removed** node 5 (the XOR the loop returned to).
+- **Added** node 12 "Anything to create?" (`count >= 1 and idx <= 15`, incoming from 4) and node 13 "Another trade to create?" (`idx <= count and idx <= 15`, incoming from 11).
+- **Loop target is now node 6**, the take-next-trade script, entered from 12 and 13.
+- **Every gateway has exactly one incoming flow:** 12 from 4, 9 from 8, 13 from 11. Hard 15 bound kept on both loop gateways.
+- Nodes 6, 7, 8, 9, 10 otherwise unchanged.
+- Readback: `updateProcessModel` returned every node, expression and flow as sent; `validateDesignObject` → `hasErrors: false`.
+
+*Verified on the live run*
+- Fixed model, `runName: "B2-TEST"`: **`COMPLETED`** in 14 s, `createdCaseId: 57`, `idx: 2` vs `count: 1` — exited through node 13.
+- Cases for B2-TEST, by readback: **55** `TRD9B2TEST01` Pending Analyst 0.62 `insufficient_securities`; **56** `TRD9B2TEST02` Pending Analyst 0.35 `funding_gap`; **57** `TRD9B2TEST03` Resolved - Straight Through 0.90 `operational_error`, disposition `Settled - Corrected`. No duplicate for 01; no case for any background trade; desks and reasons match the plan.
+- Audit on 57: 133 created, 134 assessed 0.90, 135 "Straight-through: Correct & resubmit | confidence 0.90 >= threshold 0.80 | disposition Settled - Corrected | resolved before cutoff without analyst review".
+- **Idempotency:** `SO_intakePlan("B2-TEST")` after the run → `alreadyCased` all three, **`toCreate: []`**.
+- **Delta, recorded not forced:** packet-spec expects story 02 to escalate; it landed in the analyst lane at 0.35, because the agent set no escalate flag and `funding_gap` is not a reason override. Ruling wanted.
+
+*Not verified*
+- Multi-iteration on the production model with live data (only one trade remained to create). The three-iteration proof is probe 5; Scott's post-reset console run exercises it on the real path.
+- **Two intake instances started before the fix are still `ACTIVE`** at the old gateway — the console's live run and this session's first attempt. Not cancellable over the Dev MCP; harmless, but they want clearing from the Admin Console.
+- Whether the console redisplays a stale result on a repeat press — left as an observation for Scott, console being out of scope.
+
+*The id gap (bounded check, closed)*
+Bracket: after the fixture rows (case ≤ 52, comment ≤ 52, event ≤ 124) and before the first B2-TEST row at 2026-09-22 21:37. Inside that window CLAUDE.md already records the match — the 2026-09-09 cascade measurement, "two throwaway cases plus two comments and two events, deleted by case alone, took comments 14→12 and events 16→14". That is case 53–54, comment 53–54, event 125–126. **Explained; not a defect.**
+
+*Promotion checkpoint* — current through this entry.
+- **PROMOTED to appian-supplemental §9:** a flow returning to an already-fired XOR gateway does not re-activate it (instance sits `ACTIVE`, silent); working form is to loop back to the script node with the continue/stop gateway downstream of the increment, every gateway single-incoming; isolate before blaming the work nodes. **This corrects that file's own explicit-loop recipe**, which prescribed the flow back to the XOR. Installed skill and repo copy synced.
+- **DISCARDED:** the staged Map-PV collapse candidate — measured false in both forms (probes 1 and 2). Recorded as a reversal, not rewritten.
+- **Still staged:** process instances are not readable over the Dev MCP — it cost real time again today, since rebuilding the loop as a probe was the only way to see where it stopped. NTZ-as-UTC and chart-type unchanged.
