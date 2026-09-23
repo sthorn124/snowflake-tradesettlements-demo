@@ -14,7 +14,7 @@
     --amber:#96590A; --amber-bg:#FCF3E3;
     --green:#17715B; --green-bg:#E9F5F1;
     --slate:#4A5462; --slate-bg:#EEF1F5;
-    --snow:#3E7396; --sel:#EEF4FA;
+    --snow:#3E7396; --snow-bg:#EDF4F9; --sel:#EEF4FA;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:"Segoe UI",-apple-system,"Helvetica Neue",Arial,sans-serif;background:var(--page);color:var(--ink);font-size:13.5px}
@@ -38,29 +38,40 @@
   .snowchip{display:inline-flex;align-items:center;gap:5px;color:var(--snow);font-weight:600;cursor:default}
   .snowchip svg{width:12px;height:12px}
 
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
   .kpi{background:var(--card);border:1px solid var(--line);border-left-width:3px;border-radius:4px;padding:12px 14px 11px}
   .kpi.a-ink{border-left-color:#9AA6B3}
   .kpi.a-snow{border-left-color:var(--snow)}
   .kpi.a-red{border-left-color:var(--red)}
   .kpi.a-green{border-left-color:var(--green)}
-  .kpi.good .value{color:var(--green)}
   .kpi .label{font-size:12.5px;color:var(--sec);display:flex;align-items:center;gap:5px;font-weight:600}
   .kpi .value{font-size:25px;font-weight:650;margin-top:3px;line-height:1.15}
-  .kpi .sub{font-size:12px;color:var(--sec);margin-top:2px}
   .kpi .value .unit{font-size:13px;font-weight:600;color:var(--sec);margin-left:2px}
+  .kpi .sub{font-size:12px;color:var(--sec);margin-top:2px}
   .kpi.alert .value{color:var(--red)}
-  .kpi .delta-up{color:var(--red);font-weight:600}
+  .kpi.good .value{color:var(--green)}
+
+  /* Latest batch band */
+  .batchband{display:flex;align-items:center;gap:10px;background:var(--snow-bg);border:1px solid #CBDDE9;border-left:3px solid var(--snow);border-radius:4px;padding:9px 14px;margin-bottom:16px;font-size:13px}
+  .batchband .when{color:var(--sec)}
+  .batchband b{font-weight:650}
+  .batchband .chips{display:flex;gap:8px;margin-left:auto}
+  .bchip{font-size:12px;font-weight:650;border-radius:3px;padding:2px 9px}
+  .bchip.green{background:var(--green-bg);color:var(--green)}
+  .bchip.red{background:var(--red-bg);color:var(--red)}
+  .bchip.amber{background:var(--amber-bg);color:var(--amber)}
 
   .workbench{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
-  .gridcard{background:var(--card);border:1px solid var(--line);border-radius:4px;overflow:hidden;display:flex;flex-direction:column}
+  .gridcard{background:var(--card);border:1px solid var(--line);border-radius:4px;overflow:hidden;display:flex;flex-direction:column;margin-bottom:14px}
 
-  .filters{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#FAFBFC}
-  .filters .view{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:5px 10px;font-size:12.5px;font-weight:650;display:flex;gap:7px;align-items:center;cursor:pointer;color:var(--ink)}
-  .filters .view .car{color:var(--meta)}
-  .filters .f{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:5px 9px;font-size:12.5px;display:flex;gap:6px;align-items:center;cursor:pointer;font-weight:600;color:var(--sec)}
-  .filters .f span{color:var(--meta);font-weight:400}
-  .filters .search{margin-left:auto;background:var(--card);border:1px solid var(--line);border-radius:3px;padding:5px 9px;font-size:12.5px;color:var(--meta);width:190px}
+  .qhead{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#FAFBFC;font-size:12px;font-weight:700;letter-spacing:.03em;color:var(--sec)}
+  .qhead .dot{width:8px;height:8px;border-radius:50%}
+  .qhead .dot.red{background:var(--red)}
+  .qhead .dot.amber{background:var(--amber)}
+  .qhead .dot.green{background:var(--green)}
+  .qhead .count{font-weight:650;color:var(--meta)}
+  .qhead .note{font-weight:400;color:var(--meta);letter-spacing:0;margin-left:4px}
+  .qhead .toggle{margin-left:auto;color:var(--action);font-weight:650;font-size:12.5px;letter-spacing:0;cursor:pointer;text-decoration:none}
 
   table{width:100%;border-collapse:collapse}
   thead th{font-size:11.5px;font-weight:650;color:var(--sec);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);background:#FAFBFC;white-space:nowrap}
@@ -70,32 +81,40 @@
   tbody tr{cursor:pointer}
   tbody tr:hover{background:#F6F9FC}
   tbody tr.selected{background:var(--sel);box-shadow:inset 3px 0 0 var(--action)}
+  tbody tr:last-child td{border-bottom:none}
   .tid{font-weight:600;color:var(--action)}
+  .batchtag{display:inline-block;font-size:10px;font-weight:700;border-radius:2px;padding:1px 5px;margin-left:6px;background:var(--snow-bg);color:var(--snow);vertical-align:1px}
   .inst .side{display:inline-block;font-size:10.5px;font-weight:700;border-radius:2px;padding:1px 5px;margin-right:7px;vertical-align:1px}
   .side.b{background:var(--green-bg);color:var(--green)}
   .side.s{background:var(--slate-bg);color:var(--slate)}
   .inst .tick{font-weight:650}
   .inst .name{color:var(--sec);margin-left:6px}
-  .pill{display:inline-block;font-size:11px;font-weight:650;border-radius:3px;padding:2px 8px}
-  .p-urgent{background:var(--red-bg);color:var(--red)}
-  .p-high{background:var(--amber-bg);color:var(--amber)}
-  .p-standard{background:var(--slate-bg);color:var(--slate)}
   .prob{font-weight:650}
-  .t-critical{color:var(--red)} .t-high{color:var(--amber)} .t-medium{color:var(--slate)}
+  .t-critical{color:var(--red)} .t-high{color:var(--amber)} .t-medium{color:var(--slate)} .t-low{color:var(--slate)}
+  .agentcell{font-weight:650}
+  .agentcell.held{color:var(--amber)}
+  .agentcell .why{display:block;font-weight:400;font-size:11px;color:var(--meta)}
   .cutoff{font-weight:650}
-  .cutoff.breach{color:var(--red)}
   .cutoff.soon{color:var(--amber)}
   .cutoff .at{display:block;font-weight:400;font-size:11px;color:var(--meta)}
   .status{font-size:12.5px;color:var(--sec);font-weight:600}
+  .status .sub{display:block;font-weight:400;font-size:11px;color:var(--meta)}
   .status.esc{color:var(--red)}
-  .owner{font-size:12.5px;color:var(--sec)}
-  .owner.me{font-weight:650;color:var(--ink)}
-  .owner.un{color:var(--meta);font-style:italic}
+  .snowmark{color:var(--snow);margin-right:4px}
+  .conf{font-weight:650;color:var(--green)}
+  .reltime{color:var(--meta);font-size:12px}
 
+  .esc-card tbody td{color:var(--sec)}
+  .esc-card .tid{color:#5A7392}
+
+  .clr-summary{display:flex;align-items:center;gap:18px;padding:11px 12px;font-size:12.5px;color:var(--sec)}
+  .clr-summary b{color:var(--ink)}
   .gridfoot{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;font-size:12.5px;color:var(--sec);border-top:1px solid var(--line);background:#FAFBFC}
   .gridfoot a{color:var(--action);font-weight:600;text-decoration:none}
+  .clr-summary .stp{color:var(--green);font-weight:650}
+  #clrbody{display:none}
+  #clrbody.open{display:block}
 
-  /* Preview rail */
   .preview{border:1px solid var(--line);border-top:3px solid var(--action);border-radius:4px;background:var(--card)}
   .pv-head{padding:13px 16px 12px;border-bottom:1px solid var(--line);background:var(--sel)}
   .pv-head .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -108,46 +127,34 @@
   .metarow .ids{font-size:12.5px;color:var(--sec)}
   .stpill{font-size:11.5px;font-weight:700;border-radius:3px;padding:2px 9px;background:#DCE4ED;color:#33404E}
   .hfacts{display:grid;grid-template-columns:1fr 1fr;gap:7px 16px;margin-top:10px;font-size:12.5px}
-  .hfacts .hf .k{color:var(--meta);font-size:11px;margin-bottom:2px}
+  .hfacts .hf .k{color:var(--meta);font-size:11px;margin-bottom:2px;display:flex;align-items:center;gap:4px}
   .hfacts .hf .v{font-weight:650;font-size:13.5px}
   .hfacts .hf .v.warn{color:var(--amber)}
+  .hfacts .hf .v.crit{color:var(--red)}
   .pv-sec{padding:12px 16px;border-bottom:1px solid #ECF0F4}
+  .pv-sec:last-child{border-bottom:none}
   .pv-sec .lab{font-size:11.5px;font-weight:650;color:var(--sec);margin-bottom:8px;display:flex;align-items:center;gap:5px}
 
-  .timing .tbar .tlab{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px}
-  .timing .tbar .tlab .v{font-weight:650}
-  .timing .tbar{margin-bottom:8px}
-  .timing .track{height:8px;border-radius:2px;background:#EEF1F5;position:relative;overflow:hidden}
-  .timing .fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px}
-  .fill.remain{width:58%;background:var(--action)}
-  .fill.lag{width:22%;background:var(--amber)}
-  .timing .verdict{font-size:12.5px;color:var(--ink)}
-  .timing .verdict b{color:var(--green)}
-
-  .facts{display:grid;grid-template-columns:auto 1fr;gap:6px 12px}
-  .facts dt{color:var(--meta);font-size:12px}
-  .facts dd{text-align:right;font-weight:650;font-size:13.5px}
-
-  /* Agent card — recommended action */
   .agent{background:#F7FAFC;border:1px solid var(--line);border-radius:4px;padding:12px}
   .agent .rec{font-size:14px;font-weight:650}
   .agent .rec .urg{font-size:10.5px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:2px;padding:1px 5px;margin-left:7px;vertical-align:2px}
-  .agent .hold{display:flex;align-items:center;gap:8px;margin:10px 0 6px}
-  .agent .holdpill{font-size:11px;font-weight:650;border-radius:3px;padding:2px 8px;background:var(--amber-bg);color:var(--amber)}
-  .agent .holdwhy{font-size:12.5px;color:var(--ink)}
+  .agent .holdwhy{font-size:12.5px;color:var(--ink);margin-top:8px}
+  .score{margin-top:10px}
   .score .slab{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:4px}
-  .score .slab .sv{font-weight:700;font-size:14px}
+  .score .slab .sv{font-weight:700;font-size:14px;color:var(--amber)}
   .score .slab .gl{color:var(--sec)}
-  .score .track{height:10px;border-radius:2px;background:#E9EDF2;position:relative;margin-bottom:12px}
-  .score .fillc{position:absolute;left:0;top:0;bottom:0;width:68%;background:var(--amber);border-radius:2px}
+  .score .track{height:10px;border-radius:2px;background:#E9EDF2;position:relative}
+  .score .fillc{position:absolute;left:0;top:0;bottom:0;width:62%;background:var(--amber);border-radius:2px}
   .score .gate{position:absolute;left:80%;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
-  .agent .rlab{font-size:11.5px;font-weight:650;color:var(--sec);margin-bottom:5px}
-  .agent blockquote{font-size:12.5px;color:var(--ink);line-height:1.5;border-left:2px solid #C7D5E2;padding-left:9px}
-
-  .pv-actions{padding:14px 16px;display:flex;gap:8px}
-  .btn{flex:1;border-radius:3px;padding:9px 0;font-size:13px;font-weight:600;text-align:center;cursor:pointer;border:1px solid var(--line)}
-  .btn.primary{background:var(--action);color:#fff;border-color:var(--action)}
-  .btn.secondary{background:var(--card);color:var(--action);border-color:var(--action)}
+  .score .gatelab{font-size:11px;color:var(--meta);margin-top:5px;text-align:right}
+  .factors{margin-top:10px}
+  .factors .f{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0}
+  .factors .f .fk{color:var(--sec)}
+  .factors .f .fv{font-weight:650}
+  .btnrow{display:flex;gap:8px;padding:12px 16px}
+  .btn{border-radius:3px;padding:8px 14px;font-size:13px;font-weight:650;cursor:pointer;border:1px solid transparent}
+  .btn.primary{background:var(--action);color:#fff}
+  .btn.ghost{background:var(--card);border-color:var(--line);color:var(--sec)}
 </style>
 </head>
 <body>
@@ -166,331 +173,222 @@
 <div class="wrap">
   <div class="pagehead">
     <h1>Pre-Settlement Watchlist</h1>
-    <div class="book">Settlement cycle Tue 1 Sep · T+1</div>
+    <div class="book">Equity Flow desk · Settlement cycle Wed 23 Sep · T+1</div>
   </div>
   <div class="sourceline">
     <span class="snowchip" title="Live from Snowflake">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg>
       Predictions live from Snowflake
     </span>
-    <span>· last read 09:41:22 · scored overnight batch 05:00</span>
+    <span>· last read 09:26:14 · refreshes every 30s</span>
   </div>
 
+  <!-- Book-level KPIs: the desk's whole open position, fixtures + batch -->
   <div class="kpis">
     <div class="kpi a-ink">
       <div class="label">Predicted fails — open</div>
-      <div class="value num">37</div>
-      <div class="sub num"><span class="delta-up">▲ 5</span> vs yesterday's cycle</div>
+      <div class="value num">14</div>
+      <div class="sub">12 need action · 2 escalated</div>
     </div>
     <div class="kpi a-snow">
       <div class="label">Value at risk
-        <span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span>
+        <span class="snowchip" title="Computed in Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18"/></svg></span>
       </div>
-      <div class="value num">142.6<span class="unit">M USD eq.</span></div>
-      <div class="sub num">across 37 open items</div>
+      <div class="value num">671.4M<span class="unit">USD eq.</span></div>
+      <div class="sub">across 14 open items</div>
     </div>
-    <div class="kpi alert a-red">
+    <div class="kpi a-red alert">
       <div class="label">Inside critical window</div>
-      <div class="value num">4</div>
-      <div class="sub num">cutoff within 4h · 61.8M USD eq.</div>
+      <div class="value num">1</div>
+      <div class="sub">cutoff within 4h · 19.3M USD eq.</div>
     </div>
-    <div class="kpi good a-green">
+    <div class="kpi a-green good">
       <div class="label">Straight-through today</div>
-      <div class="value num">64<span class="unit">%</span></div>
-      <div class="sub num">9 of 14 resolved without touch</div>
+      <div class="value num">9</div>
+      <div class="sub">9 of 11 in latest batch · no analyst touch</div>
+    </div>
+  </div>
+
+  <!-- Latest scoring batch: one band, timestamped, not the frame of the page -->
+  <div class="batchband">
+    <span class="snowchip" title="Scored in Snowflake">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg>
+    </span>
+    <span><b>Latest scoring batch</b></span>
+    <span class="when">06:12 ET today · 11 trades on your desk</span>
+    <div class="chips">
+      <span class="bchip green">8 cleared by Snowflake</span>
+      <span class="bchip green">1 agent-resolved</span>
+      <span class="bchip red">1 needs review</span>
+      <span class="bchip amber">1 escalated</span>
     </div>
   </div>
 
   <div class="workbench">
-    <div class="gridcard">
-      <div class="filters">
-        <div class="view">View: EQ_FLOW book (37) <span class="car">▾</span></div>
-        <div class="f">Priority <span>All ▾</span></div>
-        <div class="f">Fail reason <span>All ▾</span></div>
-        <div class="f">Counterparty <span>All ▾</span></div>
-        <div class="f">Cutoff <span>Next 24h ▾</span></div>
-        <input class="search" value="" placeholder="Trade, ticker, counterparty…">
+    <div class="qcol">
+
+      <!-- Queue 1: needs action — standing book and new batch together, sorted by cutoff -->
+      <div class="gridcard">
+        <div class="qhead"><span class="dot red"></span>NEEDS YOUR ACTION <span class="count">(4)</span><span class="note">· sorted by time to cutoff</span></div>
+        <table>
+          <thead><tr>
+            <th>Trade</th><th>Instrument</th><th>Counterparty</th><th class="r">Value</th>
+            <th class="r">Fail risk<span class="snow" title="Scored in Snowflake">❄</span></th>
+            <th>Agent</th><th>Cutoff</th><th>Status</th>
+          </tr></thead>
+          <tbody>
+            <tr class="selected">
+              <td class="tid">TRD9DEMO01<span class="batchtag">06:12</span></td>
+              <td class="inst"><span class="side b">BUY</span><span class="tick">SAP GY</span><span class="name">210,000</span></td>
+              <td>Diamond Trust AM</td>
+              <td class="r num">18,700,500 EUR</td>
+              <td class="r"><span class="prob t-critical">0.83</span> <span class="t-critical">Critical</span></td>
+              <td class="agentcell held">Held · 0.62<span class="why">below 0.80 release gate</span></td>
+              <td><span class="cutoff soon">2h 04m<span class="at">11:30 ET</span></span></td>
+              <td class="status">Awaiting review</td>
+            </tr>
+            <tr>
+              <td class="tid">TRD044231</td>
+              <td class="inst"><span class="side s">SELL</span><span class="tick">BMW GY</span><span class="name">42,000</span></td>
+              <td>Halcyon Advisors</td>
+              <td class="r num">3,864,000 EUR</td>
+              <td class="r"><span class="prob t-high">0.68</span> <span class="t-high">High</span></td>
+              <td class="agentcell">Proposed · borrow</td>
+              <td><span class="cutoff">4h 34m<span class="at">14:00 ET</span></span></td>
+              <td class="status">In remediation<span class="sub">cover borrow arranged 08:40</span></td>
+            </tr>
+            <tr>
+              <td class="tid">TRD047902</td>
+              <td class="inst"><span class="side b">BUY</span><span class="tick">ENEL IM</span><span class="name">310,000</span></td>
+              <td>Meridian Capital</td>
+              <td class="r num">2,088,400 EUR</td>
+              <td class="r"><span class="prob t-high">0.61</span> <span class="t-high">High</span></td>
+              <td class="agentcell">Held · 0.71<span class="why">below 0.80 release gate</span></td>
+              <td><span class="cutoff">6h 04m<span class="at">15:30 ET</span></span></td>
+              <td class="status">Awaiting review</td>
+            </tr>
+            <tr>
+              <td class="tid">TRD049117</td>
+              <td class="inst"><span class="side s">SELL</span><span class="tick">TTE FP</span><span class="name">57,500</span></td>
+              <td>Beacon Rock LP</td>
+              <td class="r num">3,485,600 EUR</td>
+              <td class="r"><span class="prob t-medium">0.44</span> <span class="t-medium">Medium</span></td>
+              <td class="agentcell">Proposed · partial</td>
+              <td><span class="cutoff">Tomorrow<span class="at">10:00 ET</span></span></td>
+              <td class="status">In remediation<span class="sub">partial delivery agreed</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="gridfoot">showing 4 nearest cutoffs<a href="#">View all 12</a></div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Priority</th>
-            <th>Trade</th>
-            <th>Instrument</th>
-            <th>Counterparty</th>
-            <th>Fail reason<span class="snow" title="Live from Snowflake">❄</span></th>
-            <th class="r">Value</th>
-            <th class="r">p(fail)<span class="snow" title="Live from Snowflake">❄</span></th>
-            <th class="r">Cutoff in</th>
-            <th>Owner</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="pill p-urgent">Urgent</span></td>
-            <td class="tid num">TRD044567</td>
-            <td class="inst"><span class="side s">S</span><span class="tick">TTE FP</span><span class="name">TotalEnergies</span></td>
-            <td>Liberty Trust</td>
-            <td>Funding gap</td>
-            <td class="r num">30.4M EUR</td>
-            <td class="r num prob t-critical">87%</td>
-            <td class="r num"><span class="cutoff breach">1h 12m<span class="at">08:31</span></span></td>
-            <td class="owner">Risk desk</td>
-            <td class="status esc">Escalated</td>
-          </tr>
-          <tr class="selected">
-            <td><span class="pill p-urgent">Urgent</span></td>
-            <td class="tid num">TRD031208</td>
-            <td class="inst"><span class="side b">B</span><span class="tick">SAP GY</span><span class="name">SAP SE</span></td>
-            <td>Diamond Trust</td>
-            <td>Insufficient securities</td>
-            <td class="r num">18.7M USD</td>
-            <td class="r num prob t-critical">83%</td>
-            <td class="r num"><span class="cutoff soon">3h 05m<span class="at">12:46</span></span></td>
-            <td class="owner un">Unassigned</td>
-            <td class="status">Awaiting review</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-urgent">Urgent</span></td>
-            <td class="tid num">TRD027744</td>
-            <td class="inst"><span class="side s">S</span><span class="tick">MSFT US</span><span class="name">Microsoft</span></td>
-            <td>Vantage Global</td>
-            <td>Operational error</td>
-            <td class="r num">12.3M USD</td>
-            <td class="r num prob t-high">71%</td>
-            <td class="r num"><span class="cutoff soon">3h 50m<span class="at">13:31</span></span></td>
-            <td class="owner">M. Ferreira</td>
-            <td class="status">Awaiting review</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-urgent">Urgent</span></td>
-            <td class="tid num">TRD018433</td>
-            <td class="inst"><span class="side b">B</span><span class="tick">HSBA LN</span><span class="name">HSBC Holdings</span></td>
-            <td>Harbor Point Clearing</td>
-            <td>Funding gap</td>
-            <td class="r num">9.6M GBP</td>
-            <td class="r num prob t-high">78%</td>
-            <td class="r num"><span class="cutoff soon">2h 40m<span class="at">12:21</span></span></td>
-            <td class="owner me">A. Chen</td>
-            <td class="status">In remediation</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-high">High</span></td>
-            <td class="tid num">TRD001831</td>
-            <td class="inst"><span class="side b">B</span><span class="tick">AZN LN</span><span class="name">AstraZeneca</span></td>
-            <td>Crescent Partners</td>
-            <td>Funding gap</td>
-            <td class="r num">7.9M EUR</td>
-            <td class="r num prob t-critical">87%</td>
-            <td class="r num"><span class="cutoff">19h 40m<span class="at">05:21 +1</span></span></td>
-            <td class="owner me">A. Chen</td>
-            <td class="status">In remediation</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-high">High</span></td>
-            <td class="tid num">TRD036102</td>
-            <td class="inst"><span class="side s">S</span><span class="tick">SIE GY</span><span class="name">Siemens</span></td>
-            <td>Westbrook AM</td>
-            <td>Insufficient securities</td>
-            <td class="r num">6.2M EUR</td>
-            <td class="r num prob t-high">74%</td>
-            <td class="r num"><span class="cutoff">8h 10m<span class="at">17:51</span></span></td>
-            <td class="owner">M. Ferreira</td>
-            <td class="status">Awaiting review</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-high">High</span></td>
-            <td class="tid num">TRD022958</td>
-            <td class="inst"><span class="side b">B</span><span class="tick">JPM US</span><span class="name">JPMorgan Chase</span></td>
-            <td>Liberty Trust</td>
-            <td>Funding gap</td>
-            <td class="r num">5.5M USD</td>
-            <td class="r num prob t-high">69%</td>
-            <td class="r num"><span class="cutoff">11h 25m<span class="at">21:06</span></span></td>
-            <td class="owner un">Unassigned</td>
-            <td class="status">New</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-high">High</span></td>
-            <td class="tid num">TRD041077</td>
-            <td class="inst"><span class="side s">S</span><span class="tick">NESN SW</span><span class="name">Nestlé</span></td>
-            <td>Diamond Trust</td>
-            <td>Operational error</td>
-            <td class="r num">4.8M CHF</td>
-            <td class="r num prob t-medium">63%</td>
-            <td class="r num"><span class="cutoff">14h 55m<span class="at">00:36 +1</span></span></td>
-            <td class="owner">R. Okafor</td>
-            <td class="status">Awaiting review</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-standard">Standard</span></td>
-            <td class="tid num">TRD009517</td>
-            <td class="inst"><span class="side b">B</span><span class="tick">SAN SM</span><span class="name">Banco Santander</span></td>
-            <td>Aldgate Capital</td>
-            <td>Insufficient securities</td>
-            <td class="r num">2.1M USD</td>
-            <td class="r num prob t-medium">54%</td>
-            <td class="r num"><span class="cutoff">26h 15m<span class="at">11:56 +1</span></span></td>
-            <td class="owner un">Unassigned</td>
-            <td class="status">New</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-standard">Standard</span></td>
-            <td class="tid num">TRD014290</td>
-            <td class="inst"><span class="side s">S</span><span class="tick">OR FP</span><span class="name">L'Oréal</span></td>
-            <td>Zephyr Securities</td>
-            <td>Funding gap</td>
-            <td class="r num">1.7M EUR</td>
-            <td class="r num prob t-medium">58%</td>
-            <td class="r num"><span class="cutoff">22h 30m<span class="at">08:11 +1</span></span></td>
-            <td class="owner">R. Okafor</td>
-            <td class="status">In remediation</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-standard">Standard</span></td>
-            <td class="tid num">TRD030661</td>
-            <td class="inst"><span class="side b">B</span><span class="tick">ULVR LN</span><span class="name">Unilever</span></td>
-            <td>Oakfield Partners</td>
-            <td>Operational error</td>
-            <td class="r num">940K GBP</td>
-            <td class="r num prob t-medium">51%</td>
-            <td class="r num"><span class="cutoff">30h 05m<span class="at">15:46 +1</span></span></td>
-            <td class="owner un">Unassigned</td>
-            <td class="status">New</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-standard">Standard</span></td>
-            <td class="tid num">TRD016924</td>
-            <td class="inst"><span class="side b">B</span><span class="tick">DTE GY</span><span class="name">Deutsche Telekom</span></td>
-            <td>Zephyr Securities</td>
-            <td>Funding gap</td>
-            <td class="r num">88.0K EUR</td>
-            <td class="r num prob t-medium">60%</td>
-            <td class="r num"><span class="cutoff">21h 02m<span class="at">06:43 +1</span></span></td>
-            <td class="owner un">Unassigned</td>
-            <td class="status">New</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-standard">Standard</span></td>
-            <td class="tid num">TRD007205</td>
-            <td class="inst"><span class="side s">S</span><span class="tick">BNP FP</span><span class="name">BNP Paribas</span></td>
-            <td>Harbor Point Clearing</td>
-            <td>Insufficient securities</td>
-            <td class="r num">610K EUR</td>
-            <td class="r num prob t-medium">49%</td>
-            <td class="r num"><span class="cutoff">33h 20m<span class="at">19:01 +1</span></span></td>
-            <td class="owner un">Unassigned</td>
-            <td class="status">New</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-standard">Standard</span></td>
-            <td class="tid num">TRD025488</td>
-            <td class="inst"><span class="side b">B</span><span class="tick">ASML NA</span><span class="name">ASML Holding</span></td>
-            <td>Vantage Global</td>
-            <td>Funding gap</td>
-            <td class="r num">480K EUR</td>
-            <td class="r num prob t-medium">47%</td>
-            <td class="r num"><span class="cutoff">35h 45m<span class="at">21:26 +1</span></span></td>
-            <td class="owner un">Unassigned</td>
-            <td class="status">New</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-standard">Standard</span></td>
-            <td class="tid num">TRD038112</td>
-            <td class="inst"><span class="side s">S</span><span class="tick">RY CN</span><span class="name">Royal Bank of Canada</span></td>
-            <td>Crescent Partners</td>
-            <td>Operational error</td>
-            <td class="r num">390K CAD</td>
-            <td class="r num prob t-medium">45%</td>
-            <td class="r num"><span class="cutoff">37h 10m<span class="at">22:51 +1</span></span></td>
-            <td class="owner un">Unassigned</td>
-            <td class="status">New</td>
-          </tr>
-          <tr>
-            <td><span class="pill p-standard">Standard</span></td>
-            <td class="tid num">TRD011739</td>
-            <td class="inst"><span class="side b">B</span><span class="tick">IBE SM</span><span class="name">Iberdrola</span></td>
-            <td>Westbrook AM</td>
-            <td>Insufficient securities</td>
-            <td class="r num">265K EUR</td>
-            <td class="r num prob t-medium">44%</td>
-            <td class="r num"><span class="cutoff">38h 30m<span class="at">00:11 +2</span></span></td>
-            <td class="owner un">Unassigned</td>
-            <td class="status">New</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="gridfoot">
-        <span class="num">Showing 16 of 37 open items · sorted by priority</span>
-        <a href="#">Export</a>
+
+      <!-- Queue 2: escalated, muted -->
+      <div class="gridcard esc-card">
+        <div class="qhead"><span class="dot amber"></span>ESCALATED — WITH SUPERVISOR <span class="count">(2)</span><span class="note">· raised from your book, no action needed</span></div>
+        <table>
+          <thead><tr>
+            <th>Trade</th><th>Instrument</th><th>Counterparty</th><th class="r">Value</th>
+            <th class="r">Fail risk<span class="snow" title="Scored in Snowflake">❄</span></th>
+            <th>Escalation</th><th>Status</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="tid">TRD9DEMO02<span class="batchtag">06:12</span></td>
+              <td class="inst"><span class="side b">BUY</span><span class="tick">BATS LN</span><span class="name">640,000</span></td>
+              <td>Horizon Securities</td>
+              <td class="r num">19,584,000 GBP</td>
+              <td class="r"><span class="prob t-critical">0.81</span> <span class="t-critical">Critical</span></td>
+              <td class="status esc">By policy<span class="sub">confirm lag 26.1h · window 2.5h — breached</span></td>
+              <td class="status">In supervisor queue · 06:14</td>
+            </tr>
+            <tr>
+              <td class="tid">TRD041550</td>
+              <td class="inst"><span class="side b">BUY</span><span class="tick">ADS GY</span><span class="name">14,800</span></td>
+              <td>Cobalt Partners</td>
+              <td class="r num">2,738,000 EUR</td>
+              <td class="r"><span class="prob t-critical">0.79</span> <span class="t-critical">Critical</span></td>
+              <td class="status esc">By policy<span class="sub">counterparty default — credit decision required</span></td>
+              <td class="status">With supervisor<span class="sub">escalated 18:40 yesterday · settles today</span></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+
+      <!-- Queue 3: cleared by the agent, collapsed -->
+      <div class="gridcard">
+        <div class="qhead"><span class="dot green"></span>CLEARED THIS BATCH <span class="count">(9)</span><span class="note">· scoring and agent together</span>
+          <a class="toggle" onclick="document.getElementById('clrbody').classList.toggle('open');this.textContent=this.textContent==='Show'?'Hide':'Show';">Show</a>
+        </div>
+        <div class="clr-summary">
+          <span><b>8 of 11</b> cleared by Snowflake scoring — no case needed</span>
+          <span><b>1</b> resolved by the agent</span>
+          <span class="stp">9 of 11 without analyst touch</span>
+        </div>
+        <div id="clrbody">
+          <table>
+            <thead><tr>
+              <th>Trade</th><th>Instrument</th><th>Counterparty</th><th class="r">Value</th>
+              <th class="r">Fail risk<span class="snow" title="Scored in Snowflake">❄</span></th>
+              <th>Disposition</th><th>Time</th>
+            </tr></thead>
+            <tbody>
+              <tr><td class="tid">TRD9DEMO03</td><td class="inst"><span class="side s">SELL</span><span class="tick">IFX GY</span><span class="name">18,400</span></td><td>Rosewood Trust</td><td class="r num">634,800 EUR</td><td class="r"><span class="prob t-high">0.72</span> <span class="t-high">High</span></td><td class="status"><span class="conf">Agent resolved · 0.90</span><span class="sub">settled, corrected — SSI fixed</span></td><td class="reltime">06:14</td></tr>
+              <tr><td class="tid">TRD9DEMO04</td><td class="inst"><span class="side b">BUY</span><span class="tick">VOD LN</span><span class="name">85,000</span></td><td>Meridian Capital</td><td class="r num">1,240,600 GBP</td><td class="r"><span class="prob t-medium">0.31</span> <span class="t-medium">Medium</span></td><td class="status"><span class="snowmark">❄</span>Cleared by Snowflake scoring<span class="sub">no case needed</span></td><td class="reltime">06:12</td></tr>
+              <tr><td class="tid">TRD9DEMO05</td><td class="inst"><span class="side s">SELL</span><span class="tick">ASML NA</span><span class="name">4,200</span></td><td>Beacon Rock LP</td><td class="r num">3,911,400 EUR</td><td class="r"><span class="prob t-low">0.12</span> <span class="t-low">Low</span></td><td class="status"><span class="snowmark">❄</span>Cleared by Snowflake scoring<span class="sub">no case needed</span></td><td class="reltime">06:13</td></tr>
+              <tr><td class="tid">TRD9DEMO06</td><td class="inst"><span class="side b">BUY</span><span class="tick">NESN SW</span><span class="name">22,500</span></td><td>Cobalt Partners</td><td class="r num">2,306,250 CHF</td><td class="r"><span class="prob t-low">0.09</span> <span class="t-low">Low</span></td><td class="status"><span class="snowmark">❄</span>Cleared by Snowflake scoring<span class="sub">no case needed</span></td><td class="reltime">06:13</td></tr>
+              <tr><td class="tid">TRD9DEMO07</td><td class="inst"><span class="side b">BUY</span><span class="tick">MC FP</span><span class="name">3,100</span></td><td>Diamond Trust AM</td><td class="r num">2,160,700 EUR</td><td class="r"><span class="prob t-medium">0.28</span> <span class="t-medium">Medium</span></td><td class="status"><span class="snowmark">❄</span>Cleared by Snowflake scoring<span class="sub">no case needed</span></td><td class="reltime">06:15</td></tr>
+              <tr><td class="tid">TRD9DEMO08</td><td class="inst"><span class="side s">SELL</span><span class="tick">SAN FP</span><span class="name">61,000</span></td><td>Halcyon Advisors</td><td class="r num">5,606,900 EUR</td><td class="r"><span class="prob t-low">0.11</span> <span class="t-low">Low</span></td><td class="status"><span class="snowmark">❄</span>Cleared by Snowflake scoring<span class="sub">no case needed</span></td><td class="reltime">06:16</td></tr>
+              <tr><td class="tid">TRD9DEMO09</td><td class="inst"><span class="side b">BUY</span><span class="tick">AZN LN</span><span class="name">12,800</span></td><td>Rosewood Trust</td><td class="r num">1,571,840 GBP</td><td class="r"><span class="prob t-medium">0.33</span> <span class="t-medium">Medium</span></td><td class="status"><span class="snowmark">❄</span>Cleared by Snowflake scoring<span class="sub">no case needed</span></td><td class="reltime">06:17</td></tr>
+              <tr><td class="tid">TRD9DEMO10</td><td class="inst"><span class="side s">SELL</span><span class="tick">SIE GY</span><span class="name">9,400</span></td><td>Meridian Capital</td><td class="r num">1,682,600 EUR</td><td class="r"><span class="prob t-low">0.14</span> <span class="t-low">Low</span></td><td class="status"><span class="snowmark">❄</span>Cleared by Snowflake scoring<span class="sub">no case needed</span></td><td class="reltime">06:18</td></tr>
+              <tr><td class="tid">TRD9DEMO11</td><td class="inst"><span class="side b">BUY</span><span class="tick">ULVR LN</span><span class="name">31,200</span></td><td>Beacon Rock LP</td><td class="r num">1,466,400 GBP</td><td class="r"><span class="prob t-low">0.10</span> <span class="t-low">Low</span></td><td class="status"><span class="snowmark">❄</span>Cleared by Snowflake scoring<span class="sub">no case needed</span></td><td class="reltime">06:19</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
-    <aside class="preview">
+    <!-- Preview rail: hero selected -->
+    <div class="preview">
       <div class="pv-head">
         <div class="toprow">
-          <div class="instid"><span class="side b">B</span><span class="tick">SAP GY</span><span class="name">SAP SE</span></div>
-          <span class="cutchip num">3h 05m to cutoff · 12:46</span>
+          <div class="instid"><span class="side b">BUY</span><span class="tick">SAP GY</span><span class="name">210,000</span></div>
+          <span class="cutchip">Cutoff 11:30 ET · 2h 04m</span>
         </div>
         <div class="metarow">
-          <span class="ids num">TRD031208 · Case SO-121</span>
-          <span class="stpill">Awaiting review</span>
+          <span class="ids">TRD9DEMO01 · Diamond Trust AM</span>
+          <span class="stpill">AWAITING REVIEW</span>
         </div>
         <div class="hfacts">
-          <div class="hf"><div class="k">Position</div><div class="v num">Buy 210,000</div></div>
-          <div class="hf"><div class="k">Value</div><div class="v num">18.7M USD</div></div>
-          <div class="hf"><div class="k">Counterparty</div><div class="v">Diamond Trust</div></div>
-          <div class="hf"><div class="k">Settles</div><div class="v num">Wed 2 Sep</div></div>
+          <div class="hf"><div class="k">Value</div><div class="v num">18,700,500 EUR</div></div>
+          <div class="hf"><div class="k">Fail probability <span class="snowchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18"/></svg></span></div><div class="v crit num">0.83 · Critical</div></div>
+          <div class="hf"><div class="k">Broker confirm lag</div><div class="v num">1.15h</div></div>
+          <div class="hf"><div class="k">Window remaining</div><div class="v warn num">2h 04m</div></div>
         </div>
-      </div>
-
-      <div class="pv-sec timing">
-        <div class="lab">Timing</div>
-        <div class="tbar">
-          <div class="tlab"><span>Remaining to cutoff</span><span class="v num">3h 05m</span></div>
-          <div class="track"><div class="fill remain"></div></div>
-        </div>
-        <div class="tbar">
-          <div class="tlab"><span>Broker confirmation lag</span><span class="v num">1h 09m</span></div>
-          <div class="track"><div class="fill lag"></div></div>
-        </div>
-        <div class="verdict num"><b>Fits the window</b> — confirmation completes ~1h 56m before cutoff</div>
       </div>
 
       <div class="pv-sec">
-        <div class="lab">Risk profile
-          <span class="snowchip" title="Live from Snowflake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5"/></svg></span>
-        </div>
-        <dl class="facts">
-          <dt>Fail probability</dt><dd class="num t-critical">83% · Critical</dd>
-          <dt>Predicted reason</dt><dd>Insufficient securities</dd>
-          <dt>Cpty fail history</dt><dd class="num">19.9% · 12 mo</dd>
-        </dl>
-      </div>
-
-      <div class="pv-sec">
-        <div class="lab">Recommended action</div>
+        <div class="lab">AGENT RECOMMENDATION</div>
         <div class="agent">
-          <div class="rec">Initiate borrow / partial release</div>
-          <div class="hold">
-            <span class="holdpill">Held for review</span>
-            <span class="holdwhy">Position size needs desk judgment</span>
-          </div>
+          <div class="rec">Hold for analyst review <span class="urg">HELD</span></div>
+          <div class="holdwhy">Confidence 0.62 is below the 0.80 release gate. Remediation is possible inside the window; your call, not the agent's.</div>
           <div class="score">
-            <div class="slab"><span class="sv num">Auto-release score 68</span><span class="gl num">releases at 80</span></div>
+            <div class="slab"><span class="sv num">0.62</span><span class="gl">release gate 0.80</span></div>
             <div class="track"><div class="fillc"></div><div class="gate"></div></div>
+            <div class="gatelab">agent may act alone only above the gate</div>
           </div>
-          <div class="rlab">Rationale</div>
-          <blockquote>"Deliver-side shortfall against a counterparty failing 19.9% of settlements in 12 months; the window fits a borrow, but partial release terms on a 210,000-share position need desk judgment."</blockquote>
+          <div class="factors">
+            <div class="f"><span class="fk">Large notional vs. desk norm</span><span class="fv num">×2 weight</span></div>
+            <div class="f"><span class="fk">Counterparty fail history</span><span class="fv num">2.5× desk rate</span></div>
+          </div>
         </div>
       </div>
 
-      <div class="pv-actions">
-        <div class="btn secondary">Assign to me</div>
-        <div class="btn primary">Open case</div>
+      <div class="btnrow">
+        <button class="btn primary">Open case</button>
+        <button class="btn ghost">Case history</button>
       </div>
-    </aside>
+    </div>
   </div>
 </div>
 

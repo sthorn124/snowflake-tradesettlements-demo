@@ -3234,3 +3234,59 @@ Bracket: after the fixture rows (case ≤ 52, comment ≤ 52, event ≤ 124) and
 *Promotion checkpoint* — current through this entry.
 - **NEW, STAGED:** removing the last consumer of a local makes an interface unsaveable — `updateInterface` returned `HTTP 400 — Unused Local Variables at line: 122 — local!otherSessionList`. An unused local is an ERROR, not a warning, so an edit that drops a rendered section must drop its locals in the same pass. One observation. *Trigger: the next interface edit that removes a rendered section.*
 - Unchanged: the agent-boolean method note staged; Dev MCP process-instance blindness staged; NTZ-as-UTC and chart-type staged.
+
+## 2026-09-23 — WATCHLIST RESTRUCTURED TO THE v5 MOCKUP + CONSOLE FINAL COPY (and a demo-breaking supervisor defect)
+
+*Scope:* Dev MCP as `scott.thorn` (SO Supervisors) — **every readback full-scope**, so every desk-scoped figure below is probe-derived, never observed as a persona. No `appian_*` / `ping`; no sail (no persona sessions on this machine). Changed: `SO_analystWatchlist` v16 → v18, `SO_demoAdminConsole` v9 → v11. Untouched: every process model, every integration, the connected system, `SO_caseDetail`, `SO_supervisorCommand`, Snowflake objects. Three throwaways created and deleted. One real run loaded through `SO_simulateRun` and reset through `SO_resetRun`.
+
+*Gate, failed then cleared.* `mockups/analyst_watchlist.html` was still the old flat-list mockup — unchanged since `ed52546`, neither marker present — while the v5 content sat beside it as an untracked `analyst_watchlist_v5.html`. **Stopped and reported rather than inferring the intent.** On Scott's word the v5 file was moved over the canonical name; the gate was re-run (both markers, all three queue headings) and the session continued. Environment gate passed first time: 17 cases all `P4-VERIFY`, 12 comments, 14 audit rows, 0 `TRD9` trades.
+
+*Preflight flags.* Dev MCP and sail both report **26.6.95** (`20260911-210447`) against `toolchain.md`'s **26.6.90** pin — the pin is stale, App Market says up to date. **No persona sail sessions for this build** (`~/.sail-*` holds only another build's `sd.accountant` / `sd.assetmanager`), so the `alex.analyst` and `sam.supervisor` checks were skipped per core §2.9 and routed to the browser checklist, with no fallback identity.
+
+### Task 0 — measured, not assumed (run `DEMO` loaded, measured, reset)
+1. **Packet desk mix:** EQ_FLOW **8** (01, 02, 03 — the three stories — plus 04, 08, 11, 13, 15); FI_TRADING 3 (05, 09, 14); FX_DESK 2 (06, 10); ETF_MM 1 (07); CREDIT 1 (12). An EQ_FLOW analyst sees 8 of 15.
+2. **Standing fixture book, EQ_FLOW:** 13 of 17 cases. New 4 · Agent Triage 0 · Pending Analyst 2 · In Remediation 2 · Escalated 2 · Resolved-Straight Through 1 · Resolved-Analyst 2. **Open 10 = 8 needing the analyst + 2 escalated.** Standing escalations exist and are both useful: SO-39 (`funding_gap`, past cutoff) and SO-40 (`counterparty_default`, score 0.86 — the high-score-escalated-anyway case). The ESCALATED queue is never empty.
+3. **Cleared-this-batch queryability:** 12 of 15 predictions below the High floor (Low/Medium, p 0.10–0.45), EQ_FLOW subset 5. All 15 predictions of a run carry **one identical `SCORED_AT`** (`2026-09-23 10:33:15` local), so the run has a single real scoring moment to name. Straight-through case SO-74 `TRD9DEMO03`: score 0.90, disposition `Settled - Corrected`, `resolvedOn` populated.
+**Nothing empty or absurd on the real mix.** No desks retagged, packet unaltered.
+
+### MEASURED, and it drove two decisions and found one defect
+**Process-written `SO Settlement Case` rows come back with `createdOn` NULL and `modifiedOn` NULL.** All three demo cases NULL on both; all three fixture resolved cases populated on both (the re-date script writes them). Consequences: the console's load timestamp is read from the prediction's `SCORED_AT` rather than from the case, and the supervisor defect below.
+
+### Changed — `SO_analystWatchlist` (`_a-0001f054-7a62-8000-9c49-011c48011c48_562262`) v16 → v18
+- **One definition of "open", shared by construction.** `local!openStatuses` feeds `local!caseRows`; the KPI counts the assembled rows and the two case queues **partition** the same set on `isEscalated`. No second status list exists in the file. Verified **16 = 12 + 4** loaded and **14 = 11 + 3** clean.
+- **One definition of "the batch": SO Trade, `tradeId starts with "TRD9"`**, prediction pulled through the 1:1 relationship. Anchored on SO Trade *because that is where record-level security lives*, so the band and cleared queue are desk-scoped by construction rather than by a screen-side filter. Same predicate the console uses, so the two cannot disagree.
+- **Batch stamp** taken by sorting the assembled rows on `scoredSortKey` descending and reading row 1 — never `max()`, which returns a Decimal over Dates.
+- **Every batch trade lands in exactly one of six buckets** (`SCORED_CLEAR` / `AGENT` / `ANALYST` / `ESCALATED` / `NEEDS` / `UNCASED`), so the band's chips **sum to the trade count by construction**: verified 12 + 1 + 1 + 1 = 15. Two chips render only when non-zero — `analyst-resolved` (or the split stops adding up the moment the hero is resolved on stage) and `awaiting intake` (a truthful live signal during the ~60s between Load and the cases appearing).
+- **NEEDS YOUR ACTION**: cutoff-ascending, 4 nearest by default, footer toggles to all via `a!dynamicLink`; batch rows carry a scoring-time tag on the trade id; Agent column is `Held · N` / `Proposed` / `Not yet scored` with a sub-line.
+- **ESCALATED**: muted, `selectable: false`, no action affordances. The Escalation column names the **condition** (`Window breached` / `Reason override` / `Agent escalated`), not an actor — the attributing text lives in the audit trail and reading it per row is a query per grid row, and a case the agent escalated whose window has since closed would be mis-attributed.
+- **CLEARED THIS BATCH**: collapsible `a!sectionLayout`, initially collapsed, `selectable: false`; summary line states the honest split; the ❄ mark rides the scored-clear verb only.
+- **Rail unchanged in structure and contract.**
+
+### Changed — `SO_demoAdminConsole` (`…_564828`) v9 → v11
+One explainer box above both buttons carrying Scott's verbatim copy; both captions deleted; status line `Demo loaded 23 Sep 10:33  ·  15 trades  ·  3 cases`; amber `Loaded before today. Reset, then Load for fresh dates.` when the load date is not today. **Both sides of the date comparison go through `text()`** — the stamp is stored UTC and `today()` is local, and comparing them raw would flip the verdict for the hours each day when the two calendars disagree.
+
+### 🔴 FOUND, NOT FIXED — `SO_supervisorCommand` breaks whenever a demo is loaded
+Measured with a control: **demo loaded → `at function 'text' [line 351]: A null parameter has been passed as parameter 1`, whole page fails to render; after reset → `error: null`.** One variable. Cause is exact: `local!cycleList` (line 345) guards `modifiedOn` for null; `local!cIdx` (line 351) calls `text()` on the same field unguarded. A process-written case has a NULL `modifiedOn`, and **every demo run creates exactly one straight-through resolution by design** — so the supervisor screen is dead for the entire demo window, which is exactly when Act 2 would open it. One-line fix (copy line 345's guard onto 351); **not applied — the brief says supervisor screens stay untouched. Ruling wanted; blocks Part C.**
+
+### Verified
+- `validateDesignObject` clean on both objects; both `updateInterface` readbacks **byte-identical** to the local `.work` source (compared, not eyeballed).
+- `testInterface` `error: null` on the watchlist in **both** data states, on the console, and on the supervisor screen after reset.
+- Render evidence, loaded: band `10:33 today · 15 trades on your desk`; footer `showing 4 nearest cutoffs / View all 12`; cleared summary `12 cleared by Snowflake scoring · 1 resolved by the agent · 13 of 15 without analyst touch`; one `Agent resolved · score 90` / `Settled - Corrected` against twelve `Cleared by Snowflake scoring` / `no case needed`; `Window breached / confirm lag 26.0h · 2.2h to cutoff`; `Window breached / confirm lag 3.0h · past cutoff` (negative hours kept away from `text()`); batch tag `10:33`.
+- Render evidence, clean: band **absent**, cleared card **absent**, KPI `—` / `no scoring batch on your desk`, two queues intact.
+- **Hidden branches were rendered, not reasoned about** (§4): the rail's selected state through a throwaway copy with the selection pre-set (full SO-72 rail, gate bar 62/80, AI attribution, `Open case →`), and the console's amber line through a throwaway with the date comparison inverted.
+- Console healthy view measured at **exactly 60 words**, longest sentence 11.
+- Cleanup: `listInterfaces` query `SO_zz` → `total: 0`. Environment restored to 17 / 12 / 14 / 0 / 0.
+- Per-session ritual run: `p4-verify-redate.py`, all three CSVs applied before anything rendered.
+
+### Not verified
+- **Nothing as a persona** — no live sail session for either. The desk-scoped view the demo actually shows is unobserved; one `sail login` per persona closes this permanently.
+- All geometry and paint. The view-all toggle and the cleared collapse were verified as configuration and by rendered footer text, not by clicking. The console buttons were exercised through their process models, since `a!startProcess` cannot be invoked from `testInterface`.
+
+### Structural deltas from the mockup, logged per §7
+Filter row removed (v5 has none, and the partitioned list earns it less) · scores on the 0–100 scale per the display canon, not the mockup's `0.62` / `0.90` · Escalation column names the condition rather than "By policy" · Agent sub-line carries the full canon remediation, there being no short-remediation vocabulary to invent · two conditional chips beyond the mockup's four, so the chips always sum · page head cannot say "Equity Flow desk" (that is record-level security, not screen knowledge) · cleared rows not selectable, most having no case to preview.
+
+*Promotion checkpoint* — current through this entry.
+- **PROMOTED to CLAUDE.md** (project rule, fails the noun test on purpose): process-written case rows have NULL `createdOn`/`modifiedOn` where script-written fixture rows do not; guard both before formatting, and read a process-created row's "when" from a field the process actually wrote.
+- **NEW, STAGED (gate 1):** *a fixture set and a process-written set can differ in which system-managed fields are populated, so a screen verified against fixtures is not verified against production rows.* **Trigger: the next build carrying both hand-authored fixtures and process-created rows in one table.**
+- **Second observation, same direction:** unused locals block a save — `HTTP 400 — Unused Local Variables at line: 62 — local!actionStatuses`. Still staged pending a deliberate re-test rather than a third accident.
+- Unchanged: the agent-boolean method note; Dev MCP process-instance blindness; NTZ-as-UTC; chart-type.
