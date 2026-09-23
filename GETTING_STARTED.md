@@ -4,30 +4,81 @@ This is the operator's manual, and it spans the whole of it: first-time setup on
 
 ## 1. First-time setup
 
-Work through these in order. Steps a–c happen once per build, d–g once per machine, h–k once per build.
+Work through these in order. Steps b and e happen once per machine; the rest happen once per build. Everything that writes a configuration file is done by one pasted prompt in step f, so you never edit a config file by hand.
 
-a. **Get access.** Ask the template owner to add you as a collaborator on the template repo. It is private, and the template button only appears once you can see it.
+a. **Get a GitHub account and access to the template.** You need a GitHub account. Ask the template owner to add you as a collaborator on the template repo. It is private, and the template button only appears once you can see it.
 
-b. **Create your build repo.** On the template repo's GitHub page, click **Use this template → Create a new repository**. Name it for your build (for example `<client>-<demo>-build`), keep it private, and create it under your account. You get your own repo with these files and a clean history. Forking works too, but a fork inherits the template's commit history; prefer the template button.
-
-c. **Clone it locally.** The clone is your build's project folder; every Claude Code session runs in it.
-
-d. **Install the skill.** Run `mkdir -p ~/.claude/skills/appian-supplemental && cp skills/appian-supplemental/SKILL.md ~/.claude/skills/appian-supplemental/SKILL.md`. It is user-level, so every build on the machine loads it.
-
-e. **Set up GitHub auth and your git identity**, if not already done: `gh auth login` (GitHub.com → HTTPS → login with browser), then verify with `gh auth status`. Then check `git config --global user.name` and `git config --global user.email`; if either prints nothing, set them:
+b. **Set up GitHub auth and your git identity**, if not already done: `gh auth login` (GitHub.com → HTTPS → login with browser), then verify with `gh auth status`. Then check `git config --global user.name` and `git config --global user.email`; if either prints nothing, set them:
    `git config --global user.name "Your Name"`
    `git config --global user.email "your-github-email@example.com"`
    Without these, the first commit in any build repo fails. The close-out routine commits and pushes at the end of every session, so both have to work before the first one.
 
-f. **Register your MCP servers** — the Dev MCP and the docs-search server — per `reference/toolchain.md` §1 and §3. `.mcp.json` stays untracked; it is in `.gitignore`.
-   - **Name servers by role:** the Dev MCP is `appian`, as in Appian's documented block. A runtime MCP server, if you use one, is `appian-runtime`.
-   - **Check the Claude desktop app's own config** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS) for an inherited entry already named `appian`. Claude Code sessions receive the desktop app's servers too, and a same-named one silently shadows the design tools (`reference/toolchain.md` §2).
-   - **Rename it only with the desktop app fully quit.** The running app writes its own copy back over the file.
+c. **Create your build repo.** On the template repo's GitHub page, click **Use this template → Create a new repository**. Name it for your build (for example `<client>-<demo>-build`), keep it private, and create it under your account. You get your own repo with these files and a clean history. Forking works too, but a fork inherits the template's commit history; prefer the template button.
 
-g. **Set up the sail CLI**, the persona-session tool that ships in the Dev MCP bundle (`reference/toolchain.md` §12).
-   - Run the setup script for your platform from the bundle's `bin/`: `bin/setup-mac.sh`, `bin/setup-linux.sh`, or `bin/setup-windows.bat`.
-   - Confirm that `sail --help` runs.
-   - On macOS the script clears the download quarantine and links `sail` onto your `PATH`. If it reports falling back to `~/.local/bin`, make sure that directory is on your `PATH`.
+d. **Clone it locally.** The clone is your build's project folder; every Claude Code session runs in it.
+
+e. **Download the Dev MCP bundle from your Appian site and unpack it.**
+   - Sign in to your site in a browser and open `https://<your site>/suite/plugins/servlet/stateless/downloads`.
+   - Download the Dev MCP bundle (`appian-dev-mcp-server-bundle.tar.gz`). It matches your site's DevMCP plugin, so take it from the site you will build on.
+   - Unpack it into `~/appian-dev-mcp-server`:
+     `mkdir -p ~/appian-dev-mcp-server && tar -xzf ~/Downloads/appian-dev-mcp-server-bundle.tar.gz -C ~/appian-dev-mcp-server`
+   - The folder should now hold `pyproject.toml` at its top level. Another folder works too: the setup prompt asks if it cannot find the bundle.
+
+f. **Paste the first-launch setup prompt.** Open Claude Code with your repo folder as the working folder and paste the first-launch setup prompt below. It installs and registers what the build needs. It asks you whenever it needs a decision, such as your site, an existing file, or a rename, and it never handles a password.
+
+   ````text
+   First-launch setup for this build repo. Work through these steps in order and report what you did at each one. Ask me rather than guess whenever something is missing or ambiguous. Do not start any build work, and do not call any Appian tools.
+
+   1. Locate the unpacked Appian Dev MCP bundle: the folder that holds pyproject.toml and src/lcp_mcp_server. The default is ~/appian-dev-mcp-server. If it is not there, ask me where I unpacked it.
+      Then make sure it is installed. python3 must be 3.13 or later and uv must be available; if either is missing, stop and tell me, and do not upgrade Python or install uv without asking.
+      Run `uv --directory <bundle> sync` and `uv --directory <bundle> run playwright install chromium`, and confirm both succeed.
+
+   2. Write .mcp.json in this repo folder, in this shape, with the absolute path of the located bundle:
+
+      {
+        "mcpServers": {
+          "appian": {
+            "command": "uv",
+            "args": ["run", "--directory", "<absolute bundle path>", "python", "-m", "lcp_mcp_server"],
+            "env": { "LCP_URL": "https://ny.appiancloud.com" }
+          },
+          "appian-public-docs": { "type": "http", "url": "https://appian-docs-public.mcp.kapa.ai" }
+        }
+      }
+
+      Before writing, ask me to confirm that my Appian site is https://ny.appiancloud.com, and use the site I name if it differs.
+      If .mcp.json already exists, show me its server names, never its values, and ask before changing it.
+      Afterwards, confirm that .mcp.json is listed in .gitignore and that `git check-ignore .mcp.json` reports it as ignored.
+
+   3. Run `sail --help`. If it works, report `sail --version`.
+      If it does not, run the sail setup script for this platform from the bundle's bin/ folder (bin/setup-mac.sh, bin/setup-linux.sh, or bin/setup-windows.bat). Then confirm that `sail --help` works and report `sail --version`.
+      If the script links sail into a folder that is not on my PATH, tell me which folder to add.
+
+   4. Copy skills/appian-supplemental/SKILL.md from this repo to ~/.claude/skills/appian-supplemental/SKILL.md, creating the directory if needed.
+      If an installed copy already exists and differs, show me how they differ and which is newer, and ask before overwriting it.
+      Afterwards, confirm that the two copies are byte-identical.
+
+   5. If ~/Library/Application Support/Claude/claude_desktop_config.json exists, check whether it defines an MCP server named "appian". Never print the file's contents: it can hold a credential.
+      If the file or the entry does not exist, do nothing and say so.
+      If the entry exists, tell me in one sentence that a desktop server with the Dev MCP's name silently shadows the design tools in Claude Code sessions, and offer to rename it to "appian-runtime".
+      The desktop app must be fully quit while the file is edited, because the running app writes its own copy back over it. So if you are running inside the desktop app, do not edit the file yourself; give me a command to run in Terminal after I quit the app.
+
+   6. End with exactly this line:
+      Setup files are in place. Fully quit and relaunch Claude Code so it loads the MCP servers, then say: run the preflight.
+   ````
+
+   **What this does.** Claude Code reaches Appian through MCP servers: small programs it starts itself and whose tools it can call.
+   - `.mcp.json` is the list it reads at launch. It says which program to start for the Dev MCP (the bundle you unpacked, run with `uv`), which site that program signs in to, and where the documentation search lives.
+   - The file stays out of git because the path and the site belong to your machine. It holds no password: the Dev MCP signs in through your browser the first time a tool needs it.
+   - The skill copy gives every session on this machine the measured platform facts. sail is the tool sessions use to check pages as a persona.
+   - The desktop-config check exists because a second server named `appian` would quietly take the Dev MCP's place.
+
+   Details are in `reference/toolchain.md` §1–§3 and §12.
+
+g. **Quit, relaunch, and run the preflight.** Claude Code reads `.mcp.json` only when it starts. Fully quit it: in the desktop app, quit from the menu (⌘Q on macOS), not just the window; in a terminal, `/exit`. Then open it again with the repo folder as the working folder. If it asks whether to use the MCP servers in this folder's `.mcp.json`, approve them. Then say **run the preflight**.
+   - **Sign in when the browser opens.** The preflight's first Dev MCP call opens a browser window at your site's sign-in page. Complete SSO and MFA there within five minutes. The session is kept on your machine, and the window opens again only when it expires (`reference/toolchain.md` §1).
+   - **What to expect.** The preflight reports the Dev MCP version against the template's pin, the sail version, any persona sessions on this machine, and any Build parameters still blank (step k). In a new build it also reports that the build is not planned yet, which is expected until Phase 0 (§3) fills `BUILD_PLAN.md`.
+   - If Claude Code reports that `appian-public-docs` needs authentication, authorize it from `/mcp`.
 
 h. **Create a claude.ai Project for this build.**
 
@@ -39,14 +90,11 @@ j. **Set the Project instructions: generate them, then paste.** Ask Claude Code 
    - **After that, regenerate only when the build's context changes.** Examples: a new audience, new design cues, or a change of client. Re-paste the file each time.
    - **A real client name never goes in the generated file.** The file is tracked, and a client's name belongs only in the Project. Claude Code writes the placeholder `[type the client name in the Project only]` in place of the name, and you type it into the Project yourself.
 
-k. **Confirm, then start Phase 0.** Before the first Claude Code session, confirm from a terminal:
-   - `gh auth status` succeeds;
-   - `git config --global user.email` prints your address;
-   - `claude mcp list` shows `appian`;
-   - `sail --version` prints a version, which the session preflight compares with the pin;
-   - the **Build parameters** block at the top of `CLAUDE.md`'s project sections is filled in (`CLAUDE.md` §13). The preflight reads its values by name: application UUID, design account, security groups, per-session ritual, and persona site stub. Write `unset` with the reason for anything that does not exist yet, such as an application Phase 1 will create.
-
-   Then read the rest of this manual and start Phase 0 (§3). `Closeout.md` is not in the template; it appears after your first session's close-out, and from then on the Project reads it at the start of every conversation.
+k. **Fill in the Build parameters, then start Phase 0.**
+   - The Build parameters block at the top of `CLAUDE.md`'s project sections (`CLAUDE.md` §13) must be filled in before the first build session. The preflight reads its values by name: application UUID, design account, security groups, per-session ritual, and persona site stub.
+   - Write `unset` with the reason for anything that does not exist yet, such as an application Phase 1 will create.
+   - Then read the rest of this manual and start Phase 0 (§3).
+   - `Closeout.md` is not in the template. It appears after your first session's close-out, and from then on the Project reads it at the start of every conversation.
 
 ### Persona sail logins — step by step
 
