@@ -3204,3 +3204,33 @@ Bracket: after the fixture rows (case ≤ 52, comment ≤ 52, event ≤ 124) and
 - **PROMOTED to CLAUDE.md** (project rule): escalation for a breached window is a process-layer policy, not an agent judgment; the score is recorded and audited but does not decide that lane. Fails the supplemental's noun test on purpose — it is about this build's lanes.
 - **STAGED:** the general form — *a demo beat that must land cannot depend on a model's boolean; compute it in the process from data the model also sees.* Method, not platform, and one project's experience. *Trigger: the next build that wires an agent flag to a branch.*
 - Unchanged: Dev MCP process-instance blindness staged; NTZ-as-UTC and chart-type staged.
+
+## 2026-09-22 (cont.) — CONSOLE REDESIGN: a healthy screen is quiet (presentation pass)
+
+*Scope:* Dev MCP as `scott.thorn` (SO Supervisors). Presentation only, plus the two authorised exceptions: one functional readback of the Reset enable condition, and the deletion of a throwaway from an earlier session. No process model, rule logic, integration or Snowflake object changed. `SO_demoAdminConsole` v8 → v9. Environment clean before and after (17 fixture cases / 12 comments / 14 audit rows / 0 demo trades).
+
+*Why:* Scott's verdict on v8 after the successful functional pass — "far too much text, overly verbose explaining, visually poor, overwhelming". The principle applied throughout: **prose is spent on failure states.**
+
+*Gate work first (CLAUDE.md §5, supplemental §2):* frontend-design skill and the pack's `layouts/section-layout-instructions.md` + `interface-generation-checklist.md` located and read; docs-search consulted for `a!sectionLayout` (confirmed `isCollapsible` / `isInitiallyCollapsed` / `labelSize` / `labelColor`) and for `helpTooltip`, which **renders only beside a visible label** — so the agent footnote was deleted rather than converted to a tooltip.
+
+*Changed — console v9*
+- **Header:** title, one orientation line ("One demo at a time. Load starts it, Reset removes it."), signed-in line. Blue concept card, "You need nothing but this page", and the DEMO-name explanation all deleted.
+- **Card 1 is a verdict:** `Ready` / `Not ready` plus `data 50,000/50,000 · 9/9 connections · agent OK`. Failures surface here in red with detail; only failing connection names render at all. Detail moved into `a!sectionLayout(label: "Details", isCollapsible: true, isInitiallyCollapsed: true)`, rendered through the existing `SO_adminCheck` so the three-state vocabulary stays in one place.
+- **Cards 2 and 3 merged** into "Run the demo": status line, then the two buttons side by side in an `a!columnsLayout`, each with a one-line caption beneath.
+- **Results unchanged in substance:** success one green line + small grey verbatim response; refused/failed keep STANDARD ink bold; the reset was/now evidence line kept.
+- **Correction beyond the brief, deliberate:** v8's "Leftover data" check went RED whenever a demo was loaded — the normal mid-demo state read as a fault. The verdict now covers data, connections and agent only; demo rows report neutrally as "Loaded now: N demo trades · N cases". Confirmed by render: verdict stays green with a case loaded.
+- **Measured word counts, default healthy view** (visible prose, excluding button labels and count values): **312 → 42 words**; longest line 34 → 11 words. Budgets (<60 words, ≤15 per sentence) met.
+
+*Reset enable condition — checked, already correct, unchanged.* `disabled: not(local!statusLoaded)` where `statusLoaded: or(local!tradeReserved > 0, local!otherCases > 0)`. Snowflake rows and Appian cases are both read, so the Appian-first reset's legitimate residue (Snowflake rows, zero cases) keeps the button live and a second press is the recovery. A comment was added at the button recording why, so a later edit cannot quietly narrow it. Render evidence: `disabled: true` with nothing loaded, `disabled: false` with one case.
+
+*Deletion, on Scott's word:* `SO_zz_probeQuery` (`_a-0001f054-7a62-8000-9c49-011c48011c48_562148`) deleted — "Deleted successfully". §12's rule observed: another session's throwaway goes on the owner's word, never on inference.
+
+*Verified*
+- `testInterface` both states, `diagnostics.error: null`: healthy/no-data (green verdict, Details collapsed, Reset `disabled: true`) and loaded (green verdict, "Loaded now" line, Reset `disabled: false`), the latter via a throwaway `DEMO` case, inserted and deleted.
+- Section renders with `isCollapsible: true, isInitiallyCollapsed: true`, label "Details", `labelSize: EXTRA_SMALL`.
+
+*Not verified:* geometry and paint — button/caption alignment side by side, caption weight, the collapse affordance, disabled-button contrast. Browser checklist in `Closeout.md` (d). The refused/error styling is verified as configuration, not by firing it (unreachable from the console since the name became a constant).
+
+*Promotion checkpoint* — current through this entry.
+- **NEW, STAGED:** removing the last consumer of a local makes an interface unsaveable — `updateInterface` returned `HTTP 400 — Unused Local Variables at line: 122 — local!otherSessionList`. An unused local is an ERROR, not a warning, so an edit that drops a rendered section must drop its locals in the same pass. One observation. *Trigger: the next interface edit that removes a rendered section.*
+- Unchanged: the agent-boolean method note staged; Dev MCP process-instance blindness staged; NTZ-as-UTC and chart-type staged.
