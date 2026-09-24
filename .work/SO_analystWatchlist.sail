@@ -62,8 +62,14 @@ a!localVariables(
      cannot drift apart or double-count a status. */
   local!resolvedStatuses: {"Resolved - Straight Through", "Resolved - Analyst"},
   /* How many rows NEEDS YOUR ACTION shows before the view-all footer. The
-     mockup shows four nearest cutoffs of twelve; this is that number. */
-  local!nearest: 4,
+     mockup showed four nearest cutoffs of twelve; SIX was ruled on 2026-09-24
+     after the persona pass measured the demo hero landing 4th of 9 by cutoff —
+     visible, but the last row before the footer, with three standing fixtures
+     ahead of it and no headroom if a fourth is ever added nearer. Six restores
+     two rows of margin without turning the queue back into the flat list the
+     v5 mockup replaced. The footer copy reads this local, so the number and the
+     words it prints cannot drift apart. */
+  local!nearest: 6,
 
   local!caseRows: a!refreshVariable(
     value: a!queryRecordType(

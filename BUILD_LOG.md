@@ -3326,3 +3326,46 @@ Everything above was read as the named persona and is stated with its account. *
 *Environment restored:* 0 demo trades · 0 demo cases · 17 built-in · 12 comments · 14 audit rows, read back from the console. Reset button `disabled: true`.
 
 *Promotion checkpoint* — current through this entry. No new candidates this round; the 09-23 promotion and staging stand unchanged.
+
+## 2026-09-24 (cont.) — SUPERVISOR NULL-GUARD CLASS SWEEP + WATCHLIST FOLD AT SIX
+
+*Scope:* Dev MCP as `scott.thorn` (SO Supervisors) for design work and the load/reset; **sail as `alex.analyst` and `sam.supervisor`** for persona observations. Changed: `SO_supervisorCommand` v6 → v7, `SO_analystWatchlist` v18 → v19. **Console untouched**, as instructed; no process model, no integration, nothing Snowflake-side. One throwaway created and deleted. Environment verified at baseline before and after.
+
+### The fix, and why the guard alone was not the fix
+Line 351's `local!cIdx` got the same null guard line 345 already had — the two compute the same grouping key and must be symmetric. **But the guard alone would have replaced a crash with a plausible lie, and that was measured, not reasoned:** a throwaway copy with the guard applied and the empty bucket left in rendered the trend chart as `categories: [null, "2026-09-24"]`, `series: [100, 33]` — a line chart with a **null x-axis label plotting a fabricated fall from 100% to 33%**, on the card whose own comment forbids drawing a direction the data cannot support. So `local!cycles` now drops the empty bucket as well.
+
+**Where a dateless resolved case lands: every figure except the trend axis.** `local!resolved` still feeds `resolvedCount`, `stCount`, `stPct`, `avoidedUsd` and the per-desk STP column, none of which needs a date. Measured with the demo loaded as `sam.supervisor`: 20 cases in scope, STP **50% (2 of 4)** (was 33% of 3), **4** fails prevented (was 3), EQ_FLOW STP 50%, and the trend card correctly still reading **1 cycle on record** with no chart drawn. The case is counted five times and plotted zero times, which is the only honest arrangement while the grouping key is `modifiedOn`.
+
+**Standing question, deliberately unanswered:** the chart groups by `modifiedOn` as a proxy for "the day it resolved", while **`resolvedOn` is the real field and is populated on exactly these rows**. Swapping it would place them rather than exclude them — a change of meaning, not a guard, so it is in TODO for a ruling.
+
+### The sweep — method, because absence of hits is the claim
+**Inventory:** `listInterfaces` (15) + `listExpressionRules` (19) scoped to the app UUID; **all 34 objects fetched to `.work/`**, file count verified at 34. Nothing excluded for looking irrelevant.
+
+**Two search patterns, and the second is the one that mattered:**
+1. the field UUIDs `{10200e99…}createdOn` / `{4ac3036c…}modifiedOn` — catches UUID-qualified record reads;
+2. the bare identifiers `createdOn` / `modifiedOn` — catches **map-key reads on assembled rows**, `index(fv!item, "modifiedOn", null)`.
+
+**The defect at line 351 is a map-key read, so a UUID-only sweep would have missed it.** Any future sweep of this class searches both forms.
+
+**Hits: nine, all in `SO_supervisorCommand`, none anywhere else.** Lines 74/75 are a query `fields:` list (not a read); 140/141 store into the row map with a null default; **142, 190–191, 345 and 377–378 were already correctly guarded**; **351 was the only unguarded site.** The shape of that result is worth recording: this was **one miss out of six sites in a single file that otherwise handled the field correctly every time** — not a systemic blind spot. Zero hits across the other 14 interfaces and all 19 rules.
+
+**Adjacent, same class, different record types — checked, safe, untouched:** `SO Case Comment.createdOn` (read by `SO_caseDetail` and `SO_analystWatchlist` as `assessmentAt`, guarded at row level, and **observed populated** on a process-written comment — the rail rendered `SO Triage Agent · 09:58`); and Event History `timestamp` (console agent line, guarded by `agentOk`, **observed rendering** `last run 24 Sep 08:30` for a demo-created event).
+
+### The fold
+`local!nearest` 4 → 6. The footer copy already derived from that local, so `"showing 6 nearest cutoffs"` / `"Show nearest 6"` followed with no second edit — number and words cannot drift. As `alex.analyst` with the demo loaded: NEEDS YOUR ACTION (9), showing 1–6 of 6, order TRD030639 · TRD023894 · TRD026800 · **TRD9DEMO01 10:15** · TRD046440 · TRD021300. **The hero is 4th of 9 by cutoff — its true position — and now has two rows of headroom below it** instead of being the last visible row.
+
+### Verified
+- `validateDesignObject` clean on both objects; both `updateInterface` readbacks **byte-identical** to the local `.work` source.
+- `testInterface` `error: null` on both objects in **both** data states. Supervisor loaded: the cycle chart is **absent from the render tree** (trend card in its text state), which is the positive form of "no phantom trend".
+- **`sam.supervisor` via sail opens the Supervisor page with a demo loaded** — the check that returned HTTP 500 before the fix. Full house view renders.
+- After reset, both personas clean: supervisor 17 in scope / 33% (1 of 3) / 1 cycle; analyst open 10 = 8 + 2, band and cleared absent.
+- Baseline restored by console readback: 0 demo trades · 0 demo cases · 17 built-in · 12 comments · 14 audit rows; Reset `disabled: true`.
+- Throwaway `SO_zzCycleProbe` deleted.
+
+### Not verified
+All geometry and paint. Specifically: whether six rows changes the queue's visual balance against the cards beneath it, and whether the taller needs-action card pushes the cleared summary below the fold at laptop height. Browser checklist in `Closeout.md`.
+
+*Promotion checkpoint* — current through this entry.
+- **NEW, STAGED (gate 1), method rather than platform:** *when fixing a null-formatting crash, check what the guarded value does to any grouping, aggregation or axis it feeds — the minimal guard can convert a crash into a plausible wrong answer, which is worse than the crash because nobody notices.* Measured here (the `[null, "2026-09-24"] / [100, 33]` chart). **Trigger: the next null guard added to a value feeding a chart, a group-by or a count.**
+- **The 2026-09-23 CLAUDE.md promotion had its first application and held:** knowing that process-written rows carry NULL `createdOn`/`modifiedOn` is what made this sweep targeted rather than exploratory.
+- Unchanged: fixture-vs-process-rows staged; unused-locals-block-saves; agent-boolean method note; Dev MCP process-instance blindness; NTZ-as-UTC; chart-type.

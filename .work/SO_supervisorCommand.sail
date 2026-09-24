@@ -342,13 +342,47 @@ a!localVariables(
      fixture this is one cycle, and a one-point line is not a trend — the card
      renders an explicit insufficient-data state instead of drawing a line
      through a single dot and implying a direction. */
+  /* A DATELESS RESOLVED CASE IS REAL, AND IT IS NOT A CYCLE. modifiedOn comes
+     back NULL on every process-written case (CLAUDE.md, measured 2026-09-23),
+     and a case with no usable date cannot be placed on a timeline. Both reads
+     below therefore guard it identically — the guard was on cycleList and
+     MISSING on cIdx, which took the entire page down with "A null parameter
+     has been passed" the moment a demo run resolved anything straight through.
+     The two must stay symmetric: they are the same grouping key computed twice.
+
+     AND THE EMPTY BUCKET IS DROPPED RATHER THAN GROUPED, which is the half of
+     this fix that is not about crashing. Left in, a dateless case became a
+     SECOND cycle keyed "" — enough to flip haveTrend true and draw the line
+     chart with a blank category, plotting a trend between a real day and a
+     bucket with no date. This card's own rule is that one point is not a trend
+     because it implies a direction the data cannot support; a phantom second
+     point asserts the same thing less honestly.
+
+     WHAT THE EXCLUSION COSTS: nothing outside this chart. local!resolved still
+     feeds resolvedCount, stCount, stPct, avoidedUsd and the per-desk STP
+     column, so a dateless straight-through case is counted in the KPI, in the
+     penalties-avoided figure and in its desk's row — it is absent only from the
+     by-cycle trend, which is the one place a date is the axis.
+
+     THE FIELD ITSELF IS THE STANDING QUESTION: this groups by modifiedOn as a
+     proxy for "the day it resolved", while resolvedOn is the real field and IS
+     populated on exactly these rows. Swapping it would place these cases rather
+     than exclude them. Left alone deliberately — that is a change of meaning,
+     not a null guard, and it is in TODO for a ruling. */
   local!cycleList: a!forEach(items: local!resolved, expression: if(a!isNullOrEmpty(index(fv!item, "modifiedOn", null)), "", text(index(fv!item, "modifiedOn", null), "yyyy-mm-dd"))),
-  local!cycles: if(a!isNullOrEmpty(local!cycleList), {}, union(local!cycleList, local!cycleList)),
+  local!cycles: if(
+    a!isNullOrEmpty(local!cycleList),
+    {},
+    a!flatten(a!forEach(
+      items: union(local!cycleList, local!cycleList),
+      expression: if(fv!item = "", {}, { fv!item })
+    ))
+  ),
   local!cycleRows: a!forEach(
     items: local!cycles,
     expression: a!localVariables(
       local!c: fv!item,
-      local!cIdx: wherecontains(true, a!forEach(items: local!resolved, expression: text(index(fv!item, "modifiedOn", null), "yyyy-mm-dd") = local!c)),
+      local!cIdx: wherecontains(true, a!forEach(items: local!resolved, expression: if(a!isNullOrEmpty(index(fv!item, "modifiedOn", null)), "", text(index(fv!item, "modifiedOn", null), "yyyy-mm-dd")) = local!c)),
       local!cSet: if(a!isNullOrEmpty(local!cIdx), {}, index(local!resolved, local!cIdx, {})),
       a!map(
         cycle: local!c,
