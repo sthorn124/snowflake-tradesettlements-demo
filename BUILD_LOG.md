@@ -3418,3 +3418,41 @@ Everything above read as the named account and stated with it. Task 0: `validate
 - **CORRECTION OWED to CLAUDE.md:** record-header related actions are reachable and drivable through sail; the "browser check and only a browser check" wording is superseded. Deferred to the next session that may edit objects/docs.
 - **The 2026-09-23 NULL-timestamp rule applied again and held:** SO-84 still showed blank `createdOn`/`modifiedOn` *after* the analyst's disposition write while `resolvedOn` was set — which is exactly why Task 0's swap was the right fix rather than a cosmetic one.
 - Unchanged: guard-vs-grouping method note; fixture-vs-process-rows; unused-locals; agent-boolean; process-instance blindness; NTZ-as-UTC; chart-type.
+
+## 2026-09-24 (cont.) — POST-REHEARSAL CLEANUP: display honesty, presenter grants, records current
+
+*Scope:* Dev MCP as `scott.thorn` (SO Supervisors) for object work, security and the load/reset; **sail as `alex.analyst` and `sam.supervisor`** for the persona comparison that is the whole of Task 1. Changed: `SO_caseDetail` v7 → v8; **security on three process models**; `CLAUDE.md`, `GETTING_STARTED.md`, `TODO.md`, `BUILD_PLAN.md`. No throwaways needed. Baseline verified before and after; the P4-VERIFY re-date ritual was re-run because the previous one was 85 minutes old and case 37 had already decayed past its cutoff.
+
+### Task 1 — the fabricated zero, cause proven then removed
+**Cause confirmed by reading the same card on the same case as two identities.** `alex.analyst` saw `TRD040796, —, Operational error, 0`; `sam.supervisor` saw `TRD040796, ALV GY, Operational error, 2.7M EUR`. Dates, trade ids and reasons identical — **only the trade-sourced fields differ**, because date/trade/reason come from SO Settlement History (not desk-secured) while instrument and notional come through the desk-secured trade, and a counterparty's fails span desks by nature.
+
+**The zero was a code fault, not a data one:** the Value column called `SO_fmtMoney(amount: index(fv!row, …notional, 0), …)` — defaulting a null to 0 and then FORMATTING it, producing a real-looking number in a money column that no reader could distinguish from a true zero.
+
+**Fixed as per-row labelling rather than a count line, and the reason is the card's argument.** For an analyst *every* row here is usually out-of-desk, so collapsing them into "5 fails you cannot see" would discard the dates and reasons she CAN read — and the reason mix is what the summary line computes and what the card exists to say. Instrument cell now renders `outside your desk view` (SMALL, muted) when ticker and notional both read null; value cell renders an em dash, never a formatted 0; `preventWrapping` dropped on that one cell so the phrase is not truncated. Summary line untouched.
+
+**Verified both ways:** analyst now `outside your desk view` + `—` with dates/ids/reasons intact; **supervisor unchanged** at `ALV GY / 2.7M EUR`; summary line byte-identical for both. `validateDesignObject` clean, readback byte-identical, `testInterface` (case 36) `error: null`. No security changed for this task.
+
+### Task 2 — presenter grants, and a UUID correction worth recording
+**The working note was wrong and checking it mattered.** `53dbfcbc-8eb9-4ecd-943d-7f68c62023bb` was recorded in context as the "admin group UUID"; `listGroups` shows it is **SO Administrators**. **SO Demo Admins is `_e-0000f057-1d8f-8000-9b9b-01075c01075c_5425`** and held **no role at all** on the three process models — the precise reason a presenter in that group alone could not press Load or Reset.
+
+`updateObjectSecurity` is a **full replacement**, so each call resent the whole role map with only `initiator` changed. `SO_simulateRun`, `SO_intakeRun`, `SO_resetRun`: `initiator: []` → `initiator: [SO Demo Admins]`, with `administrator: [SO Administrators]` and `viewer: [SO Users, SO Supervisors, SO Analysts]` preserved verbatim. **Verified by an independent `getObjectSecurity`, not from the PUT echo.** No group nesting, no membership, no other identity touched. *(Note for the boundaries file: `updateObjectSecurity` works cleanly on process models, unlike the documented HTTP 500 it returns for documents.)*
+
+`GETTING_STARTED.md` gained "The demo presenter's own account" — two lines: SO Demo Admins or the console's buttons cannot start their process models; SO Supervisors or intake silently reads one desk.
+
+### Task 3 — records
+- **Reset delete-click residual CLOSED BY RULING**, citing three live human-clicked Resets with the was/now line read back (2026-09-22, 2026-09-24) plus verification-summary **checks 20/21** (prefix-safe tag-scoped deletion, `VFY1` vs `VFY12`). Same citation closes the console was/now check and **GATE D part (c)** in place. `a!deleteRecords` in a `saveInto` is now recorded as a tooling boundary rather than an unverified link.
+- **Parked intake instances CLOSED on Scott's word** (terminated in the Admin Console 2026-09-22), with the limitation stated: sessions cannot read process instances at all, so **the Admin Console is the authority** and a session can only record the ruling.
+- **CLAUDE.md corrected.** The status→action rule no longer claims browser-only. It keeps what is true (header renders outside the view interface; `testInterface` sees no action set; a throwing visibility expression hides its action silently) and adds the measured correction: sail reads the header and drives it, so the mapping is a persona check through sail, and only the header's *geometry* is browser-only.
+- **TODO:** hero's scripted analyst action **DECIDED** as `Record Disposition → Settled - Borrow Executed`; a demo-script inputs list started under it (the action, the double-Load hygiene line, the stale-date rule); Matched-time gate divergence **moved** into the next-mockup-pass block beside the supervisor mockup refresh; double-Load item marked as captured rather than duplicated.
+
+### Flagged
+**`GETTING_STARTED.md` is template-owned and the added lines are build-specific** (they name SO Demo Admins and SO Supervisors, which the client-neutral operating core excludes by design). Written where asked and marked in-file, but **they will conflict on the next template pull**. Recommendation: durable home is CLAUDE.md's project sections, with the template carrying at most a parameterised line. Scott's call.
+
+### Not verified
+All geometry and paint — specifically, `outside your desk view` is 22 characters in a `NARROW` column with wrapping now permitted, so it will take two lines; whether that unbalances the rows is a browser check. Also unverified: that a presenter holding only SO Demo Admins can now actually press the buttons — the grant is confirmed by readback, the click belongs on the GATE D pass.
+
+*Promotion checkpoint* — current through this entry.
+- **NEW, STAGED (gate 1):** *a null default inside a formatter is a fabricated value, not a fallback* — `format(index(row, field, 0))` renders a real-looking 0 where the honest answer is "unreadable". Each half is defensible alone; composed, they manufacture data. Measured here on a money column across a security boundary. **Trigger: the next `a!defaultValue` / `index(..., 0)` found inside a formatter or an aggregate.**
+- **Application pointer, not a new rule:** this is the concrete instance of CLAUDE.md §4's "nothing distinguishes absent from invisible unless the screen says so". The rule existed; the screen was not obeying it.
+- **Process-instance blindness reinforced:** closing the parked-instances item required Scott's word precisely because a session cannot see instance state. Still staged.
+- Unchanged: grouping-not-named-in-output; guard-vs-grouping; NULL-timestamp (promoted 2026-09-23); fixture-vs-process-rows; unused-locals; agent-boolean; NTZ-as-UTC; chart-type.

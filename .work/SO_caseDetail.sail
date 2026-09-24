@@ -639,19 +639,59 @@ a!localVariables(
                         ),
                         linkStyle: "STANDALONE",
                         size: "STANDARD", color: "#2E5A88"))),
+                    /* THE CARD SAYS WHAT IT CANNOT SEE, RATHER THAN SHOWING A
+                       BLANK AND A ZERO — fixed 2026-09-24, cause measured.
+                       Date, trade id and fail reason come from SO Settlement
+                       History, which is NOT desk-secured, so every viewer sees
+                       them. Instrument and value come through the TRADE, which
+                       IS desk-secured — and a counterparty's fails are spread
+                       across desks by nature. So an analyst reading a broker's
+                       history legitimately cannot read most of these trades.
+                       MEASURED on the same case, same five rows, two identities:
+                       sam.supervisor saw "ALV GY / 2.7M EUR" where alex.analyst
+                       saw "— / 0". The dash was survivable; the ZERO was not —
+                       it is a fabricated number in a value column, and a reader
+                       has no way to tell it from a real zero. Nothing
+                       distinguishes absent from invisible unless the screen says
+                       so (CLAUDE.md §4), so now it says so.
+                       FORM CHOSEN, and why it is this one rather than a count
+                       line: for an analyst EVERY row here is usually
+                       out-of-desk, so collapsing them into "5 fails you cannot
+                       see" would throw away the dates and reasons she CAN see —
+                       and the reason mix is the card's entire argument, the
+                       thing the summary line beneath it computes. Per-row
+                       labelling keeps the argument intact and hides only the two
+                       cells that are genuinely unreadable.
+                       preventWrapping is dropped on this cell alone: the phrase
+                       is longer than a ticker and truncating it would defeat the
+                       point of saying it. */
                     a!gridColumn(label: "Instrument", width: "NARROW", value: a!richTextDisplayField(
-                      labelPosition: "COLLAPSED", preventWrapping: true,
-                      value: a!richTextItem(text: a!defaultValue(index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.relationships.{2cbb6339-86b2-4618-8f47-59aa1081075e}instrument.fields.{8efffa50-ca97-41a1-94e7-301837f8f02f}ticker', ""), "—"), size: "STANDARD", color: "#1B2330", style: "STRONG"))),
+                      labelPosition: "COLLAPSED",
+                      value: if(
+                        and(a!isNullOrEmpty(index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.relationships.{2cbb6339-86b2-4618-8f47-59aa1081075e}instrument.fields.{8efffa50-ca97-41a1-94e7-301837f8f02f}ticker', null)), a!isNullOrEmpty(index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional', null))),
+                        a!richTextItem(text: "outside your desk view", size: "SMALL", color: "#6E7885"),
+                        a!richTextItem(text: a!defaultValue(index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.relationships.{2cbb6339-86b2-4618-8f47-59aa1081075e}instrument.fields.{8efffa50-ca97-41a1-94e7-301837f8f02f}ticker', ""), "—"), size: "STANDARD", color: "#1B2330", style: "STRONG")
+                      ))),
                     a!gridColumn(label: "Reason", width: "AUTO", value: a!richTextDisplayField(
                       labelPosition: "COLLAPSED",
                       value: a!richTextItem(
                         text: index(rule!SO_failReasonDisplay(failReason: index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.fields.{1174e91d-5fbc-4c99-bbeb-3d0b34db64f9}failReason', ""), short: false), "label", "—"),
                         size: "STANDARD", color: "#454F5C"))),
+                    /* NEVER A FABRICATED ZERO. The old form defaulted a null
+                       notional to 0 and then FORMATTED it, so an unreadable
+                       trade rendered as a real-looking "0" in a money column.
+                       A value the viewer cannot read is an em dash — the null
+                       convention already used across these screens — and the
+                       instrument cell beside it says why. */
                     a!gridColumn(label: "Value", width: "NARROW", align: "END", value: a!richTextDisplayField(
                       labelPosition: "COLLAPSED", align: "RIGHT", preventWrapping: true,
-                      value: a!richTextItem(
-                        text: rule!SO_fmtMoney(amount: index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional', 0), currency: index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.fields.{c5b04fca-3b01-4e51-8e23-5b1ddff6376e}currency', ""), compact: true),
-                        size: "STANDARD", color: "#1B2330")))
+                      value: if(
+                        a!isNullOrEmpty(index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional', null)),
+                        a!richTextItem(text: "—", size: "STANDARD", color: "#6E7885"),
+                        a!richTextItem(
+                          text: rule!SO_fmtMoney(amount: index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional', 0), currency: index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.fields.{c5b04fca-3b01-4e51-8e23-5b1ddff6376e}currency', ""), compact: true),
+                          size: "STANDARD", color: "#1B2330")
+                      )))
                   }
                 ),
                 /* The line that makes the table an ARGUMENT rather than a list:

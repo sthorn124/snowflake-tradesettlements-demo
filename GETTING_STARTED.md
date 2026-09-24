@@ -100,6 +100,12 @@ k. **Fill in the Build parameters, then start Phase 0.**
    - Then read the rest of this manual and start Phase 0 (§3).
    - `Closeout.md` is not in the template. It appears after your first session's close-out, and from then on the Project reads it at the start of every conversation.
 
+### The demo presenter's own account
+
+A person who is going to run the demo needs to be in **two** groups, and missing either one fails in a way that looks like a broken build rather than a permissions gap. They must be in **SO Demo Admins**, or the Demo Admin site's Load and Reset buttons cannot start their process models and the console reports "could not start". They must also be in **SO Supervisors**, or intake reads a desk-scoped set of predictions and silently creates cases for that one desk only.
+
+*(Build-specific note in a template-owned file — see the 2026-09-24 close-out. The durable home for it is the project's own `CLAUDE.md`; it is written here because the setup instructions are what a new presenter actually reads.)*
+
 ### Persona sail logins — step by step
 
 Do this once per persona, after the build's persona accounts exist and before the first build prompt that ends with persona-scoped sail steps.
