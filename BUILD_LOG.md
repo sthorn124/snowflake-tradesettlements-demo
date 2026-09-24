@@ -3500,3 +3500,56 @@ CLAUDE.md:266 "Reset/Verify and Admin page are **Demo Admins only**" and CLAUDE.
 - **NEW, STAGED (gate 1):** *a page-level visibility expression and the site object's security role map are different gates, and satisfying one does not satisfy the other* — a site documented and built as "gated to group X" was unopenable by group X for fifteen days because the page gate named X while the site's viewer list never did. Verify site access by opening as a member, not by reading the page gate. **Trigger: the next site built or re-secured.**
 - No promotion from the crash itself: cause is not yet measured, so nothing has passed gate 1.
 - Unchanged: null-default-inside-a-formatter; grouping-not-named-in-output; guard-vs-grouping; NULL-timestamp (promoted); fixture-vs-process-rows; unused-locals; agent-boolean; process-instance blindness; NTZ-as-UTC; chart-type.
+
+---
+
+## 2026-09-24 — Console presenter preflight; the presenter model made consistent
+
+**Scope line.** Dev MCP as `scott.thorn` (member of `SO Supervisors` — every readback below is full-scope). Persona reads via sail as `alex.analyst` (`~/.sail-alex.analyst`) and `sam.supervisor` (`~/.sail-sam.supervisor`), both live. **`test.presenter` has no sail session in any `~/.sail-*` directory**, so nothing in this entry was observed as that account. Environment at clean baseline: no packet loaded, 17 P4-VERIFY fixture cases present and re-dated (evidenced by live cutoffs `0h 32m` / `1h 47m` and a non-zero critical-window KPI on the rendered watchlist).
+
+### What changed, by object
+
+**`SO_demoAdminConsole` — v11 → v12** (`_a-0000f057-1da8-8000-9c4b-011c48011c48_564828`).
+
+1. **Presenter preflight.** `local!isPresenter: a!isUserMemberOfGroup(username: loggedInUser(), groups: cons!SO_SUPERVISORS_GROUP)` is now the first evaluated expression in the interface. On false, the whole console body is replaced by a single instruction card; on true, the console renders exactly as v11.
+2. **The twenty query locals moved inside a nested `a!localVariables` in the `if`'s true branch.** This is the mechanism, not a style choice — see the ruling below.
+3. **Line-232 guard.** `local!agentLast` now returns `null` when `local!agentEvents` is empty and when `wherecontains` finds nothing, instead of indexing a result it had not tested.
+4. **No new constant.** `cons!SO_SUPERVISORS_GROUP` (`_a-0001f054-7a62-8000-9c49-011c48011c48_562328`) already existed and already gates the Supervisor site page; reusing it keeps one definition of "can read the demo data".
+
+**Documents:** `CLAUDE.md` (:266 reworded, :405 gained a clarifying sub-bullet), `TODO.md` (two items closed), `GETTING_STARTED.md` (:105 corrected — its stated failure mode was not the measured one), `BUILD_PLAN.md` (:10 corrected, Phase 5 bullet added). Full before/after in `Closeout.md` (d).
+
+**No security change, no membership change, no process model, nothing Snowflake-side.**
+
+### Decisions and why
+
+- **A `showWhen` would not have satisfied the requirement.** The brief required that **zero record queries evaluate** for a misconfigured viewer. `showWhen` hides output and still evaluates everything behind it, so a scope-starved viewer would still issue all twenty queries and still crash — the exact failure the preflight exists to prevent. Declaring the locals inside the branch is what makes non-evaluation true rather than merely invisible.
+- **Amber (`#96590A`), not red, on the card.** This is a state with exactly one fix; red on this screen is reserved for a broken environment, and a console that paints a fixable config gap the same colour as a broken environment teaches its reader to ignore red — the same three-state argument already in CLAUDE.md for the checklist.
+- **The signed-in line is kept on the card** although nothing else survives: "this account" is ambiguous without it, and the reader needs to know **which** login is short a group.
+- **The guard was applied although the preflight makes it unreachable in the measured failure.** Defence in depth at the cost of one `if()`, per the staged null-default rule.
+
+### Verified (how, with counts and scope)
+
+- **`validateDesignObject` → `hasErrors: false`**; readback after save **byte-identical** to what was sent; version **12**.
+- **Configured branch, design account, clean data state:** full console, unchanged, `error: null`, **durationMs 613**.
+- **Misconfigured branch:** exercised through throwaway `SO_zzPreflightProbe` with `local!isPresenter: false` forced (the design account is a supervisor and cannot otherwise reach the branch). Rendered **the card and nothing else** — no verdict, no checklist, no buttons — `error: null`, **durationMs 19**. Probe deleted same session, **verified by absence (HTTP 404)**.
+- **THE 19 ms IS THE MEASUREMENT, NOT A FOOTNOTE.** Twenty queries — nine one-row reachability probes plus COUNT aggregations over 50,000-row Snowflake tables — cannot execute in 19 ms; the same screen doing exactly that takes 613 ms. The ~32× gap is the evidence that the query locals in the untaken branch did not evaluate. Structure alone would not have shown this, and a `showWhen` build would have rendered the same card at ~613 ms — which is precisely why the duration was taken as the proof rather than the render.
+- **Page gate intact, both personas:** `pages settlement-ops-admin` as `alex.analyst` and as `sam.supervisor` both return *"the site resolved (\"Settlement Ops — Demo Admin\") but no pages are visible"* — zero pages. Their own site unchanged: analyst 2 pages, supervisor 3. Both screens rendered clean as each persona.
+- **`sam.supervisor` would PASS the new preflight and is still correctly excluded — by the page gate.** The two gates are independent and both load-bearing; this is the behavioural confirmation of the two-membership model rather than merely a pass.
+- **Site security read back** (`getObjectSecurity` on `14c4f1a3-…`): administrator `SO Administrators`; viewer `SO Users`, `SO Supervisors`, `SO Analysts`, **`SO Demo Admins`** (`_e-0000f057-1d8f-…_5425`). Page `Admin` gate: `a!isUserMemberOfGroup(username: loggedInUser(), groups: cons!SO_DEMO_ADMINS_GROUP)` — keyword `groups`, not the silently-false `groupsToCheck`.
+
+### The build-time gap, named
+
+**Scott's manual addition of `SO Demo Admins` to the site's viewer list is the correct, permanent state** — now read back rather than remembered. The 2026-09-09 build recorded the **page** gate and never checked the **site** grant; they are two different layers and only one was verified. Without the site grant a Demo-Admins-only account cannot resolve the site at all; with it, the account resolves the site and the page expression decides entry. Both sides are now measured. The general shape of the miss is worth keeping: **a gate recorded at one layer invites the assumption that the layer beneath it was checked too.**
+
+### Not verified (and why)
+
+- **The instruction card as `test.presenter`** — no sail session exists for that account. Reported per §2 step 9, no fallback identity, no password handling. Scott's hand-off step 1.
+- **The configured branch in the loaded data state** — loading a packet is a data change beyond the brief's scope, and the Load click is Scott's. The structural argument (no expression inside the branch changed; readback byte-identical) is reasoning, not a render, and is recorded as unverified rather than folded into the pass.
+- **Task 0's platform question — does a record query under an account with no viewer right THROW or return EMPTY?** Unrun for want of a session; staged with its trigger. The fix does not depend on it: the preflight prevents the query from being issued under either answer.
+
+### Promotion candidates (staging)
+
+- **STAGED (gate 1 — one observation): a `showWhen` hides output; only nesting the declaration prevents evaluation.** Trap: gating a query-heavy region with `showWhen` leaves every local behind it evaluating. Working form: make the guarded content the value of an `if` branch and declare its locals in a nested `a!localVariables` inside that branch; **verify by render duration, not by structure** — the two builds are indistinguishable in the component tree. Survives the noun test. *Trigger: the next interface that gates a query-heavy region on identity or state.*
+- **STAGED, carried unchanged: does a record query under an account with no viewer right THROW or return EMPTY?** *Trigger: the first session in which an account holding no viewer right on a record type has a live sail session.*
+
+**Promotion checkpoint: current through this entry (2026-09-24, presenter preflight).**
