@@ -3290,3 +3290,39 @@ Filter row removed (v5 has none, and the partitioned list earns it less) · scor
 - **NEW, STAGED (gate 1):** *a fixture set and a process-written set can differ in which system-managed fields are populated, so a screen verified against fixtures is not verified against production rows.* **Trigger: the next build carrying both hand-authored fixtures and process-created rows in one table.**
 - **Second observation, same direction:** unused locals block a save — `HTTP 400 — Unused Local Variables at line: 62 — local!actionStatuses`. Still staged pending a deliberate re-test rather than a third accident.
 - Unchanged: the agent-boolean method note; Dev MCP process-instance blindness; NTZ-as-UTC; chart-type.
+
+## 2026-09-24 — PERSONA VERIFICATION of the v5 watchlist (sail), and the supervisor defect confirmed as a real user
+
+*Scope:* design work unchanged from the 09-23 entry — **no object was edited in this round.** Dev MCP as `scott.thorn` for the load/reset and the console readback; **sail as `alex.analyst` and `sam.supervisor`**, each from its own data directory, for every persona observation. Scott logged both personas in between the rounds, which is what made this possible; the 09-23 entry recorded them as absent and routed these checks to the browser.
+
+*Ritual re-run.* The date rolled over mid-session, so `p4-verify-redate.py` was run again and all three CSVs re-applied before anything rendered — the 09-23 offsets were a day stale and would have shown a book entirely past cutoff.
+
+### Both sessions live, and two owed browser checks closed from the terminal
+- `sail pages settlement-ops` — **`alex.analyst` sees 2 pages** (Watchlist, Cases); **`sam.supervisor` sees 3** (Watchlist, Cases, Supervisor). The Supervisor tab is not merely hidden from the analyst; it is absent from their page list. Closes the gate-C item.
+- The supervisor source line reads exactly `house view across 5 desks · 17 cases in scope`. Closes the other gate-C item.
+
+### The desk-scoping design proved itself
+The batch band anchored on **SO Trade** rather than SO Trade Predictions — chosen because record-level security lives on the Trade — renders **`15 trades`** to the full-scope design account and **`8 trades on your desk`** to `alex.analyst`. That is the Task 0 desk mix (8 EQ_FLOW of 15) appearing on the screen with no desk filter anywhere in the interface. The chips sum to the trade count **at both scopes**: 12+1+1+1 = 15, and 5+1+1+1 = 8.
+
+### Persona results, `alex.analyst`
+- **No demo:** open `10` / `8 need action · 2 escalated`; NEEDS YOUR ACTION (8) showing 4 with `showing 4 nearest cutoffs   View all 8`; ESCALATED (2); **band absent, CLEARED absent**; straight-through `—  no scoring batch on your desk`.
+- **Demo loaded:** open `12` / `9 need action · 3 escalated`; band `Latest scoring batch  09:57 today  ·  8 trades on your desk`; chips `5 cleared by Snowflake / 1 agent-resolved / 1 needs review / 1 escalated`; straight-through `6` · `6 of 8 in latest batch · no analyst touch`; hero row handle `☐ TRD9DEMO01  09:57` (**the batch tag renders on the trade id**); escalated row `TRD9DEMO02  09:57` with `Window breached  confirm lag 26.0h · 2.4h to cutoff`; cleared section **collapsed** as `[Show the 6 cleared trades]` with the split `5 cleared by Snowflake scoring · 1 resolved by the agent · 6 of 8 without analyst touch`; the two verbs distinct — `Agent resolved · score 88  Settled - Corrected` against five `Cleared by Snowflake scoring  no case needed`; only the agent-resolved row carries a `⤴` record link.
+
+### Three things sail verified that no render tree could
+1. **The view-all toggle was CLICKED, not inspected.** `View all 8` took the grid from `showing 1-4 of 4` to `showing 1-8 of 8` and flipped the footer to `showing all 8 / Show nearest 4`. The prompt's check — "KPI open count equals the sum of rows reachable through the queues' view-all" — is now exercised: 8 reachable + 2 escalated = the KPI's 10.
+2. **`selectable: false` is positively confirmed.** sail marks the escalated and cleared grids `[READONLY]` and lists **no row handles** for either, while the needs-action grid exposes one checkbox handle per row. A render tree shows the parameter; this shows the consequence.
+3. **The rail binds as the persona**, twice — on a standing case (`TRD026800`: *"Does not fit the window — confirmation takes 10.2h against only 2.6h remaining"*, score 68/80, `Assign`) and on the hero (`TRD9DEMO01`: SAP GY, 18.7M EUR, 83% Critical, *"Fits the window … completing about 1.9h before cutoff"*, score 62/80, `SO Triage Agent · 09:58`, `Open case →`). The Act 1 beat is verified end to end at real-user scope.
+
+### 🔴 THE SUPERVISOR DEFECT IS WORSE AS A REAL USER THAN THE DESIGN ACCOUNT SUGGESTED
+The 09-23 entry recorded `testInterface` erroring with a demo loaded. As the persona it is an **HTTP 500 page**: `sail load settlement-ops Supervisor` returns `{"error":"APNX-1-4198-000","title":"Error Evaluating UI Expression"}` with the same line-351 text. After Reset the same command loads the full house view cleanly. **Control holds at both scopes, one variable.** A supervisor clicking their own tab mid-demo gets an error page, not a degraded screen. Unchanged verdict: one-line fix on line 351, **not applied** (brief says supervisor screens stay untouched), **ruling wanted, blocks Part C.**
+
+### Also noted
+- The agent scored **0.88** on this run against **0.90** on 09-23 for the same story. Non-deterministic, both above the 0.80 gate, both straight-through. Expected; recorded so a future session does not read it as drift.
+- The hero-on-the-fold flag is **confirmed at persona scope**: with the demo loaded `alex.analyst` sees 9 needing action and the hero is the **4th and last visible row**. Ruling still wanted.
+
+### Verified / not verified
+Everything above was read as the named persona and is stated with its account. **Not verified:** all geometry and paint (sail carries style values and requested widths, never pixels) — that is now the entire browser script; the cleared section's expand interaction (its collapsed state and its rows are verified, the click is not); and the console buttons, which neither persona can reach, since SO Demo Admins sits outside the SO Users tree.
+
+*Environment restored:* 0 demo trades · 0 demo cases · 17 built-in · 12 comments · 14 audit rows, read back from the console. Reset button `disabled: true`.
+
+*Promotion checkpoint* — current through this entry. No new candidates this round; the 09-23 promotion and staging stand unchanged.
