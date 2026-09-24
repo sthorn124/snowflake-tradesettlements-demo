@@ -1,3 +1,21 @@
+<!--
+  SUPERSEDED 2026-09-24 — the built SO_supervisorCommand is the authority for this screen.
+
+  This file was the structural authority while the supervisor screen was being built.
+  That screen is built, gated (gate C) and verified, so authority transferred to the
+  deployed object; this file is now a historical design artifact and is NOT maintained.
+
+  Known divergences, recorded rather than fixed (CLAUDE.md, Working style: a mockup is
+  not regenerated to match the build):
+    - Layout. The build was reorganised by ruling into wide-left / rail-right. This DOM
+      still puts the trend chart beside the runway and the reason/queue cards inside the
+      left column. Do not restore that shape from here.
+    - Figures the build could not carry: the runway's "on track" band, the day-over-day
+      comparisons.
+
+  Read the deployed SO_supervisorCommand for what this screen IS. Read this only for what
+  it was once meant to be.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>

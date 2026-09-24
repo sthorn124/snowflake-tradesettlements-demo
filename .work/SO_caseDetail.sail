@@ -428,7 +428,33 @@ a!localVariables(
                 a!columnsLayout(columns: {
                   a!columnLayout(contents: rule!SO_railFact(key: "ISIN", val: a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{2cbb6339-86b2-4618-8f47-59aa1081075e}instrument.fields.{81083946-31a9-4e4f-9ff0-3a0ad8881a02}isin', ""), "—"), warn: false, sub: "", showWhen: true)),
                   a!columnLayout(contents: rule!SO_railFact(key: "Settles at", val: a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{2cbb6339-86b2-4618-8f47-59aa1081075e}instrument.fields.{1e559342-6615-482d-b8d9-6da82605fbc9}csd', ""), "—"), warn: false, sub: "", showWhen: true)),
-                  a!columnLayout(contents: a!richTextDisplayField(
+                  a!columnLayout(contents: a!localVariables(
+                    local!isMatched: index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{215fda37-6b90-4fe8-9e52-6018dbb2ef52}isMatched', false),
+                    local!matchedAt: index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{919f547f-434d-463c-a702-cecc8662376b}matchedAt', null),
+                    /* ============ THE MATCHED-TIME GATE — OPENED 2026-09-24 ============
+                       The 2026-09-09 ruling withheld this stamp because matchedAt is
+                       Snowflake BASELINE: never re-dated by a demo run, so beside a
+                       cutoff-derived settlement date it renders a year-old timestamp and
+                       asserts a contradiction the screen cannot resolve. The ruling also
+                       named the condition that would open the gate, and it is NOT "the
+                       field is populated" — it is "a stamp exists that was AUTHORED ON
+                       THIS CLOCK". Phase 5 packet trades author MATCHED_AT on their
+                       relative-to-now trade date, so that condition is now satisfiable.
+                       WHY A RECENCY TEST AND NOT A NULL TEST: measured 2026-09-24, every
+                       row on this instance has isMatched = Y, so PRESENCE DISCRIMINATES
+                       NOTHING. The seventeen fixture cases carry baseline stamps spanning
+                       2023-01-10 to 2025-05-02; the three packet cases carry 2026-09-23.
+                       Recency is the only signal that separates them, and the margin is
+                       enormous in both directions — ~16 months to the nearest baseline
+                       stamp, ~1 day to the packet ones — so a 7-day window cannot be
+                       tripped by baseline data and cannot miss a packet, including a
+                       packet left loaded for several days. */
+                    local!stampOnThisClock: and(
+                      not(a!isNullOrEmpty(local!matchedAt)),
+                      todate(local!matchedAt) >= today() - 7,
+                      todate(local!matchedAt) <= today()
+                    ),
+                    a!richTextDisplayField(
                     labelPosition: "COLLAPSED", marginBelow: "STANDARD",
                     value: {
                       a!richTextItem(text: "Matched", color: "#6E7885", size: "SMALL"),
@@ -437,23 +463,37 @@ a!localVariables(
                          an unmatched trade this close to cutoff is a second
                          problem on top of the predicted fail. */
                       a!richTextItem(
-                        text: if(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{215fda37-6b90-4fe8-9e52-6018dbb2ef52}isMatched', false), "Yes", "No"),
-                        color: if(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{215fda37-6b90-4fe8-9e52-6018dbb2ef52}isMatched', false), "#17715B", "#B3261E"),
+                        text: if(local!isMatched, "Yes", "No"),
+                        color: if(local!isMatched, "#17715B", "#B3261E"),
                         style: "STRONG", size: "STANDARD"
                       ),
-                      /* THE MATCHED TIME IS WITHHELD, not missing. matchedAt is
-                         Snowflake baseline and cannot be re-dated, so beside a
-                         derived settlement date it renders a stamp from another
-                         year — the same contradiction the Settles ruling
-                         removed. The STATE is the decision-relevant part and it
-                         is shown; the stamp waits on the same ruling. */
+                      /* THE STAMP CARRIES ITS DAY WHENEVER IT IS NOT TODAY'S, and that
+                         is the whole point rather than a detail. A packet trade matches
+                         on its TRADE date and settles on the NEXT one, so the honest
+                         stamp is usually yesterday's; rendering a bare "14:12" beside a
+                         cutoff of today would assert that it matched this morning — a
+                         fresh instance of exactly the contradiction the 2026-09-09
+                         ruling removed. "d mmm hh:mm" is the mask already in service
+                         elsewhere in this build, so it is known to render here. */
                       a!richTextItem(
-                        showWhen: not(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{215fda37-6b90-4fe8-9e52-6018dbb2ef52}isMatched', false)),
+                        showWhen: and(local!isMatched, local!stampOnThisClock),
+                        text: "  ·  " & if(
+                          todate(local!matchedAt) = today(),
+                          text(local!matchedAt, "hh:mm"),
+                          text(local!matchedAt, "d mmm hh:mm")
+                        ),
+                        color: "#454F5C", size: "SMALL"
+                      ),
+                      /* STILL WITHHELD on baseline and fixture rows. The state is the
+                         decision-relevant half and is always shown; the stamp appears
+                         only where it can be supported. */
+                      a!richTextItem(
+                        showWhen: not(local!isMatched),
                         text: "  ·  unmatched this close to cutoff",
                         color: "#B3261E", size: "SMALL"
                       )
                     }
-                  )),
+                  ))),
                   /* THE INSTRUMENT NAME/TICKER LINE IS GONE FROM HERE — the
                      title row owns identity and repeating it inside a
                      settlement panel is noise. ASSET CLASS STAYS, because it is
@@ -614,12 +654,34 @@ a!localVariables(
                   spacing: "DENSE",
                   borderStyle: "LIGHT",
                   shadeAlternateRows: false,
+                  /* ============ COLUMN WIDTHS — REBALANCED 2026-09-24 ============
+                     Scott's browser finding: the out-of-desk label wrapped to three
+                     lines, the Instrument HEADER itself wrapped, and Value hoarded
+                     width. All five columns are now RELATIVE, for two documented
+                     reasons. (1) "AUTO" on a grid column does NOT absorb slack — it
+                     sizes to "the length of the longest unbroken value in that
+                     column", so Reason at AUTO was sized by "Insufficient" while the
+                     NARROW columns beside it were free to starve. (2) The docs say
+                     to AVOID mixing AUTO with weighted widths, so going relative
+                     means going relative everywhere. NARROW was the other half of
+                     the fault: it has NO minimum width, and a fixed column is only
+                     ever "at least as wide as the longest word" — and in the
+                     Instrument column the longest word was the HEADER, at ten
+                     unbroken characters.
+                     Budget, from the longest unbroken token each column must seat:
+                     Date "Sat 5 Jul" (3) · Trade "TRD026800" (9) · Instrument header
+                     "Instrument" (10) · Reason "Insufficient" (12) · Value "8.3M"
+                     (4). 2X/2X/3X/4X/2X of 13X gives Reason the most and no column
+                     less than ~15%.
+                     GEOMETRY IS NOT VERIFIABLE FROM A SESSION (CLAUDE.md §4): what
+                     is verified here is the width VALUES in the render tree. One
+                     line per column at laptop width is a browser check. */
                   columns: {
                     /* "Date", not "Settled". The card is headed RECENT
                        SETTLEMENT FAILS and every row in it is a fail, so a
                        column called Settled invites the reading that these
                        ones settled. */
-                    a!gridColumn(label: "Date", width: "NARROW", value: a!richTextDisplayField(
+                    a!gridColumn(label: "Date", width: "2X", value: a!richTextDisplayField(
                       labelPosition: "COLLAPSED", preventWrapping: true,
                       value: a!richTextItem(text: rule!SO_fmtDayDate(value: index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.fields.{73e751ad-433c-4555-994e-266d8aac867a}actualSettlementDate', null)), size: "STANDARD", color: "#1B2330"))),
                     /* EACH TRADE REF IS A RECORD LINK to SO Trade. NOTE THE
@@ -628,7 +690,7 @@ a!localVariables(
                        counterparty booked on another desk opens as "no access"
                        for alex.analyst. That is row security working, and the
                        link existing is what was asked for. */
-                    a!gridColumn(label: "Trade", width: "NARROW", value: a!richTextDisplayField(
+                    a!gridColumn(label: "Trade", width: "2X", value: a!richTextDisplayField(
                       labelPosition: "COLLAPSED", preventWrapping: true,
                       value: a!richTextItem(
                         text: index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.fields.{bad6863a-6fd2-40f3-a5ea-b41f50235249}tradeId', ""),
@@ -662,17 +724,26 @@ a!localVariables(
                        thing the summary line beneath it computes. Per-row
                        labelling keeps the argument intact and hides only the two
                        cells that are genuinely unreadable.
-                       preventWrapping is dropped on this cell alone: the phrase
-                       is longer than a ticker and truncating it would defeat the
-                       point of saying it. */
-                    a!gridColumn(label: "Instrument", width: "NARROW", value: a!richTextDisplayField(
+                       preventWrapping stays OFF on this cell. The phrase is short
+                       now, so it no longer needs the room — but truncation hides
+                       content where wrapping only reflows it, and this is the one
+                       cell whose whole job is to say something the reader cannot
+                       otherwise know.
+                       LABEL SHORTENED to "Other desk" 2026-09-24 (Scott, browser):
+                       "outside your desk view" wrapped to THREE lines in a NARROW
+                       column. The explanation it carried did not just disappear with
+                       it — it moved into the card's summary line below, which now
+                       names the hidden rows explicitly when there are any. A terse
+                       in-cell label is only honest while something else carries the
+                       full framing. */
+                    a!gridColumn(label: "Instrument", width: "3X", value: a!richTextDisplayField(
                       labelPosition: "COLLAPSED",
                       value: if(
                         and(a!isNullOrEmpty(index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.relationships.{2cbb6339-86b2-4618-8f47-59aa1081075e}instrument.fields.{8efffa50-ca97-41a1-94e7-301837f8f02f}ticker', null)), a!isNullOrEmpty(index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional', null))),
-                        a!richTextItem(text: "outside your desk view", size: "SMALL", color: "#6E7885"),
+                        a!richTextItem(text: "Other desk", size: "SMALL", color: "#6E7885"),
                         a!richTextItem(text: a!defaultValue(index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.relationships.{2cbb6339-86b2-4618-8f47-59aa1081075e}instrument.fields.{8efffa50-ca97-41a1-94e7-301837f8f02f}ticker', ""), "—"), size: "STANDARD", color: "#1B2330", style: "STRONG")
                       ))),
-                    a!gridColumn(label: "Reason", width: "AUTO", value: a!richTextDisplayField(
+                    a!gridColumn(label: "Reason", width: "4X", value: a!richTextDisplayField(
                       labelPosition: "COLLAPSED",
                       value: a!richTextItem(
                         text: index(rule!SO_failReasonDisplay(failReason: index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.fields.{1174e91d-5fbc-4c99-bbeb-3d0b34db64f9}failReason', ""), short: false), "label", "—"),
@@ -683,7 +754,7 @@ a!localVariables(
                        A value the viewer cannot read is an em dash — the null
                        convention already used across these screens — and the
                        instrument cell beside it says why. */
-                    a!gridColumn(label: "Value", width: "NARROW", align: "END", value: a!richTextDisplayField(
+                    a!gridColumn(label: "Value", width: "2X", align: "END", value: a!richTextDisplayField(
                       labelPosition: "COLLAPSED", align: "RIGHT", preventWrapping: true,
                       value: if(
                         a!isNullOrEmpty(index(fv!row, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional', null)),
@@ -704,6 +775,19 @@ a!localVariables(
                       items: local!recentFails,
                       expression: if(index(fv!item, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.fields.{1174e91d-5fbc-4c99-bbeb-3d0b34db64f9}failReason', "") = index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{61aca3bf-502f-41af-8996-e91de5d1b8ad}failReason', ""), 1, 0)
                     )),
+                    /* THE HIDDEN-ROW COUNT, added 2026-09-24 with the "Other desk"
+                       label. The in-cell phrase used to be self-explanatory
+                       ("outside your desk view"); shortening it for width would have
+                       left the card terse ABOUT THE ONE THING IT EXISTS TO BE EXPLICIT
+                       ABOUT — that nothing distinguishes absent from invisible unless
+                       the screen says so (CLAUDE.md §4). The framing moved here rather
+                       than disappearing. Counted with the SAME test the Instrument cell
+                       uses, so the number always equals the number of "Other desk"
+                       labels the reader can see. */
+                    local!hidden: sum(a!forEach(
+                      items: local!recentFails,
+                      expression: if(and(a!isNullOrEmpty(index(fv!item, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.relationships.{2cbb6339-86b2-4618-8f47-59aa1081075e}instrument.fields.{8efffa50-ca97-41a1-94e7-301837f8f02f}ticker', null)), a!isNullOrEmpty(index(fv!item, 'recordType!{c80aeca9-1f81-4f12-864e-1a9723566d33}SO Settlement History.relationships.{68a4ae92-1d2c-4dc1-8943-5dfcb1875738}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional', null))), 1, 0)
+                    )),
                     {
                       a!richTextItem(text: count(local!recentFails) & " most recent · ", color: "#6E7885", size: "SMALL"),
                       a!richTextItem(
@@ -711,6 +795,13 @@ a!localVariables(
                         color: if(local!same > 0, "#B3261E", "#6E7885"), size: "SMALL", style: "STRONG"),
                       a!richTextItem(
                         text: if(local!same > 0, " — consistent with the predicted reason on this case", " — a different pattern from this case"),
+                        color: "#6E7885", size: "SMALL"),
+                      /* char(10) rides INSIDE the conditional item's text, so a case
+                         with nothing hidden gets no stray blank line. */
+                      a!richTextItem(
+                        showWhen: local!hidden > 0,
+                        text: char(10) & local!hidden & " of " & count(local!recentFails)
+                          & " are booked on other desks — their dates and reasons are shown, their instrument and value are not yours to read.",
                         color: "#6E7885", size: "SMALL")
                     }
                   )

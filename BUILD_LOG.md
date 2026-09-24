@@ -3553,3 +3553,55 @@ CLAUDE.md:266 "Reset/Verify and Admin page are **Demo Admins only**" and CLAUDE.
 - **STAGED, carried unchanged: does a record query under an account with no viewer right THROW or return EMPTY?** *Trigger: the first session in which an account holding no viewer right on a record type has a live sail session.*
 
 **Promotion checkpoint: current through this entry (2026-09-24, presenter preflight).**
+
+---
+
+## 2026-09-24 — Mockup authority ruled; Matched-time gate opened; fails-card geometry
+
+**Scope line.** Dev MCP as `scott.thorn` (`SO Supervisors`, full scope). Persona reads via sail as `alex.analyst` (`~/.sail-alex.analyst`) and `sam.supervisor` (`~/.sail-sam.supervisor`), both live; `test.presenter` also live now (3 pages on `settlement-ops`, 1 on `settlement-ops-admin` — both memberships confirmed behaviourally). Per-session ritual run: all three P4-VERIFY CSVs regenerated and applied. Preflight drift re-reported: Dev MCP and sail both **26.6.95** against the 26.6.90 pin, already logged (TODO:59/199); skill copies identical.
+
+**ENVIRONMENT WAS NOT AT CLEAN BASELINE, contrary to the brief.** The console read `Loaded now: 15 demo trades · 3 cases`, `Demo loaded 24 Sep 13:33`, agent last run 13:34 — a fully triaged packet sixteen minutes old, almost certainly the GATE D run left loaded. **No Load was run** (one was there, and it was the state Tasks 3 and 5 needed) and **no Reset was run at the end** — the brief's "reset after" assumed the session created the packet, and leaving the environment as found is the correct end state. The packet is still loaded.
+
+### What changed, by object
+
+**`SO_caseDetail` — v8 → v9** (`_a-0000f057-1da8-8000-9c4b-011c48011c48_564319`).
+
+1. **Matched-time gate opened.** `local!stampOnThisClock` = non-null AND `todate(matchedAt)` within the last 7 days inclusive of today. The stamp renders `hh:mm` when it is today's and **`d mmm hh:mm` otherwise**.
+2. **Fails-card widths** — all five columns relative: Date `2X`, Trade `2X`, Instrument `3X`, Reason `4X`, Value `2X` (was NARROW/NARROW/NARROW/AUTO/NARROW).
+3. **Out-of-desk label** `"outside your desk view"` → `"Other desk"`, muted SMALL treatment unchanged.
+4. **New `local!hidden`** in the summary line, counting rows with the same test the Instrument cell uses, and a conditional clause naming them.
+
+**Documents:** `CLAUDE.md` (mockup-authority rule added; §7 clause reconciled; grid `AUTO` rule **corrected**; three-presenter-states bullet added), `mockups/supervisor_command.html` (superseded header), `GETTING_STARTED.md` (build-specific prose → one parameterized paragraph), `TODO.md` (5 closed, 3 added, section retitled), `BUILD_PLAN.md`.
+
+### Decisions and why
+
+- **The §7 contradiction was reconciled in the same edit as the new rule.** The bullet adjacent to the new one quotes the operating core's "fix the mockup in the next mockup pass" verbatim; adding the supersession rule without naming that clause would have left `CLAUDE.md` arguing with itself on the next read.
+- **A mockup is superseded, not regenerated.** Regeneration spends a session redrawing a file nobody renders, re-asserts a claim to authority the file no longer has, and goes stale again at the next ruling. A header is cheaper and durable.
+- **THE MATCHED GATE IS RECENCY, NOT PRESENCE, AND THE DATA FORCED IT.** Measured over all twenty cases at `NOW=2026-09-24 13:53`: **every row reads `isMatched = Y`**. Fixture (baseline) stamps span `2023-01-10`–`2025-05-02`; packet stamps read `2026-09-23 14:05/14:12/14:37`. A null test would have fired on all twenty. The margin — ~16 months to the nearest baseline stamp, ~1 day to the packet ones — is what makes a 7-day window safe at both ends, including a packet left loaded for several days.
+- **THE STAMP CARRIES ITS DAY WHENEVER IT IS NOT TODAY'S.** A packet trade matches on its **trade** date and settles the **next**, so the honest stamp is usually yesterday's; a bare `"· 14:12"` beside today's cutoff would have asserted it matched this morning — **a fresh instance of the contradiction the 2026-09-09 ruling removed.** The mask `d mmm hh:mm` was taken from a working example already in this build rather than guessed, because Appian's `mm` is ambiguous between month and minute.
+- **THE BRIEF'S BASIS FOR SHORTENING THE LABEL WAS FALSE, AND THE FRAMING WAS MOVED RATHER THAN DROPPED.** The brief said the summary line "continues to carry the full framing". It did not — it read only the reason-mix sentence. Shortening `"outside your desk view"` to `"Other desk"` on that basis would have quietly undone the 2026-09-24 display-honesty fix, whose premise is that nothing distinguishes absent from invisible unless the screen says so (§4). A conditional clause now names the hidden rows.
+- **`AUTO` WAS THE FAULT, AND `CLAUDE.md` HAD IT BACKWARDS.** docs-search: an `AUTO` grid column's width is *"determined by the length of the longest unbroken value in that column"* — it sizes to its own content and does **not** absorb slack (that is `ICON` + `AUTO`), and the docs say to **avoid mixing `AUTO` with weighted widths**. Combined with `NARROW` having **no minimum width**, `Reason` at AUTO was sized by "Insufficient" while its NARROW neighbours shrank to their longest word — which in the Instrument column was the ten-character **header**. The project file's claim that "one column — the widest, normally Instrument — takes `AUTO` and absorbs the remainder" is corrected in place, together with the real `a!gridColumn` width vocabulary (no `EXTRA_NARROW` / `WIDE_PLUS` / `EXTRA_WIDE` — those are `a!columnLayout`'s).
+
+### Verified (how, with counts and scope)
+
+- `updateInterface` accepted **v9** (authoritative object validator); readback **byte-identical**, 88,290 characters both sides; `validateDesignObject` → `hasErrors: false`.
+- **Matched gate, both paths, as `alex.analyst`:** `TRD9DEMO01` → `Matched  Yes · 23 Sep 14:12`, beside `Trade date Wed 23 Sep` and `Settles Thu 24 Sep T+1` — three mutually coherent lines. `TRD026800` (baseline) → `Matched  Yes`, stamp withheld. Same screen, same field, opposite outcomes.
+- **Fails card, hero as `alex.analyst`:** `Sun 6 Jul | TRD040796 | Other desk | Operational error | —`; summary `5 most recent · 4 of 5 on insufficient securities — consistent…` plus `5 of 5 are booked on other desks — their dates and reasons are shown, their instrument and value are not yours to read.`
+- **Row-accuracy control:** on fixture case `TRD026800` as `alex.analyst` the card is MIXED — `TRD003842 | BAS GY | Funding gap | 28.6K EUR` readable beside `TRD021939 | Other desk | — ` — and the clause reads **4 of 5**, not 5 of 5.
+- **Scope control, same case as `sam.supervisor`:** `TRD021939` renders `AAPL 4.35 12/39 … 1.9M USD`, and the hidden-row clause **disappears** (`showWhen: local!hidden > 0`, hidden = 0). The count is scope-derived, not asserted — the same two-identity control that caught the fabricated zero, passing in both directions.
+- Throwaway `SO_zzMatchedProbe` deleted, **verified by absence (HTTP 404)**.
+
+### Not verified (and why)
+
+- **Geometry.** A session cannot measure pixels (§4); the width **values** are what is verified. Browser checklist: at laptop width confirm Date/Trade/Instrument/Reason/Value each render one line, the **Instrument header no longer wraps**, and `Other desk` sits on one line.
+- **The 7-day boundary.** Proven at ~1 day and ~9 months; nothing on the instance sits near the edge, so the boundary is reasoned rather than measured.
+- **`local!hidden = 0` on a packet case** — every packet counterparty's history is out-of-desk for alex, so suppression was proven on a fixture case as supervisor instead.
+
+### Promotion candidates (staging)
+
+- **CORRECTED IN PLACE, not promoted:** the `AUTO`/`NARROW` grid-width behaviour. The supplemental already carries the `NARROW`/longest-word half; the `AUTO` half is documented behaviour that only this project's file contradicted, so the fix belongs where the error was. One home per fact.
+- **NEW, STAGED (gate 1):** *when a field is populated on every row, presence cannot gate its display — the discriminator is recency, and it is safe only across a margin you have measured.* Trap: a non-null test looks correct and fires on everything. Working form: measure both populations, pick a window with slack at both ends, record the measured margin in the comment beside it. Survives the noun test. **Trigger: the next screen that must show a value only for freshly-authored rows.**
+- **[TRIGGER DID NOT FIRE] scope-starved query — throws or returns empty?** `test.presenter` now has a live session but has **also been added to `SO Supervisors`**, so it holds viewer rights and is no longer the specimen. **Trigger restated:** any account with a live sail session holding no viewer right on a record type — which no current account does.
+- Unchanged: `showWhen`-vs-nested-locals; null-default-inside-a-formatter; grouping-not-named-in-output; guard-vs-grouping; NULL-timestamp (promoted); fixture-vs-process-rows; unused-locals; agent-boolean; process-instance blindness; NTZ-as-UTC; chart-type; page-gate-vs-site-security.
+
+**Promotion checkpoint: current through this entry (2026-09-24, mockup authority / Matched gate).**

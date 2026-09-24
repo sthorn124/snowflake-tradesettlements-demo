@@ -102,9 +102,7 @@ k. **Fill in the Build parameters, then start Phase 0.**
 
 ### The demo presenter's own account
 
-A person who is going to run the demo needs to be in **two** groups, and missing either one fails in a way that looks like a broken build rather than a permissions gap. They must be in **SO Demo Admins**, or the Demo Admin site's Load and Reset buttons cannot start their process models and the console reports "could not start". They must also be in **SO Supervisors**, which nests under SO Users and is where viewer rights on the record types come from: without it the console's readiness queries read record types the account cannot see and **the page does not render at all** (measured 2026-09-24 against a Demo-Admins-only account; the console now preflights the membership and names the missing group instead of crashing). A presenter in **SO Analysts** rather than SO Supervisors is the subtler failure — the console renders, but intake reads a desk-scoped set of predictions and silently creates cases for that one desk only.
-
-*(Build-specific note in a template-owned file — see the 2026-09-24 close-out. The durable home for it is the project's own `CLAUDE.md`; it is written here because the setup instructions are what a new presenter actually reads.)*
+A person who runs the demo is not a persona, and a build's operator tooling is normally gated to its own group. Where a build has such tooling, the presenter needs **both** the group that makes the operator site visible **and** the group that grants read access to the data that site queries — missing either one fails in a way that reads as a broken build rather than a permissions gap, and the partial-access case is the one that fails quietly. Which groups those are for this build, and what each missing membership actually does, are in its `CLAUDE.md` project sections: the **Security groups** row of the Build parameters block, and the operator-site section.
 
 ### Persona sail logins — step by step
 
