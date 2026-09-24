@@ -54,9 +54,13 @@ f. **Paste the first-launch setup prompt.** Open Claude Code with your repo fold
       If it does not, run the sail setup script for this platform from the bundle's bin/ folder (bin/setup-mac.sh, bin/setup-linux.sh, or bin/setup-windows.bat). Then confirm that `sail --help` works and report `sail --version`.
       If the script links sail into a folder that is not on my PATH, tell me which folder to add.
 
-   4. Copy skills/appian-supplemental/SKILL.md from this repo to ~/.claude/skills/appian-supplemental/SKILL.md, creating the directory if needed.
-      If an installed copy already exists and differs, show me how they differ and which is newer, and ask before overwriting it.
-      Afterwards, confirm that the two copies are byte-identical.
+   4. Install the two skills sessions load. Each goes in its own folder under ~/.claude/skills/ with SKILL.md at the top of that folder.
+      - Appian's base skill: clone https://github.com/appian/dev-mcp-skills into a temporary folder, copy its skills/appian folder to ~/.claude/skills/appian, then delete the temporary clone.
+        If ~/.claude/skills/appian already exists, compare it with the fresh copy first. If it is identical, leave it.
+        If it differs, or is an older install (a whole-repo clone with skills/appian inside it), tell me and ask before replacing it, and move the old folder aside rather than deleting it.
+      - The supplemental skill: copy skills/appian-supplemental/SKILL.md from this repo to ~/.claude/skills/appian-supplemental/SKILL.md, creating the directory if needed.
+        If an installed copy already exists and differs, show me how they differ and which is newer, and ask before overwriting it.
+        Afterwards, confirm that the two copies are byte-identical.
 
    5. If ~/Library/Application Support/Claude/claude_desktop_config.json exists, check whether it defines an MCP server named "appian". Never print the file's contents: it can hold a credential.
       If the file or the entry does not exist, do nothing and say so.
@@ -70,7 +74,7 @@ f. **Paste the first-launch setup prompt.** Open Claude Code with your repo fold
    **What this does.** Claude Code reaches Appian through MCP servers: small programs it starts itself and whose tools it can call.
    - `.mcp.json` is the list it reads at launch. It says which program to start for the Dev MCP (the bundle you unpacked, run with `uv`), which site that program signs in to, and where the documentation search lives.
    - The file stays out of git because the path and the site belong to your machine. It holds no password: the Dev MCP signs in through your browser the first time a tool needs it.
-   - The skill copy gives every session on this machine the measured platform facts. sail is the tool sessions use to check pages as a persona.
+   - The two skills give every session on this machine Appian's own guidance for the Dev MCP, plus the measured corrections to it. sail is the tool sessions use to check pages as a persona.
    - The desktop-config check exists because a second server named `appian` would quietly take the Dev MCP's place.
 
    Details are in `reference/toolchain.md` §1–§3 and §12.
