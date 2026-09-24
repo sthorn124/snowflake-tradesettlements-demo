@@ -3369,3 +3369,52 @@ All geometry and paint. Specifically: whether six rows changes the queue's visua
 - **NEW, STAGED (gate 1), method rather than platform:** *when fixing a null-formatting crash, check what the guarded value does to any grouping, aggregation or axis it feeds — the minimal guard can convert a crash into a plausible wrong answer, which is worse than the crash because nobody notices.* Measured here (the `[null, "2026-09-24"] / [100, 33]` chart). **Trigger: the next null guard added to a value feeding a chart, a group-by or a count.**
 - **The 2026-09-23 CLAUDE.md promotion had its first application and held:** knowing that process-written rows carry NULL `createdOn`/`modifiedOn` is what made this sweep targeted rather than exploratory.
 - Unchanged: fixture-vs-process-rows staged; unused-locals-block-saves; agent-boolean method note; Dev MCP process-instance blindness; NTZ-as-UTC; chart-type.
+
+## 2026-09-24 (cont.) — PHASE 5 PART C: cycle-axis ruling, then the full dress rehearsal
+
+*Scope:* Dev MCP as `scott.thorn` (SO Supervisors) for Task 0 and the process-path load/reset; **sail as `alex.analyst` and `sam.supervisor`** for every persona observation. **One object changed, in Task 0 only:** `SO_supervisorCommand` v7 → v8. Nothing changed once the rehearsal began. Two throwaways created and deleted. Environment at baseline before and after, matched line for line.
+
+### Task 0 — the trend axis moved to resolvedOn
+Every resolved fixture carries `resolvedOn` (SO-41, SO-42, SO-50, all `2026-09-24 12:45:00`) — nothing backfilled, no stop. `resolvedOn` was already in the supervisor's query `fields:` list but never carried into the row map; it is now, and **both** grouping reads moved together with their guards kept.
+
+**The claim was measured, because the screen cannot show it.** The trend card renders "1 cycle on record" under either grouping and its rate text is global rather than cycle-scoped, so a throwaway computed both keys over the same live resolved set: SO-41/42/50 keyed `2026-09-24` either way; the demo's straight-through **SO-83 keyed `''` (dropped) under modifiedOn and `2026-09-24` under resolvedOn**. `OLD: cycles=1 n-in-today=3 dropped=1` → `NEW: cycles=1 n-in-today=4 dropped=0`. Card renders `33% (1 of 3)` clean and `50% (2 of 4)` loaded. **The swap also serves the analyst lane**, unanticipated by the ruling: after the rehearsal's disposition it read `40% (2 of 5)`, the analyst-resolved case having joined the cycle because the disposition path writes `resolvedOn` too.
+
+### The rehearsal — press to settled in 88 seconds
+Press 14:42:13. Snowflake `OK run=DEMO trades=15 predictions=15 high_or_critical=3` at **+9s** (8,807 ms). Band up with 5 scored-clear and `3 awaiting intake` at +14s. Cases appear **+21s / +36s / +44s**. Triage lands story 02 → escalated at **+80s**, story 03 → agent-resolved at **+88s**. Console advertises "About 2 minutes" — accurate, slightly conservative. Second Load 8,238 ms; Reset 7,686 ms.
+
+*Instrument limit, recorded:* the chip vocabulary groups `New` with `Pending Analyst` under "needs review", so the hero's triage-completion instant is not separable from its creation instant by chip polling. The case activity log gives it: created 10:42, triaged 10:43.
+
+### What the screens said
+**Mid-flight (t+20s), verbatim:** `5 cleared by Snowflake   0 agent-resolved   1 needs review   0 escalated   2 awaiting intake` — **the chips sum to 8 during intake**, and the conditional `awaiting intake` chip did the job it was added for.
+
+**Settled, analyst:** open `12 / 9 need action · 3 escalated`; band `10:42 today · 8 trades on your desk`; chips `5/1/1/1`; `NEEDS YOUR ACTION (9)` with `showing 6 nearest cutoffs   View all 9` and **the hero 4th of 6 visible** — the fold ruling holding on live data; `CLEARED THIS BATCH (6)`; `6 of 8 without analyst touch`.
+
+**Hero case detail**, as the persona: `Auto-release: Held for review — score 65 · releases at 80`; lag `1h 08m` against cutoff `3h 02m`; Diamond Trust APAC/High/19.9%; penalty `~1.9K EUR/day`, five-day `~9.4K`; onward deliveries `None next 2 cycles — contained`; activity `Case Created 10:42` → `Agent Triage Complete 10:43`; the agent's narrative naming the 19.89% against the 9.2% average and the 13.8% materiality threshold.
+
+**NEW CAPABILITY FACT: the record header's related actions render to sail.** `Record Disposition · Assign · Escalate · Add Comment`, in the Designer order, readable and drivable as the persona. **CLAUDE.md's "status→action mapping is a browser check and only a browser check" is now out of date** — correction owed, deferred because no object could change after Task 0.
+
+**Settled, supervisor:** `20 cases in scope`, open 16, `698.4M USD eq.`, escalations 4 oldest `7h 45m`, `Straight-through today 50% / 2 of 4`, penalties `3.0K / 4 fails prevented`. Escalation queue carried story 02 with its arithmetic — `SO-85  Confirmation lag exceeds window  26.1h lag · 2.5h to cutoff — cannot complete straight-through` — beside `SO-39` (cutoff passed) and `SO-43` (credit decision required).
+
+### The analyst action, and the property it proved
+`Record Disposition → Settled - Borrow Executed` on SO-84, verified by fresh read. Hero left NEEDS YOUR ACTION (9→8), joined CLEARED (6→7); the **conditional fifth chip fired** — `5 / 1 agent-resolved / 1 analyst-resolved / 0 need review / 1 escalated`, still summing to 8; the cleared summary gained `1 resolved by an analyst`; and **`Straight-through today` stayed at `6 of 8 · no analyst touch`**. Supervisor: open 16→15, STP `50% (2 of 4)` → `40% (2 of 5)`, penalties `3.0K/4` → `5.0K/5`. **Three verbs rendered side by side** — `Analyst resolved · Settled - Borrow Executed` / `Agent resolved · score 90 · Settled - Corrected` / five `Cleared by Snowflake scoring · no case needed`. The honesty property the split was built for is now demonstrated on a live run rather than argued.
+
+### Edges
+**Double Load duplicates nothing** — identical OK message, case set unchanged (SO-84/85/86, same statuses, dispositions and `resolvedOn`, no new ids, no re-triage). **But it re-stamps the batch:** the band moved `10:42 today` → `10:47 today` while every case and chip stayed identical, because `SIMULATE_FEED` is idempotent and replaces the trades. Both statements true; the effect is a five-minute gap between "scored" and the case's own creation time that never happened. Talk-track line: **do not press Load twice mid-demo.** *Scope stated:* the logged race is "two Loads within ~1 minute finding the same `New` case"; this press was ~4 minutes later with all cases created and two resolved, so that race was **not** reproduced and is not closed.
+
+**Delete-during-triage: skipped deliberately.** Its logged spec records the behaviour as unmeasured and notes orphaned-process cancellation is still open; it defines no safe observation. Observing would risk further uncancellable `ACTIVE` instances. Stated and skipped rather than improvised.
+
+### Stopped on
+- **"ZZ-CLICK" is not defined anywhere in the repo** — grepped every `.md`, zero matches. The residual that exists is TODO:82, whose spec hands the click to a human and asks a session to *stage* a two-click verification. Not improvised. Ruling wanted.
+- **The console's was/now line was not produced** — it is composed at button-click time and `a!startProcess` in a `saveInto` is not session-invocable. Equivalent evidence recorded instead: 3 cases / 15 trades / 15 predictions → 0 / 0 / 0, comments and audit back to 12 / 14.
+
+### Defect captured, not diagnosed
+The counterparty recent-fails card on case detail renders **Instrument `—` and Value `0` on every row** for `alex.analyst`, while its own summary correctly reads "4 of 5 on insufficient securities". TODO already anticipates the likely mechanism (SO Trade is desk-secured; a counterparty's fails span desks), which would make this row security working while the display says "0" rather than "not visible" — the absent-vs-invisible trap CLAUDE.md §4 names. Cause **not confirmed**; one read as `sam.supervisor` would settle it, deliberately not done mid-rehearsal.
+
+### Verified / not verified
+Everything above read as the named account and stated with it. Task 0: `validateDesignObject` clean, readback byte-identical, `testInterface` `error: null` both states. Environment restored and matched to step 1 line for line. **Not verified:** all geometry and paint; the delete click and the was/now line (human-only by their own spec); the sub-minute double-Load race; the recent-fails cause.
+
+*Promotion checkpoint* — current through this entry.
+- **NEW, STAGED (gate 1):** *a screen's rendered text can be identical under two different groupings, so "the screen looks right" does not verify a grouping change — compute both keys over the same live set and compare.* Measured here. **Trigger: the next change to a group-by, sort key or aggregation whose rendered output does not name the key.**
+- **CORRECTION OWED to CLAUDE.md:** record-header related actions are reachable and drivable through sail; the "browser check and only a browser check" wording is superseded. Deferred to the next session that may edit objects/docs.
+- **The 2026-09-23 NULL-timestamp rule applied again and held:** SO-84 still showed blank `createdOn`/`modifiedOn` *after* the analyst's disposition write while `resolvedOn` was set — which is exactly why Task 0's swap was the right fix rather than a cosmetic one.
+- Unchanged: guard-vs-grouping method note; fixture-vs-process-rows; unused-locals; agent-boolean; process-instance blindness; NTZ-as-UTC; chart-type.

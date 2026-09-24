@@ -139,6 +139,12 @@ a!localVariables(
         confidence: index(fv!item, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{fe73bdaa-5959-4ca5-97e9-82ccf8d7ade1}confidenceScore', null),
         createdOn: index(fv!item, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{10200e99-176e-44ce-a5dc-3c5c45847da5}createdOn', null),
         modifiedOn: index(fv!item, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{4ac3036c-ab51-4940-a5d5-363e4f2a8a09}modifiedOn', null),
+        /* THE DAY IT RESOLVED, from the field that actually records it. Written
+           by the resolution write path on every lane — the agent's straight
+           through, the analyst's disposition — so unlike modifiedOn it is
+           populated on process-written rows as well as fixtures (measured on
+           all of both, 2026-09-24). This is the cycle trend's grouping key. */
+        resolvedOn: index(fv!item, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{a0a31026-e28d-4526-9c51-19b314a2fb33}resolvedOn', null),
         ageHrs: if(a!isNullOrEmpty(index(fv!item, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{10200e99-176e-44ce-a5dc-3c5c45847da5}createdOn', null)), 0.0, todecimal(index(fv!item, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{10200e99-176e-44ce-a5dc-3c5c45847da5}createdOn', null) - now()) * -24)
       )
     )
@@ -364,12 +370,18 @@ a!localVariables(
      penalties-avoided figure and in its desk's row — it is absent only from the
      by-cycle trend, which is the one place a date is the axis.
 
-     THE FIELD ITSELF IS THE STANDING QUESTION: this groups by modifiedOn as a
-     proxy for "the day it resolved", while resolvedOn is the real field and IS
-     populated on exactly these rows. Swapping it would place these cases rather
-     than exclude them. Left alone deliberately — that is a change of meaning,
-     not a null guard, and it is in TODO for a ruling. */
-  local!cycleList: a!forEach(items: local!resolved, expression: if(a!isNullOrEmpty(index(fv!item, "modifiedOn", null)), "", text(index(fv!item, "modifiedOn", null), "yyyy-mm-dd"))),
+     THE FIELD QUESTION IS RULED AND THE SWAP IS DONE (2026-09-24). This groups
+     by resolvedOn — the field that actually records the resolution — where it
+     used to group by modifiedOn as a proxy. modifiedOn comes back NULL on every
+     process-written row, so the proxy silently excluded exactly the cases a
+     demo produces; resolvedOn is written by the resolution path on both lanes
+     and was measured populated on all three fixtures and on the agent's
+     straight-through case. The guards below stay anyway: they are cheap, and
+     "resolved with no resolution date" is a state worth surviving rather than
+     crashing on if a future write path ever produces one. BOTH READS MOVED
+     TOGETHER — they are the same key computed twice, and splitting them is how
+     the original defect happened. */
+  local!cycleList: a!forEach(items: local!resolved, expression: if(a!isNullOrEmpty(index(fv!item, "resolvedOn", null)), "", text(index(fv!item, "resolvedOn", null), "yyyy-mm-dd"))),
   local!cycles: if(
     a!isNullOrEmpty(local!cycleList),
     {},
@@ -382,7 +394,7 @@ a!localVariables(
     items: local!cycles,
     expression: a!localVariables(
       local!c: fv!item,
-      local!cIdx: wherecontains(true, a!forEach(items: local!resolved, expression: if(a!isNullOrEmpty(index(fv!item, "modifiedOn", null)), "", text(index(fv!item, "modifiedOn", null), "yyyy-mm-dd")) = local!c)),
+      local!cIdx: wherecontains(true, a!forEach(items: local!resolved, expression: if(a!isNullOrEmpty(index(fv!item, "resolvedOn", null)), "", text(index(fv!item, "resolvedOn", null), "yyyy-mm-dd")) = local!c)),
       local!cSet: if(a!isNullOrEmpty(local!cIdx), {}, index(local!resolved, local!cIdx, {})),
       a!map(
         cycle: local!c,
