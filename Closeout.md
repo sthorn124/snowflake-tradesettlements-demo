@@ -1,113 +1,153 @@
-# Closeout — 2026-09-24 — Post-rehearsal cleanup: display honesty, presenter grants, records brought current
+# Closeout — 2026-09-24 — INVESTIGATION: demo console crashes for a Demo-Admins-only identity
 
-*Scope and identity:* Dev MCP as `scott.thorn` (SO Supervisors — full scope) for object work, security and the process-path load/reset; **sail as `alex.analyst` and `sam.supervisor`** for the persona comparison that is the whole of Task 1. No `appian_*`, no `ping`. **One interface changed:** `SO_caseDetail` v7 → v8. **Three process models re-secured.** Four documents updated. No throwaways needed.
+*Scope and identity:* **Observation only. No object was changed, no security was changed, nothing was fixed.** Dev MCP as `scott.thorn` (SO Supervisors — full scope) for design-surface reads and one contrast render. The only filesystem change is an empty `~/.sail-test.presenter` directory, created per harness convention so the operator's login lands in the right place.
 
-*Gate:* baseline verified before starting — 17 cases all `P4-VERIFY`, console `Ready · 50,000/50,000 · 9/9 · agent OK`, 0 demo trades, 0 demo cases. The P4-VERIFY re-date ritual was re-run: the previous re-date was 85 minutes old and this session renders Phase 4 screens, so cutoffs had decayed far enough to matter (case 37 had already passed its cutoff).
-
----
-
-## (a) The counterparty recent-fails card
-
-### 1. Cause confirmed — same card, same case, two identities
-
-Loaded a real run, opened the hero case (`TRD9DEMO01`) as each persona, read the same five rows:
-
-**`alex.analyst` (EQ_FLOW):**
-```
-Date, Trade, Instrument, Reason, Value
-Sun 6 Jul,  TRD040796, —, Operational error,       0
-Thu 19 Jun, TRD022509, —, Insufficient securities, 0
-```
-
-**`sam.supervisor` (all desks):**
-```
-Date, Trade, Instrument, Reason, Value
-Sun 6 Jul,  TRD040796, ALV GY,             Operational error,       2.7M EUR
-Thu 19 Jun, TRD022509, BAYERN 1.768 09/29, Insufficient securities, 1.7M EUR
-```
-
-Identical dates, trade ids and reasons; **only the trade-sourced fields differ.** Date, trade id and fail reason come from **SO Settlement History**, which is not desk-secured, so every viewer sees them. Instrument and notional come through the **trade**, which is desk-secured — and a counterparty's fails are spread across desks by nature, so an analyst reading a broker's history legitimately cannot read most of these trades. **Desk security is the mechanism, confirmed.**
-
-The zero was the real fault, and it was in the code rather than the data: the Value column called `SO_fmtMoney(amount: index(fv!row, …notional, 0), …)` — **defaulting a null notional to 0 and then formatting it.** A fabricated number in a money column, indistinguishable from a real zero.
-
-### 2. The fix as built
-
-**Form chosen: per-row labelling, not a count line.** For an analyst *every* row here is usually out-of-desk, so collapsing them into "5 fails you cannot see" would throw away the dates and reasons she *can* see — and the reason mix is the card's entire argument, the thing the summary line beneath it computes. Per-row labelling keeps the argument intact and hides only the two cells that are genuinely unreadable. A count line would have been the right choice on a card where the hidden rows were the minority; here they are the norm.
-
-- **Instrument cell** — when both the ticker and the notional read null (the trade is unreadable), renders `outside your desk view` at SMALL in muted `#6E7885`. `preventWrapping` dropped on this cell alone, because the phrase is longer than a ticker and truncating it would defeat the point of saying it.
-- **Value cell** — when the notional is null, renders an em dash in muted, never a formatted 0. The em dash is the null convention already used across these screens, and the instrument cell beside it says why.
-- **The summary line is untouched** and still computes from SO Settlement History, which every viewer can read.
-
-### 3. Readback
-
-`SO_caseDetail` `_a-0000f057-1da8-8000-9c4b-011c48011c48_564319`, **v7 → v8**. `updateInterface` returned the stored expression **byte-identical** to the local `.work` source; `validateDesignObject` → `hasErrors: false`; `testInterface` (case 36) → `diagnostics.error: null`.
-
-**No security was changed anywhere for this task** — the fix is display-side only.
+**Blocked, stated up front:** items 2 and 3 asked me to read as `test.presenter`. **There is no sail session for that account and I cannot create one** — a login needs a password, which a session never asks for, types or stores (CLAUDE.md §6). Per §2 step 9 I report "no live session for `test.presenter`, run the login" and do not fall back to another identity. Everything below is either design-surface fact, a design-account render, or clearly-labelled inference. **The one measurement that would settle the ranked causes is the persona login**, and it is the first thing the fix session should have.
 
 ---
 
-## (b) Security grants — readback
+## 0. Environment, and Scott's site-security change
 
-**A correction first, because it nearly went the other way.** My working note recorded `53dbfcbc-8eb9-4ecd-943d-7f68c62023bb` as the "admin group UUID". `listGroups` shows it is **SO Administrators**, not SO Demo Admins. **SO Demo Admins is `_e-0000f057-1d8f-8000-9b9b-01075c01075c_5425`**, and it held **no rights at all** on the three process models — which is exactly why a presenter in that group alone could not press Load or Reset.
+**Baseline verified and unaffected by the security edit.** Console as the design account: `Ready · data 50,000/50,000 · 9/9 connections · agent OK`, **Demo trades 0 · Demo cases 0 · Built-in test cases 17 · Case comments 12 · Audit rows 14**, `Status: No demo data loaded.`, Reset `disabled: true`. No demo is loaded; the site change touched security only.
 
-`updateObjectSecurity` is a **full replacement**, so each call resent the complete role map with only `initiator` changed.
+**Finding 1 — the site's security, as it now reads** (`getObjectSecurity` on `14c4f1a3-e77d-4d37-b971-5be0e803736b`):
 
-| process model | UUID | before | after |
-|---|---|---|---|
-| `SO_simulateRun` | `0000f060-f4ba-8000-2418-7f0000014e7a` | `initiator: []` | `initiator: [SO Demo Admins]` |
-| `SO_intakeRun` | `0000f060-f4bd-8000-2419-7f0000014e7a` | `initiator: []` | `initiator: [SO Demo Admins]` |
-| `SO_resetRun` | `0000f060-f4bf-8000-241a-7f0000014e7a` | `initiator: []` | `initiator: [SO Demo Admins]` |
-
-Every other role preserved verbatim on all three: `administrator: [SO Administrators]`, `viewer: [SO Users, SO Supervisors, SO Analysts]`, `editor / manager / deny: []`.
-
-**Verified independently, not from the PUT response** — a fresh `getObjectSecurity` on `SO_intakeRun` returns `initiator: ["_e-0000f057-1d8f-8000-9b9b-01075c01075c_5425"]`. No group nesting changed, no membership changed, no other identity touched.
-
-**`GETTING_STARTED.md`** gained a short subsection, "The demo presenter's own account": two plain-language lines saying a presenter must be in **SO Demo Admins** (or the console's buttons cannot start their process models and it reports "could not start") **and** in **SO Supervisors** (or intake reads a desk-scoped prediction set and silently creates cases for one desk only).
-
----
-
-## (c) Records brought current
-
-1. **Reset delete-click residual — CLOSED BY RULING.** Citation recorded in TODO: three live human-clicked Resets with the was/now evidence line read back in the 2026-09-22 and 2026-09-24 sessions, plus `snowflake/verification-summary.sql` **checks 20/21**, which prove tag-scoped deletion is prefix-safe at any code length (runs `VFY1` vs `VFY12`, packet-spec §1). **The same citation closes the console's was/now human check**, and closes **GATE D part (c)** in place. `a!deleteRecords` in a `saveInto` remains session-uninvocable — recorded now as a tooling boundary, not an unverified link.
-2. **Parked intake instances — CLOSED on Scott's word**, both terminated in the Admin Console on 2026-09-22. Noted explicitly that this is not independently verifiable from a session: process instances are not readable over the Dev MCP at all, so **the Admin Console is the authority for instance state** and a session can only record the ruling.
-3. **CLAUDE.md corrected.** The rule that said the status→action mapping "is now a browser check and only a browser check" is rewritten. It now states what is still true (the header renders outside the view interface, so `testInterface` sees no action set, and a throwing visibility expression hides its action silently) and what is not (browser-only), citing the rehearsal: as `alex.analyst` the header listed `Record Disposition · Assign · Escalate · Add Comment` in the record type's own order, and `Record Disposition` was followed, filled and submitted through to a written disposition. **The mapping is now verified as a persona through sail, per case status; only the header's geometry stays a browser check.**
-4. **TODO updates:**
-   - **The hero's scripted analyst action is DECIDED** — `Record Disposition → Settled - Borrow Executed`, the disposition `SO_remediationForReason` maps to `insufficient_securities` and the one that makes the agent's proposed cover borrow the thing the analyst accepts. What remains is the script around it, not the choice.
-   - **Demo-script inputs list started** under that item: (i) the decided action; (ii) do not press Load twice mid-demo — it re-stamps the scoring batch away from the case timestamps; (iii) if the console shows the amber "Loaded before today" line, Reset then Load before presenting, or every cutoff on the book reads as past.
-   - **Matched-time gate divergence moved** into the next-mockup-pass block, beside the supervisor mockup refresh which already lived there.
-   - The double-Load talk-track item is marked as captured into the demo-script inputs rather than duplicated.
-
----
-
-## (d) Verification
-
-| check | result |
+| role | groups |
 |---|---|
-| Cause, `alex.analyst` (before) | `—` instrument, `0` value on all five rows |
-| Cause, `sam.supervisor` (before) | `ALV GY / 2.7M EUR`, `BAYERN 1.768 09/29 / 1.7M EUR` — same rows, same case |
-| Fix, `alex.analyst` (after) | `outside your desk view` + `—`; dates, trade ids and reasons intact |
-| Fix, `sam.supervisor` (after) | **unchanged** — `ALV GY / 2.7M EUR`, `BAYERN 1.768 09/29 / 1.7M EUR` |
-| Summary line, both personas | identical and unchanged: `5 most recent · 4 of 5 on insufficient securities — consistent with the predicted reason on this case` |
-| `SO_caseDetail` | `validateDesignObject` clean · readback byte-identical · `testInterface` (case 36) `error: null` |
-| Security | independent `getObjectSecurity` confirms `initiator: [SO Demo Admins]`, all other roles unchanged |
-| Environment restored | `Ready · 50,000/50,000 · 9/9 · agent OK` · 0 demo trades · 0 demo cases · 17 built-in · 12 comments · 14 audit rows · `No demo data loaded.` · Reset `disabled: true` |
+| administrator | SO Administrators (`53dbfcbc-…`) |
+| editor | — |
+| **viewer** | SO Users (`622bcff2-…`), SO Supervisors (`_e-…5309`), SO Analysts (`_e-…5311`), **SO Demo Admins (`_e-0000f057-1d8f-8000-9b9b-01075c01075c_5425`)** |
 
-**Not verified:** all geometry and paint. Specifically — **`outside your desk view` is 22 characters in a `NARROW` column with wrapping now permitted, so it will take two lines.** Whether that makes the rows uneven, and whether the muted SMALL treatment reads as a note rather than as data, are browser checks. Also unverified: that a presenter who is *only* in SO Demo Admins can now actually press the buttons — the grant is confirmed by readback, but the click is a human check, and it belongs on the GATE D pass.
+**What it read before is NOT determinable from the tool surface.** `listObjectVersions` returns a single version, `savedBy scott.thorn@appian.com`, `savedOn 2026-09-24T16:09:02Z` — about ninety seconds before my first read — and there is no earlier snapshot to retrieve. **Inference, flagged:** the other three viewer groups are exactly the application's default security trio, and the 2026-09-09 build-log entry records only that the *page* was gated on `cons!SO_DEMO_ADMINS_GROUP` — it never records the *site object's* role map. So the site was almost certainly created with app-default security and SO Demo Admins was never on it, which is precisely the gap Scott closed.
+
+**The shape of that gap is worth naming:** the page-level `visibilityExpr` gates on the Demo Admins group, but the site object's viewer list did not include it. A page gate controls what you see *once you are in the site*; it cannot let you *into* it. The build log recorded the gate and not the grant, so the check that was run at build time confirmed the wrong half.
 
 ---
 
-## (e) Stopped on, and flagged
+## 1. Line 232 and its inputs
 
-1. **`GETTING_STARTED.md` is template-owned, and these lines are build-specific.** CLAUDE.md's own file list says the template files are "copied unchanged from appian-devmcp-method — edit them in the template, not here", and the operating core's premise is that nothing in it names a client, an application or a group. The two lines I added name **SO Demo Admins** and **SO Supervisors**. I wrote them where you asked and marked them in the file as a build-specific note with a pointer, but **they will conflict on the next template pull**. Recommendation: the durable home is the project sections of `CLAUDE.md`, with `GETTING_STARTED.md` carrying at most a parameterised line ("the presenter must hold both the console group and the full-data-scope group named in `BUILD_PLAN.md`"). One line either way — your call.
-2. **The recent-fails weekend dates are untouched and remain the deliberate known artifact** (`Sun 6 Jul` is visible in the capture above). Flagging only so nobody reads this session's change as having addressed them; it did not, by design.
-3. **Nothing else was stopped on.** No tool-surface surprises: `updateObjectSecurity` worked cleanly on process models, unlike the documented HTTP 500 it returns for documents.
+Deployed `SO_demoAdminConsole` v11, lines 226–240 verbatim (field references elided for width where marked `…`):
+
+```
+226  local!agentEvents: a!queryRecordType(
+227    recordType: 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History',
+228    fields: { …timestamp, …user, …relationships.{b87d38c6}eventType.fields.{fd5aa5de}eventName },
+229    pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 50, sort: a!sortInfo(field: …timestamp, ascending: false))
+230  ).data,
+231  local!agentLast: a!localVariables(
+232    local!idx: wherecontains(true, a!forEach(
+233      items: local!agentEvents,
+234      expression: and(
+235        a!isNullOrEmpty(index(fv!item, '…{c4acbfe1-…}user', null)),
+236        contains({ "Agent Triage Complete", "Straight-Through Resolution", "Escalated" },
+237          a!defaultValue(index(fv!item, '…eventType.fields.{fd5aa5de-…}eventName', ""), ""))
+238      ))),
+239    if(a!isNullOrEmpty(local!idx), null, index(local!agentEvents, index(local!idx, 1, 1), null))
+240  ),
+```
+
+- **What `wherecontains` compares:** the literal `true` (Boolean) against the value returned by the `a!forEach` on lines 232–238. In a healthy render that forEach returns a list of Booleans, one per event row.
+- **Which query feeds it:** `local!agentEvents`, lines 226–230 — and note it is consumed on line 233 **with no `a!isNullOrEmpty` guard and no `if` wrapper**.
+- **The UUID:** `eede988b-5576-4daa-a49c-fa962d90b16b` is the record type **SO Settlement Case Event History** (confirmed against `listRecordTypes` for the application, and self-evident from the field references inside the same query).
+
+**The diagnostic content of the error message.** `Invalid types, can only act on data of the same type (Boolean, eede988b-…)` names the two operand types. The second is not `List of Variant`, not `Null`, not `Text` — it is **the record type itself**. So at the moment `wherecontains` ran, its second argument was record-typed data from SO Settlement Case Event History, i.e. **the forEach did not yield Booleans**. That is the fact the fix has to explain; it is stronger evidence than "the query came back empty", because an empty list would not carry that type.
 
 ---
 
-## Promotion candidates: 1 found; 0 promoted, 1 staged
+## 2. Reproduce as the persona — BLOCKED; design-account contrast recorded
 
-- **STAGED, gate 1:** *a null default inside a formatter is a fabricated value, not a fallback — `format(index(row, field, 0))` renders a real-looking 0 where the honest answer is "unreadable".* The null default and the formatting are each defensible in isolation; composed, they manufacture data. Measured here on a money column across a security boundary. **Trigger: the next `a!defaultValue`/`index(..., 0)` found inside a formatter or an aggregate.**
-- **Application pointer, no promotion needed:** this is the concrete instance of CLAUDE.md §4's "nothing distinguishes absent from invisible unless the screen says so". The rule existed; the screen just wasn't obeying it. Worth citing rather than restating.
-- Unchanged: the grouping-not-named-in-output note; guard-vs-grouping; NULL-timestamp rule (promoted 2026-09-23); fixture-vs-process-rows; unused-locals; agent-boolean; process-instance blindness — **reinforced today**, since closing the parked-instances item required Scott's word precisely because a session cannot see instance state; NTZ-as-UTC; chart-type.
+- **As `test.presenter`:** not run. No session exists, and creating one requires a password. `~/.sail-test.presenter` created and left empty.
+- **As `scott.thorn` via `testInterface`:** renders completely, **`diagnostics.error: null`**, 1,305 ms — verdict line, all seven Details lines, both buttons, Reset correctly `disabled: true`.
 
-*Promotion checkpoint: current through this entry.*
+**The delta is therefore between Scott's reported browser error and a clean design-account render**, which is exactly the shape CLAUDE.md §4 warns about: "a design-account render proves nothing about a persona". I am treating Scott's quoted error as the persona-side evidence; I have not reproduced it myself and do not claim to have.
+
+---
+
+## 3. Identity shape — what `test.presenter` can read
+
+**I could not read as the persona, so this table is CONFIGURATION, not observation.** It is `getObjectSecurity` on each record type the console touches. It settles "does this identity hold a viewer right" decisively; it does **not** settle "does an unreadable record type return empty or throw", which is the question that discriminates the two candidate causes below.
+
+`test.presenter` ∈ SO Demo Admins only. SO Demo Admins sits **outside** the SO Users tree by design (CLAUDE.md:405).
+
+| # | record type | viewer groups | Demo Admins a viewer? |
+|---|---|---|---|
+| 1 | SO Trade `8539c3b7` | SO Users | **No** |
+| 2 | SO Trade Predictions `b1967741` | SO Users | **No** |
+| 3 | SO Counterparty `caca5336` | SO Users | **No** |
+| 4 | SO Instrument `553867ce` | SO Users | **No** |
+| 5 | SO Settlement History `c80aeca9` | SO Users | **No** |
+| 6 | SO Settlement Case `09405a10` | SO Users | **No** |
+| 7 | SO Case Comment `c8cdbb02` | SO Users, SO Supervisors, SO Analysts | **No** (both extras nest inside SO Users) |
+| 8 | **SO Settlement Case Event History `eede988b`** | SO Users | **No** ← the record type in the error |
+| 9 | SO Settlement Case Event Type `beb76989` | SO Users | **No** |
+
+**Uniform: SO Demo Admins holds no viewer right on any of the nine record types the console queries.** Every record type carries the application's default map — `administrator: SO Administrators`, `viewer: SO Users` — and the Demo Admins group was deliberately built outside that tree.
+
+So the console asks a Demo-Admins-only identity to run **twenty queries against nine record types it cannot read**, including the nine "connection" probes whose entire purpose is to prove those record types are reachable. Nothing was widened to establish this; it is read from the security role maps.
+
+**Classified visible / empty / error:** unavailable without the login. The honest entry for all nine rows today is **"no viewer right; observed behaviour not yet measured"**.
+
+---
+
+## 4. The class — every console query and what its consumer assumes
+
+Twenty queries. The column that matters is the last one.
+
+| # | local (line) | record type | downstream consumer | shape-safe? |
+|---|---|---|---|---|
+| 1 | `tradeBaseline` (97) | SO Trade | `tointeger(a!defaultValue(index(index(agg,1,null),"n",0),0))` | ✅ aggregation, double-defaulted |
+| 2 | `tradeReserved` (106) | SO Trade | same | ✅ |
+| 3 | `predBaseline` (115) | SO Trade Predictions | same | ✅ |
+| 4 | `allCases` (129) | SO Settlement Case | `fixtureCases` / `otherCases` both open `if(a!isNullOrEmpty(local!allCases), 0, …)` | ✅ explicitly guarded |
+| 5 | `commentCount` (143) | SO Case Comment | aggregation, double-defaulted | ✅ |
+| 6 | `eventCount` (154) | SO Settlement Case Event History | aggregation, double-defaulted | ✅ |
+| 7–15 | `pTrade` … `pEventType` (169–204) | all nine | `a!map(name:…, ok: not(a!isNullOrEmpty(local!q)))` | ✅ — and this is the *designed* empty-means-failed path |
+| **16** | **`agentEvents` (226)** | **SO Settlement Case Event History** | **`wherecontains(true, a!forEach(items: local!agentEvents, …))` — line 232** | ❌ **NO GUARD** |
+| 17 | `loadStamp` (259) | SO Trade Predictions | `index(index(query,1,null), field, null)` | ✅ |
+| 18 | `resetRows` (326) | SO Settlement Case | `resetCaseIds` opens `if(a!isNullOrEmpty(local!resetRows), {}, …)`; `count()` is null-safe | ✅ |
+| 19 | `resetCommentCount` (338) | SO Case Comment | `if(a!isNullOrEmpty(local!resetCaseIds), 0, …)` | ✅ |
+| 20 | `resetEventCount` (351) | SO Settlement Case Event History | same | ✅ |
+
+**Answer to "is line 232 the only landmine or merely the first": on shape, it is the only one.** Nineteen of twenty results are either aggregated-and-defaulted or opened with an explicit `a!isNullOrEmpty` guard. `local!agentEvents` is the single query whose result is fed straight into an iterator and a type-sensitive comparison without a guard, and it is the one that blew up.
+
+**That conclusion holds only if the failure mode is shape.** If an unreadable record type *throws* rather than returning empty, then the guards on the other nineteen are irrelevant — a throw is not caught by `a!isNullOrEmpty` — and line 232 is simply the first expression to touch a poisoned value, not the only vulnerable one. **This is the crux, and it is exactly what the persona login resolves.**
+
+---
+
+## 5. The intended viewer model, as documented — and it contradicts itself
+
+- **CLAUDE.md:266** — "Business groups Viewer; process initiators where they start things; **Reset/Verify and Admin page are Demo Admins only**."
+- **CLAUDE.md:405** — "`SO_DemoAdmin` is a SEPARATE SITE … gated to **SO Demo Admins**, a group deliberately **outside the SO Users tree**. An SC running the demo is not a persona … Membership is the presenting SC's own account — never `alex.analyst` or `sam.supervisor`."
+- **BUILD_PLAN:10** — "the presenting SC's own account in `SO Demo Admins` for the separate Demo Admin site."
+- **TODO:66** — "**Presenter must be in SO Supervisors (document or rule)** — *Part E setup doc.* Intake and triage run as the presenter, and SO Trade Predictions is row-secured: a desk-scoped presenter's intake would find only its own desk's stories, silently."
+- **GETTING_STARTED.md**, added 2026-09-24 — a presenter "must be in **SO Demo Admins** … and also in **SO Supervisors**, or intake reads a desk-scoped set of predictions and silently creates cases for that one desk only."
+
+**These do not agree, and the disagreement is the root of this incident.** Two of them say Demo-Admins-only; two say Demo Admins *plus* SO Supervisors. The "outside the tree" decision was made for one specific reason — so the reset tooling never appears as a tab beside the watchlist — and that reason is about **where the site shows up**, not about **what data the presenter can read**. Nothing in the documentation ever reasoned about a presenter with no data scope; the console was built and verified only ever as `scott.thorn`, who is in SO Supervisors.
+
+`test.presenter` is the first identity that matches the letter of "Demo Admins only" — and it is a configuration the design never actually endorsed for a *working* presenter, while CLAUDE.md:266's phrasing plainly invites it.
+
+**So the ruling the fix needs is not "which line" but "who is this screen for":** a presenter who is also a Supervisor (in which case the fix is documentation plus possibly one guard), or a genuinely Demo-Admins-only operator (in which case the console needs either grants on nine record types or a reduced-visibility rendering that does not pretend to check data it cannot see).
+
+---
+
+## Two ranked candidate causes — inference
+
+**Candidate 1 — most likely: an unreadable record type returns a degenerate non-Boolean result, and line 232 is the one consumer with no guard.**
+The error names the second operand's type as the record type itself, which is what you would expect if the `a!forEach` yielded rows rather than Booleans — for instance because the projected fields could not be resolved for this identity and the row passed through unprojected. Every other consumer either aggregates (so a degenerate result collapses to a defaulted 0) or opens with `a!isNullOrEmpty`. On this reading the console is one guard away from rendering for a Demo-Admins-only identity, though what it would then *show* is nine failed connection probes and zeroed counts — accurate, and useless.
+
+**Candidate 2 — plausible and more expensive: the read is refused rather than empty, so the failure is access, not shape.**
+Under CLAUDE.md §4 and supplemental §5, a row-secured read normally returns *empty and silent*; but that rule is about **row**-level scoping for an identity that can read the record type at all. `test.presenter` has no viewer right on the **object**, which is a different boundary and may well raise rather than return. If so, line 232 is merely where the poison first touches a type-sensitive function, guarding it moves the error downstream, and the nineteen "safe" consumers are not safe at all.
+
+**The two are distinguished by one cheap measurement**: log `test.presenter` in and render the console; if the nine probes come back as nine red "no connection" lines and the crash is gone once line 232 is guarded, Candidate 1 holds. If any query raises, Candidate 2 holds.
+
+## Smallest coherent fix scope — inference, and it is a ruling before it is a code change
+
+**If Candidate 1 holds, the smallest coherent scope is still larger than line 232.** Guarding that one line stops the crash, but it buys a console that renders "Not ready · 0/9 connections · no record of the AI agent running" in red to a presenter whose environment is in fact perfectly healthy — a readiness screen that lies in the alarming direction, which CLAUDE.md's own three-state rule was written to prevent ("a checklist that paints normal states red teaches its reader to ignore red"). So the coherent unit of work is *the panel*, not the line: either SO Demo Admins gains viewer on the nine record types (making the checks meaningful), or the console detects that it cannot read them and renders a reduced view that says so plainly instead of reporting nine failures. **If Candidate 2 holds, the line-level fix is not even available** and the scope is necessarily the grants or the reduced rendering.
+
+**Either way the ruling comes first:** decide whether a demo presenter is Demo-Admins-only or Demo-Admins-plus-Supervisors, because that single decision picks the fix and also resolves the documentation contradiction in item 5. My own reading — flagged as opinion, not finding — is that the cheapest durable answer is to make the presenter's required groups explicit and consistent everywhere, since intake already needs SO Supervisors for reasons that have nothing to do with this crash (TODO:66), and a presenter who cannot read the data cannot sanity-check the demo they are about to give.
+
+---
+
+## Not verified
+
+The persona render, the visible/empty/error classification, and therefore the discrimination between the two candidates. All three need one operator login. No fixes were made, no objects changed, no security altered, and nothing was widened to find any of the above.

@@ -3456,3 +3456,47 @@ All geometry and paint — specifically, `outside your desk view` is 22 characte
 - **Application pointer, not a new rule:** this is the concrete instance of CLAUDE.md §4's "nothing distinguishes absent from invisible unless the screen says so". The rule existed; the screen was not obeying it.
 - **Process-instance blindness reinforced:** closing the parked-instances item required Scott's word precisely because a session cannot see instance state. Still staged.
 - Unchanged: grouping-not-named-in-output; guard-vs-grouping; NULL-timestamp (promoted 2026-09-23); fixture-vs-process-rows; unused-locals; agent-boolean; NTZ-as-UTC; chart-type.
+
+## 2026-09-24 (cont.) — INVESTIGATION: demo console crashes for a Demo-Admins-only identity (observation only)
+
+*Scope:* **No object changed, no security changed, nothing fixed.** Dev MCP as `scott.thorn` (SO Supervisors) for design-surface reads and one contrast render. Only filesystem change: an empty `~/.sail-test.presenter` directory, created per harness convention.
+
+### Scott's change, logged
+**Scott added `SO Demo Admins` to the `SO_DemoAdmin` site's viewer role in Designer, 2026-09-24 ~16:09 UTC.** The site (`14c4f1a3-e77d-4d37-b971-5be0e803736b`) now reads `administrator: [SO Administrators]`, `editor: []`, `viewer: [SO Users, SO Supervisors, SO Analysts, **SO Demo Admins** (_e-0000f057-1d8f-8000-9b9b-01075c01075c_5425)]`.
+
+**The prior state is NOT retrievable:** `listObjectVersions` shows a single version, `savedBy scott.thorn@appian.com`, `savedOn 2026-09-24T16:09:02Z`, with no earlier snapshot. *Inference, flagged:* the other three viewer groups are exactly the app's default trio, and the 2026-09-09 build-log entry records only that the **page** was gated on `cons!SO_DEMO_ADMINS_GROUP` — it never records the **site object's** role map. So the site was almost certainly created with app-default security and Demo Admins was never on it.
+
+**The shape of that gap is the lesson:** a page `visibilityExpr` controls what you see *once inside* a site; it cannot let you *into* one. The build check at the time confirmed the gate and not the grant, so a site documented as "gated to SO Demo Admins" was unopenable by that group for fifteen days.
+
+### The crash
+Reported by Scott, opening the site as `test.presenter` (SO Demo Admins only): whole-page `Expression evaluation error in rule 'so_demoadminconsole' at function 'wherecontains' [line 232]: Invalid types, can only act on data of the same type (Boolean, eede988b-5576-4daa-a49c-fa962d90b16b)`.
+
+**Line 232 is `local!idx: wherecontains(true, a!forEach(` inside `local!agentLast`.** It compares the literal `true` against the forEach over `local!agentEvents` (lines 226–230), which queries **SO Settlement Case Event History** — the record type `eede988b-…` names. **The error's second operand type is the RECORD TYPE, not Null or List of Variant**, so the forEach yielded record-typed data rather than Booleans; an empty result would not carry that type. That is the fact a fix must explain.
+
+### The identity, from security configuration
+`getObjectSecurity` on all nine record types the console queries: **every one grants viewer to `SO Users` only** (SO Case Comment additionally lists Supervisors and Analysts, both nested inside SO Users). **SO Demo Admins holds no viewer right on any of them** — it was deliberately built outside the SO Users tree. So the console asks a Demo-Admins-only identity to run twenty queries against nine record types it cannot read, including the nine probes whose whole purpose is to prove those record types are reachable. Nothing was widened to establish this.
+
+### The class — enumerated
+Twenty queries. **Nineteen are shape-safe:** six are aggregations whose result passes through `tointeger(a!defaultValue(index(index(agg,1,null),"n",0),0))`; nine are reachability probes consumed as `not(a!isNullOrEmpty(local!q))` — the *designed* empty-means-failed path; `allCases`, `resetRows`, `resetCommentCount`, `resetEventCount` and `loadStamp` each open with an explicit `a!isNullOrEmpty` guard or a null-defaulted `index`. **`local!agentEvents` (line 226) is the only query whose result is fed straight into an iterator and a type-sensitive comparison with no guard.**
+
+**On shape, line 232 is the only landmine. If the failure mode is a throw rather than a degenerate value, that conclusion collapses** — a throw is not caught by `a!isNullOrEmpty`, and line 232 is merely the first expression to touch a poisoned read.
+
+### Documented intent — and it contradicts itself
+CLAUDE.md:266 "Reset/Verify and Admin page are **Demo Admins only**" and CLAUDE.md:405 "gated to SO Demo Admins … deliberately outside the SO Users tree", against TODO:66 "**Presenter must be in SO Supervisors**" and GETTING_STARTED.md (added this morning) "must be in SO Demo Admins … and also in SO Supervisors". **Two say Demo-Admins-only; two say both.** The outside-the-tree decision was taken so the reset tooling never appears as a tab beside the watchlist — a statement about *where the site shows up*, not about *what data the presenter can read*. The console was only ever built and verified as `scott.thorn`, who is in SO Supervisors. `test.presenter` is the first identity to match the letter of "Demo Admins only", and it is a configuration the design never endorsed for a working presenter.
+
+### Blocked, and it is the measurement that matters
+**No sail session exists for `test.presenter` and a session cannot create one** (a login needs a password; CLAUDE.md §6). Per §2 step 9: "no live session for `test.presenter`, run the login", no fallback identity. So the persona render and the visible/empty/error classification are **not measured**. Design-account contrast recorded instead: `testInterface` renders the console completely, `error: null`, 1,305 ms. Baseline confirmed unaffected by the security edit: 0 demo trades · 0 demo cases · 17 built-in · 12 comments · 14 audit rows.
+
+### Two ranked candidate causes (inference)
+1. **Most likely — degenerate non-Boolean result, consumed unguarded.** An unreadable record type yields rows that fail to project, the forEach passes them through, and line 232 is the one consumer without a guard. Console would then be one guard from rendering — but would show nine failed probes and zeroed counts on a healthy environment.
+2. **Plausible, more expensive — the read is refused rather than empty.** §4/§5's "row-secured reads return empty, silently" is about **row** scoping for an identity that can read the type at all; no viewer right on the **object** is a different boundary and may raise. Then guarding 232 only moves the error.
+
+**Distinguished by one cheap measurement:** log `test.presenter` in and render.
+
+### Smallest coherent fix scope (inference)
+**Larger than line 232 even under Candidate 1.** Guarding it stops the crash but yields "Not ready · 0/9 connections · no record of the AI agent running" in red to a presenter whose environment is healthy — a readiness screen lying in the alarming direction, which the console's own three-state rule exists to prevent. The coherent unit is the panel: either grant SO Demo Admins viewer on the nine record types so the checks mean something, or detect unreadability and render a reduced view that says so. **Under Candidate 2 the line-level fix is not available at all.** Either way **the ruling precedes the code**: decide whether a presenter is Demo-Admins-only or Demo-Admins-plus-Supervisors — that one decision picks the fix and resolves the documentation contradiction.
+
+*Promotion checkpoint* — current through this entry.
+- **NEW, STAGED (gate 1):** *a page-level visibility expression and the site object's security role map are different gates, and satisfying one does not satisfy the other* — a site documented and built as "gated to group X" was unopenable by group X for fifteen days because the page gate named X while the site's viewer list never did. Verify site access by opening as a member, not by reading the page gate. **Trigger: the next site built or re-secured.**
+- No promotion from the crash itself: cause is not yet measured, so nothing has passed gate 1.
+- Unchanged: null-default-inside-a-formatter; grouping-not-named-in-output; guard-vs-grouping; NULL-timestamp (promoted); fixture-vs-process-rows; unused-locals; agent-boolean; process-instance blindness; NTZ-as-UTC; chart-type.
