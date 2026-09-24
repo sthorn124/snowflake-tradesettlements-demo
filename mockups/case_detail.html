@@ -1,3 +1,25 @@
+<!--
+  SUPERSEDED 2026-09-24 — the built SO_caseDetail is the authority for this screen.
+
+  This file was the structural authority while the case detail screen was being built.
+  That screen is built, gated (gate B) and verified, so authority transferred to the
+  deployed object; this file is now a historical design artifact and is NOT maintained.
+
+  Known divergences, recorded rather than fixed (CLAUDE.md, Working style: a mockup is
+  not regenerated to match the build):
+    - "last 30 days" on the recent-fails card. The build deliberately makes NO
+      time-window claim: the newest settled fail in the baseline is ~13 months old, so
+      a 30-day window renders empty for every counterparty.
+    - "Overnight scoring flagged TRD031208 at 83% fail probability" (line ~277). Packet
+      trades score ON ARRIVAL, not overnight; the built screens say so.
+    - Currency label. The hero is authored in EUR so ticker, ISIN, CSD and the CSDR
+      penalty agree; this file still shows USD beside a EUR penalty accrual.
+    - Matched time. The build renders a stamp only when one was authored on the current
+      clock, and carries the day whenever it is not today's.
+
+  Read the deployed SO_caseDetail for what this screen IS. Read this only for what it
+  was once meant to be.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>

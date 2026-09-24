@@ -3605,3 +3605,67 @@ CLAUDE.md:266 "Reset/Verify and Admin page are **Demo Admins only**" and CLAUDE.
 - Unchanged: `showWhen`-vs-nested-locals; null-default-inside-a-formatter; grouping-not-named-in-output; guard-vs-grouping; NULL-timestamp (promoted); fixture-vs-process-rows; unused-locals; agent-boolean; process-instance blindness; NTZ-as-UTC; chart-type; page-gate-vs-site-security.
 
 **Promotion checkpoint: current through this entry (2026-09-24, mockup authority / Matched gate).**
+
+---
+
+## 2026-09-24 — Phase 6 Part 1: Ask panels wired live to Snowflake Cortex (PARTIAL)
+
+**Scope line.** Dev MCP as `scott.thorn` (full scope). Persona reads via sail as `sam.supervisor` and `alex.analyst`. Environment **verified at clean baseline** (zero `TRD9` rows). P4-VERIFY re-dated, all three CSVs. Drift re-reported: Dev MCP and sail both 26.6.95 against the 26.6.90 pin (already logged, TODO:59/199).
+
+### What changed, by object
+
+- **`SO_askSnowflake`** (NEW integration, `3abbedbd-f93b-4ae6-923e-c3a08d7eba66`, v7) on `SO Snowflake SQL API`. POST `/api/v2/statements`, `requestTimeout` 120s, `usage` MODIFY, `autoConvertToJson` false, PAT header `X-Snowflake-Authorization-Token-Type: PROGRAMMATIC_ACCESS_TOKEN`.
+- **`SO_askAnswerText`** (NEW rule, v4) — trims and guards; deliberately parses nothing.
+- **`SO_askPanel`** (NEW interface rule, v2) — the panel, built once, used by both screens.
+- **`SO_supervisorCommand` v8 → v9** — inert shell replaced by the shared rule.
+- **`SO_analystWatchlist` v19 → v20** — NEW panel at the foot of the queues.
+- **`mockups/case_detail.html`** — superseded header (Task 0 rider).
+- **No Snowflake objects created. No process model, security or identity change.**
+
+### Decisions and why
+
+- **THE CONNECTED SYSTEM'S BASE URL IS THE ACCOUNT ROOT, WHICH IS WHAT MADE THIS A CHOICE.** `SO Snowflake SQL API` points at `https://<account>.snowflakecomputing.com`, not at `/api/v2/statements`, so every Cortex REST path was reachable with the existing PAT. Read before assumed.
+- **Chosen: `DATA_AGENT_RUN` as SQL over the proven endpoint.** Grounded, one call, and maximum reuse — same connected system, PAT, body shape and `body.data[1][1]` path as `SO_simulateFeed`. **Rejected:** Cortex Analyst REST (returns generated SQL, not results — two calls, though `semantic_view` does accept the existing `TRADE_SETTLEMENT_ANALYTICS`); Cortex Agents REST `agents/{name}:run` (equivalent and viable with `stream:false`, rejected on risk against a proven path, kept as fallback); `AI_COMPLETE`/`CORTEX.COMPLETE` (ungrounded — rule (1)).
+- **ZERO SNOWFLAKE OBJECTS WERE NEEDED**, because `SETTLEMENT_RISK_AGENT` and `TRADE_SETTLEMENT_ANALYTICS` already existed. No Snowsight round trip, so the session carried no dependency on Scott running a script first.
+- **Read-only rests on three things, none of them the `usage` flag:** a single SELECT; the question passed as **BINDING 2, never concatenated**, so no input can alter the statement; and extraction inside that same SELECT. **Named gap:** the PAT is `FINSERVADMIN`, so the role restricts nothing, and the agent's own toolset could not be inspected from a session.
+- **ANSWER EXTRACTION MOVED INTO SNOWFLAKE, and it is a governance improvement as well as a fix.** `FLATTEN` + `WHERE type='text'` inside the statement means the agent's `thinking` and `tool_use` elements never leave Snowflake at all — a better answer to "don't show working-out as findings" than filtering on arrival.
+
+### Measured, and each one cost a round
+
+- **`testRule` AND `testInterface` BOTH CAP AT 5s.** `testRule` on the integration: `Execution timed out after 5s`. `testInterface` on a probe: identical, 5001 ms. **This CONTRADICTS appian-supplemental §3**, which says the interface route tolerates longer and is "the only legal and measurable home for real model calls". It is not — a **persona session through sail** ran the same call for 45 s without complaint. Staged as a correction.
+- **THE FULL AGENT TRANSCRIPT ARRIVES TRUNCATED AT EXACTLY 4000 CHARACTERS.** `LEN=4000` on a raw dump. Truncated mid-structure, so it is never valid JSON, and `a!fromJson` **threw and took the entire supervisor page down** — the precise demo-killer the brief said must not exist. Fixed by extracting server-side; the rule now parses nothing and so cannot throw. Source of the cap unmeasured.
+- **A QUERY-USAGE INTEGRATION'S RESPONSE IS CACHED, AND THE CACHE SURVIVES A FRESH PAGE LOAD.** A call that took 35 s returned in **1 s** carrying the previous body — after the integration's own SQL had been changed. So "ask again" silently did not ask, **and the three-run stability bar would have passed on three identical answers without a second call ever leaving Appian.** Switched to MODIFY.
+- **A MODIFY INTEGRATION MUST BE CALLED THROUGH THE `rule!` DOMAIN, or `fv!result` does not resolve** (`Unresolved reference(s): fv!result`). The same object under QUERY usage is called bare. Same integration, two syntaxes depending on usage.
+- **`a!buttonWidget`'s `enableLoadingIndicator` is NOT settable** — "Unrecognized Keyword" from the object validator, despite appearing as an attribute in a rendered button's tree. Fourth instance of that trap. There is therefore no per-button spinner, and no custom "asking" state is possible on a synchronous call.
+- **`Unused Local Variables`** on `local!ok` — third observation. Put to work rather than deleted: a non-200 now fails the panel even if something parsed.
+
+### Verified (how, with scope)
+
+- Envelope proven with a fast control (`SELECT 'HELLO'`): 200, `body.data = [["HELLO","42"]]`, **277 ms** — separating "my path is wrong" from "the agent is slow".
+- Object validator accepted every save; supervisor **v9** and watchlist **v20** both **byte-identical** on readback.
+- **Three live grounded answers**, quoted verbatim in `Closeout.md`. **Checked against recorded truth, not trusted:** the analyst answer's own arithmetic gives 276 + 6,140 = **6,416** fails over **50,000** trades — exactly the baseline this file records. The asset-class answer reconciles the same way (2,611/18,776 = 13.91%).
+- **Context line proven:** with `TRD030639` selected, the answer named **Beacon Finance**, **TRD030639** and **ULVR LN**, all inherited from the row.
+- **Failure path break-tested** by repointing at `ZZ_NO_SUCH_AGENT`: **1 s**, plain one-liner, **page alive with 37 display values**. Restored, and restore confirmed by a fresh 22 s answer.
+- Latency **22–45 s**. Throwaways `SO_zzAskProbe` and `SO_zzFastSqlProbe` deleted, **verified by absence**.
+
+### Not verified (and why)
+
+- **Task 4 is 3 of 6 questions, run ONCE each. The three-run stability bar is unproven** — each call is 22–45 s and the mechanism took four diagnostic rounds. Nothing fabricated to fill the gap.
+- **The hero was not used**: the analyst panel was proved against fixture row `TRD030639`, because the environment was at clean baseline and loading a packet costs ~2 minutes plus triage.
+- **All geometry**, both panels, and whether the platform's own progress rendering reads as "working" over ~30 s on stage.
+- **The agent's toolset** — no Snowflake execution path from a session.
+
+### Content defects found in the answers (Part 2, agent-side)
+
+- **The agent narrates its process and promises a chart the panel cannot render** — "I'll look at the data model first…", "The chart makes the gap visually stark…". These arrive as `type:"text"`, so they cannot be filtered display-side without filtering answer prose. **The fix is `SETTLEMENT_RISK_AGENT`'s instructions**, Snowflake-side.
+- Excess blank lines between paragraphs.
+
+### Promotion candidates (staging)
+
+- **CORRECTION TO appian-supplemental §3 (measured):** `testInterface` does NOT tolerate longer than `testRule` — both cap at 5 s. The home for a long model call is a persona session through sail. *Trigger: next session that touches the supplemental.*
+- **STAGED (gate 1):** a QUERY-usage integration's response is cached across page loads; MODIFY is the working form where a repeat must genuinely re-run. *Trigger: the next integration called repeatedly with identical inputs.*
+- **STAGED (gate 1):** an integration called as a smart service needs the `rule!` domain or `fv!result` will not resolve; bare-name works only under QUERY. *Trigger: the next MODIFY integration called from an interface.*
+- **`enableLoadingIndicator`** — fourth instance of the rendered-tree-is-not-a-parameter-list trap; strengthens an already-promoted entry rather than adding one.
+- Unchanged: recency-not-presence; showWhen-vs-nested-locals; the rest.
+
+**Promotion checkpoint: current through this entry (2026-09-24, Ask panels).**

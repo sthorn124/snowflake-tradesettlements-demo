@@ -862,64 +862,29 @@ a!localVariables(
                         )
           }),
           a!columnLayout(width: "MEDIUM_PLUS", contents: {
-            a!cardLayout(
-                        padding: "LESS", shape: "SEMI_ROUNDED", showBorder: true, marginBelow: "STANDARD",
-                        decorativeBarPosition: "TOP", decorativeBarColor: "#3E7396",
-                        contents: {
-                          a!richTextDisplayField(
-                            labelPosition: "COLLAPSED",
-                            value: {
-                              rule!SO_snowflakeMark(showWhen: true),
-                              a!richTextItem(text: "  ASK ACROSS THE BOOK", color: "#454F5C", size: "SMALL", style: "STRONG")
-                            }
-                          ),
-                          a!richTextDisplayField(
-                            labelPosition: "COLLAPSED", marginBelow: "STANDARD",
-                            value: a!richTextItem(
-                              text: "Answers computed in Snowflake over all 50,000 trades — nothing copied, nothing synced.",
-                              color: "#6E7885", size: "SMALL"
-                            )
-                          ),
-                          /* THE THREE CHIPS ARE THE SEMANTIC MODEL'S VERIFIED QUERIES, named
-                             exactly. They are inert, like the input below them. */
-                          a!tagField(
-                            labelPosition: "COLLAPSED",
-                            marginBelow: "STANDARD",
-                            tags: {
-                              a!tagItem(text: "Fail rate trend", backgroundColor: "#EEF4FA", textColor: "#2E5A88"),
-                              a!tagItem(text: "Top failing counterparties", backgroundColor: "#EEF4FA", textColor: "#2E5A88"),
-                              a!tagItem(text: "Notional at risk", backgroundColor: "#EEF4FA", textColor: "#2E5A88")
-                            }
-                          ),
-                          /* NO SPECIMEN ANSWER IN THE THREAD, and that is a deliberate
-                             departure from the mockup, which shows a full Cortex reply with
-                             a counterparty table and figures. Rendering that here would put
-                             a fabricated answer on screen wearing "Answered by Snowflake
-                             Cortex Analyst" — a machine-attributed claim that no machine
-                             made. It is the same error as the forged escalation, in a
-                             friendlier costume. The shell holds the shape; the answer
-                             arrives in Phase 6 when the call is real. */
-                          a!cardLayout(
-                            padding: "STANDARD", shape: "SEMI_ROUNDED", style: "#FAFBFC", showBorder: false,
-                            marginBelow: "STANDARD",
-                            contents: a!richTextDisplayField(
-                              labelPosition: "COLLAPSED",
-                              value: a!richTextItem(
-                                text: "Pick a question above, or ask your own.",
-                                color: "#6E7885", size: "SMALL"
-                              )
-                            )
-                          ),
-                          a!textField(
-                            labelPosition: "COLLAPSED",
-                            placeholder: "Ask about the book — fails, exposure, counterparties, trends…",
-                            value: null,
-                            saveInto: {},
-                            disabled: true,
-                            marginBelow: "NONE"
-                          )
-                        }
-                      ),
+            /* ---------- ASK ACROSS THE BOOK — LIVE, Phase 6 Part 1 ----------
+               Was an inert shell: chips that could not be pressed and a DISABLED
+               text field. It is now the shared rule!SO_askPanel, pointed at
+               Snowflake Cortex through SO_askSnowflake.
+               CONTEXT LINE IS EMPTY HERE, deliberately: the supervisor's question
+               IS the house question, so there is no scope to prepend. The analyst
+               panel passes its selected case instead — same rule, different scope.
+               THE THREE CHIPS ARE THE SEMANTIC MODEL'S OWN VERIFIED QUERIES
+               (CLAUDE.md: "These are the Act 2 question vocabulary; do not invent
+               others without testing"). They are the questions the model is known
+               to answer, not the questions that sounded best. */
+            rule!SO_askPanel(
+              title: "ASK ACROSS THE BOOK",
+              blurb: "Answers computed in Snowflake over all 50,000 trades — nothing copied, nothing synced.",
+              questions: {
+                "Which counterparties have the highest settlement fail rates?",
+                "What is the settlement fail rate by asset class?",
+                "What is the total notional at risk for High and Critical risk trades?"
+              },
+              contextLine: "",
+              idleText: "Pick a question above, or ask your own.",
+              placeholder: "Ask about the book — fails, exposure, counterparties, trends…"
+            ),
             a!cardLayout(
                         padding: "LESS", shape: "SEMI_ROUNDED", showBorder: true, marginBelow: "STANDARD",
                         contents: {

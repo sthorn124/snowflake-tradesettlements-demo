@@ -116,6 +116,7 @@ Snowflake, direct access, never synced: TRADES, TRADE_PREDICTIONS (1:1), COUNTER
 - [ ] SC setup doc: new-SC-from-zero (own Snowflake user, default warehouse, PAT, grants), reset/verify usage, known failure modes + fallbacks (pre-scored batch; REST DATA_AGENT_RUN path)
 
 ### Phase 6 — Supervisor analytics (0.5 day)
+- ✅ 2026-09-24 — **PART 1: both Ask panels wired live to Snowflake Cortex** via `SNOWFLAKE.CORTEX.DATA_AGENT_RUN` over the existing SQL API connected system and PAT — **zero new Snowflake objects**, because the agent and the semantic view already existed. One shared `SO_askPanel` serves both screens; scope is the only parameter that differs. The analyst panel is NEW (that side never had one, in build or mockup) and sits at the foot of the queues by ruling. Three live grounded answers reconcile to the recorded 6,416/50,000 baseline. Failure path break-tested: plain one-liner, page survives. **PARTIAL — 3 of 6 questions, once each; the three-run bar, the hero-with-packet check and all geometry remain open (see TODO).**
 - [ ] Wire 3 verified-query questions (fail rate trend, top failing counterparties, notional at risk) as suggested prompts in a supervisor Ask panel (agentChatField scoped to analyst tool)
 - [ ] Verify answers against worksheet ground truth; add to eval suite
 
