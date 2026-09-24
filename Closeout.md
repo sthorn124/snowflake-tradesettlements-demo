@@ -1,156 +1,133 @@
-# Closeout — 2026-09-24 — Ask panels wired live to Snowflake Cortex (Part 1, partial)
+# Closeout — 2026-09-24 — Ask panel relocation, click feedback, answer quality (Part 1b)
 
-**Read (g) first.** The mechanism works end to end and both panels are live, but **Task 4 is one-third done** — 3 of 6 questions, run once each, not three times. That is the honest state.
+**Scope.** `SO_analystWatchlist` v20→**v21** (panel removed), `SO_caseDetail` v9→**v10** (panel added, replacing an inert shell that already existed there), `SO_askPanel` v2→**v3** (click feedback), `SO_askAnswerText` v4→**v5** (formatting defence), `snowflake/agent-instructions.sql` (authored, **not executed**). No process model, security or identity change. One read-only Snowflake probe, deleted and verified absent.
 
-**Scope.** `SO_askSnowflake` (new integration), `SO_askAnswerText` (new rule), `SO_askPanel` (new shared interface rule), `SO_supervisorCommand` v8→v9, `SO_analystWatchlist` v19→v20, `mockups/case_detail.html` superseded header. **Zero Snowflake objects created.** No process model, no security or identity change, no triage/intake/console/case-detail change.
-
-**Identity.** Dev MCP as `scott.thorn`. Persona reads via sail as `sam.supervisor` and `alex.analyst`. Preflight: design surface present, drift re-reported (Dev MCP and sail both 26.6.95 vs the 26.6.90 pin, already logged), skills identical, P4-VERIFY re-dated (all three CSVs). **Environment verified at clean baseline this time** — zero `TRD9` rows.
+**Identity.** Dev MCP as `scott.thorn`. Persona reads via sail as `alex.analyst` and `sam.supervisor`. Environment **verified at clean baseline** (zero `TRD9` rows); P4-VERIFY re-dated, all three CSVs applied.
 
 ---
 
-## (a) Mechanism chosen, routes rejected, and the read-only argument
+## (a) The greyed-out root cause — and an honest correction
 
-**CHOSEN: `SELECT SNOWFLAKE.CORTEX.DATA_AGENT_RUN(?, ?)` over the existing `/api/v2/statements` endpoint**, targeting the pre-existing `FINSERV.TRADE_SETTLEMENT.SETTLEMENT_RISK_AGENT`.
+**"Greyed out and does not work" does NOT reproduce from the terminal, and I am not going to invent a cause that fits.** Measured as `alex.analyst`: no `[DISABLED]` marker anywhere on the page with a row selected; the panel answered correctly with context. My first attempt to switch rows appeared to prove a stale-context bug — until I checked the checkbox state and found **`☑ TRD030639` still set**: my `interact` had never moved the selection, and the panel had been right all along. Reporting that as the cause would have been a fabrication.
 
-The decision turned on a fact discovered by reading the connected system rather than assuming it: **`SO Snowflake SQL API`'s `baseUrl` is the account root**, not `/api/v2/statements`. Any path on the account is therefore reachable with the existing PAT — which made this a real choice rather than a forced one.
+**What IS evidenced, and it explains the report without needing a disable bug:**
 
-| Route | Verdict |
+1. **The one thing in the panel that greys is the Ask button** — it carried `disabled: a!isNullOrEmpty(local!draft)`. On any fresh page the draft is empty, so Ask renders grey. I observed exactly that as `"Ask" <click> [DISABLED]` on the supervisor panel's first render this session.
+2. **Nothing else looked pressable.** The chips were `a!richTextItem` + `a!dynamicLink` — they render as prose-coloured text, not controls.
+3. **Clicking one produced no feedback for 20–45 seconds** (finding 1).
+
+So the panel presented prose that did not look clickable, one grey button, and no response to a click. "Greyed out and does not work" is a fair description of that from the user's seat, and all three are now fixed.
+
+**The scope half of the finding is real and structural.** The watchlist auto-selects row 1, so context usually existed — but deselecting left `contextLine` empty while the panel still read "ASK ABOUT THIS CASE", asking house-wide under a heading that claimed otherwise. Scope was invisible and could silently be nothing.
+
+**None of it can travel to case detail, by construction: there is no selection there.** `rv!record` fixes the case for the whole page.
+
+## (b) Case detail placement and composed chips
+
+**The shell was already there.** `SO_caseDetail` carried card `7c · ASK — PHASE 6 SHELL, DELIBERATELY INERT` (a disabled text field), sitting after `7a · AGENT ASSESSMENT` and `7b · TIMING`. Neither the brief nor Part 1 knew it existed. So this was replacing a dormant shell in its designed home, not inserting a new card.
+
+**Placement, and why:** immediately after the agent's assessment and its timing, in the main `AUTO` column (full width of the content area). That is the analyst's actual decision order — read what the machine concluded, check the window, then interrogate the book before disposing. **"Before the disposition action" resolves to "last in the reading order":** the disposition is a *record action in the record header* (ratified 2026-09-09), not a card on this view, so there is no button to sit above.
+
+**Composed chips, rendered live on case `TRD026800`:**
+
+```
+How does Vanguard Prime's settlement fail rate compare with the rest of the book?
+Which risk factors most often drive settlement fails for Equity trades?
+How does this trade's 11.8M EUR notional compare with typical Equity trades?
+```
+
+Counterparty, asset class and notional all come from the case's own fields. The asset class is rendered through `SO_assetClassDisplay` and **left in title case on purpose** — lower-casing it into the sentence would have produced "etf trades" and destroyed an initialism.
+
+**Context line** carries the same facts plus trade id, ticker and desk, so a free-typed question inherits them too.
+
+## (c) Click feedback — mechanism found; Part 1 had the wrong keyword
+
+**The documented parameter is `loadingIndicator`, not `enableLoadingIndicator`.**
+
+> **Show loading indicator on press** — `loadingIndicator` [Boolean] — "Determines whether the button will display a loading indicator on press **and be disabled while processing**." — [Button Component, 26.6](https://docs.appian.com/suite/help/26.6/Button_Component.html#parameters)
+
+Part 1 read `enableLoadingIndicator` off a rendered button's component tree, had it rejected by the object validator, and concluded no spinner existed. **The tree prints an internal attribute name; the settable keyword is different.** `loadingIndicator: true` was accepted by the object validator this session — so the mechanism was there all along.
+
+**It is button-local, so every ask path is now a button.** The chips became stacked `a!buttonWidget`s, each with its own indicator; the Ask button has one too and **is no longer disabled on an empty draft**.
+
+**What the browser should show, precisely:**
+- **On press, within ~1 s:** the pressed button shows a spinner and becomes disabled. It stays that way for the whole call. A second click on *that* button cannot queue a second call.
+- **On return (20–45 s):** the spinner clears, the question echoes in bold, the answer appears beneath it with the snowchip provenance line.
+
+**What it will NOT show, and I am not going to claim otherwise:** the question echo and an "Asking Snowflake…" line **cannot** appear before the answer. The call is synchronous — Appian paints once, when the evaluation returns — so any local set in the same `saveInto` is invisible until the answer is already on screen. There is no documented mechanism that repaints mid-evaluation short of the async process-and-poll route the brief explicitly forbade.
+
+**So the wait is made expected instead of narrated.** A standing line sits under the buttons, visible before anyone clicks: *"Answers are computed live in Snowflake and take 20–40 seconds."* Setting the expectation up front beats a progress message that cannot render. **This is a partial satisfaction of Task 3 and should be read as such**: the disable and the spinner are delivered; the echo-and-asking-line is not achievable synchronously.
+
+## (d) The agent's current specification, and the authored change
+
+Read through a throwaway read-only probe (`DESCRIBE AGENT`), now deleted and **verified absent**. Current spec:
+
+- **`instructions.response`**: *"You are a trade settlement risk analyst. Answer questions about settlement failures, counterparty risk, and trade predictions concisely with data-backed answers."* — that is all of it, which is why the agent narrates freely.
+- **`instructions.orchestration`**: use the Analyst tool for settlement data questions.
+- **`instructions.sample_questions`**: five.
+- **`tools`**: exactly one — `cortex_analyst_text_to_sql`, "SettlementAnalyst".
+- **`tool_resources`**: semantic view `FINSERV.TRADE_SETTLEMENT.TRADE_SETTLEMENT_ANALYTICS`, warehouse `COMPUTE_WH`, `query_timeout` 299.
+- No `models` block, no top-level `orchestration` block. Owner `FINSERVADMIN`, single version `VERSION$1`.
+
+**This closes the read-only gap Part 1 flagged as unverifiable.** The agent's only tool is text-to-SQL over a semantic view, which cannot emit DML — now measured rather than assumed.
+
+**Preservation argument.** Snowflake's docs are explicit: `ALTER AGENT … MODIFY LIVE VERSION SET SPECIFICATION` **"completely replaces the existing one. Fields that are not included in the new specification are removed."** There is no partial edit. So preservation is achieved by restating every other field character-for-character as `DESCRIBE` returned it, and changing only `instructions.response`. No `models` or top-level `orchestration` block is added, because adding one would itself be a change.
+
+**The new response instruction, quoted in full:**
+
+> You are a trade settlement risk analyst answering a colleague on a settlements desk. Lead with the answer in your first sentence. Keep the whole reply to two to four sentences. Write plain text only: no markdown, no asterisks, no bold, no bullet points, no headings. Never describe your own process - do not mention verified queries, semantic models, logical or physical column names, SQL, tools, or what you are about to do, and never write phrases like 'let me', 'I will look at', 'first I need to', or 'here is'. Never refer to a chart, graph, table or any visual, because the answer is shown as text only and no visual exists. Whenever you give a rate or a percentage, state the numerator and denominator that produced it, for example '24.37 percent, 240 of 985 trades'. If the data cannot answer the question, say so in one sentence and stop.
+
+Saved as `snowflake/agent-instructions.sql` with the full header. **Not executed.**
+
+## (e) `SO_askAnswerText` changes
+
+Strips **only unambiguous** markdown — `**`, `__`, backticks. **A single `*` is deliberately left alone**: it can be a footnote or a multiplication sign, and stripping it would corrupt an answer to fix a cosmetic.
+
+Blank-line runs are normalised **by construction** rather than by chasing run lengths: split on newline, trim each line, drop the empties, rejoin with exactly one blank line. Verified by `testRule` — six consecutive newlines, `**bold**`, `__under__` and backticks in, clean two-paragraph prose out.
+
+**It does not filter narration, on purpose.** Any display-side filter would have to guess which sentences are working-out, and a wrong guess silently deletes answer prose. Formatting is safe to normalise; meaning is not. That is the agent statement's job.
+
+## (f) Verification
+
+| Check | Result |
 |---|---|
-| **`DATA_AGENT_RUN` via `/api/v2/statements`** | **CHOSEN.** Grounded (the agent runs Analyst over the semantic view and executes the SQL); maximum reuse — same connected system, same PAT, same endpoint, same body shape and same `body.data[1][1]` response path as the proven `SO_simulateFeed`; one call per question. |
-| Cortex Analyst REST (`/api/v2/cortex/analyst/message`) | **Rejected on rule (3).** It returns the *generated SQL*, not results — the caller must execute it. Two calls per question. Worth noting it *would* have worked: `semantic_view` accepts a fully-qualified existing view, and `TRADE_SETTLEMENT_ANALYTICS` already exists. |
-| Cortex Agents REST (`agents/{name}:run`) | **Rejected on risk, not capability.** Equivalent and viable with `stream:false`, but a new endpoint path and new auth surface against a proven one. Kept as the documented fallback. |
-| `AI_COMPLETE` / `CORTEX.COMPLETE` as SQL | **Rejected on rule (1)** — the brief's own warning. Ungrounded unless data is stuffed into the prompt, which is model free-association wearing a SQL costume. |
+| Watchlist without panel, `alex.analyst` | **0** occurrences of the panel; page alive, 35 displays |
+| Supervisor panel shape | 3 **buttons**, standing wait line, `"Ask"` **no longer `[DISABLED]`** |
+| Supervisor answer, markdown | 23 s; **no `**`, no `\n\n\n`**. "Jade Capital leads at a 27.23% fail rate (281 of 1,032 trades failed)…" |
+| Case chips composed | Vanguard Prime / Equity / 11.8M EUR — all from case fields |
+| Case chip 1 | **27 s**, answered. Names Vanguard Prime, TRD026800, ENGI FP, 11.8M EUR Equity on EQ_FLOW. 240 + 6,176 = **6,416 / 50,000** — reconciles to recorded baseline |
+| Case chip 2 | **24 s**, answered, names the case |
+| Case chip 3 | **FAILED — 46 s, then the plain failure line; page intact** |
 
-**Read-only, and how it is actually enforced.** Three things, none of them hope:
-1. **The statement is a single `SELECT`.** There is no second statement and no DDL/DML verb anywhere in it.
-2. **The question is passed as BINDING 2, never concatenated.** A user cannot alter the statement's shape, whatever they type — this is the same parameterisation that makes SQL injection impossible, applied deliberately.
-3. **Answer extraction happens inside that same SELECT** (`FLATTEN` + `WHERE type='text'`), so there is no second round trip to be hijacked.
+**Chip 3 failing is a real result, not a blip to hide.** It is also the failure path working in production conditions rather than only under break-test: one calm amber line, everything else on the screen untouched. Under the Part 1 bar — *"a question that cannot clear that bar is replaced, not shipped"* — **the notional-comparison question is now suspect and must be re-run or replaced** in the completion session.
 
-**What is NOT enforcement, stated plainly:** the integration's `usage` flag. It governs caching and where the integration may be called, **not permissions**. And the PAT is scoped to `FINSERVADMIN`, which owns the schema — so the *role* is not restricting anything. **The residual gap, named:** the agent's own toolset is the one link I could not inspect, because a session has no Snowflake execution path. If `SETTLEMENT_RISK_AGENT` were ever given a tool that writes, the argument above would not cover it. Cortex Analyst itself is text-to-SQL over a semantic model and emits SELECT only.
+**Narration is still present**, as expected — chip 1 opened *"I'll look at the settlement data model…"* and chip 2 *"I'll analyze what risk factors…"*, and chip 2 referred to a breakdown it never rendered. That is exactly what the agent statement fixes, and it is why it exists.
 
-## (b) Snowflake objects created: NONE — and that is the finding
+**Not verified:** the hero with a packet loaded (case detail was proved on fixture case `TRD026800`; no packet was loaded, and loading costs ~2 min plus triage); all geometry and paint; the three-run stability bar; whether chip 3's failure is intermittent or structural.
 
-**Nothing was created, and nothing needed to be.** The agent (`SETTLEMENT_RISK_AGENT`) and the semantic view (`TRADE_SETTLEMENT_ANALYTICS`) already existed. No stage, no semantic model file, no helper view, no deploy note, no `snowflake/` script, and **no Snowsight round trip** — which also means this session had no dependency on Scott running anything first. The additive-only constraint is satisfied vacuously: the 50K baseline, the packet, `SIMULATE_FEED` and `RESET_SESSION` were never touched.
+## (g) Scott's steps
 
-## (c) Integration and settings
-
-**`SO_askSnowflake`** (`3abbedbd-f93b-4ae6-923e-c3a08d7eba66`), v7, on `SO Snowflake SQL API`. **PAT field never touched and never read.**
-
-| Setting | Value | Why |
-|---|---|---|
-| Path | `/api/v2/statements` | POST, same as the proven integrations |
-| `requestTimeout` | **120 s** | Measured answers land 22–45 s; 120 leaves headroom without hanging a demo indefinitely |
-| statement `timeout` | **120 s** | Snowflake-side, matched |
-| `usage` | **MODIFY** | A caching choice — see (g); not a security one |
-| `autoConvertToJson` | **false** | The body is already a finished JSON string |
-| `responseBodyParsing` | `CONVERT_JSON` | |
-| Headers | `Content-Type`, `Accept`, `User-Agent`, **`X-Snowflake-Authorization-Token-Type: PROGRAMMATIC_ACCESS_TOKEN`** | The last one is what makes PAT auth work; copied from the working integration rather than rediscovered |
-
-**`SO_askAnswerText`** v4 — trims and guards. It deliberately **no longer parses anything**; see (g).
-**`SO_askPanel`** v2 — the panel, built once, used by both screens. Scope is the only parameter that differs.
-
-## (d) Seeded questions and answers — PARTIAL (3 of 6, once each)
-
-**The brief's supervisor topics were adjusted, as it permits, because two of them are unanswerable by this mechanism.** STP trend and escalation patterns live in **Appian** (`SO Settlement Case`), not Snowflake; the Cortex agent cannot see them. The three shipped are the semantic model's own verified queries, which CLAUDE.md flags as the tested vocabulary.
-
-**Supervisor (house scope):**
-1. Which counterparties have the highest settlement fail rates?
-2. What is the settlement fail rate by asset class?
-3. What is the total notional at risk for High and Critical risk trades? *(not yet run)*
-
-**Analyst (scoped to the selected row):**
-1. How does this counterparty's settlement fail rate compare with the rest of the book?
-2. Which risk factors most often drive settlement fails for trades like this one? *(not yet run)*
-3. How does this trade's notional compare with typical trades of this asset class? *(not yet run)*
-
-**Answers captured verbatim — 3 of an intended 18.**
-
-**S1, `sam.supervisor`, 36 s:**
-> "The counterparties with the highest settlement fail rates are all classified in the **high** risk tier, led by **Jade Capital** at a 27.23% fail rate (281 of 1,032 trades failed), followed by **Beacon Finance** (25.99%) and **Liberty Trust** (25.28%). … Notably, every counterparty in the top 10 carries a "high" risk-tier classification, and fail rates cluster tightly between roughly 22.5% and 27.2% — reinforcing that the risk-tier labeling aligns well with actual settlement outcomes."
-
-**S2, `sam.supervisor`, 22 s:**
-> "There's a verified query that exactly matches this question. Here is the settlement fail rate broken down by asset class. Equities have the highest fail rate at 13.91%, followed closely by FX forwards (12.29%) and bonds (12.24%), with ETFs the lowest at 11.93%. … Equities stand out as the clear leader — its ~14% fail rate is nearly two percentage points above ETFs, and it also carries the largest trade volume (18,776 trades, 2,611 fails), making it the biggest contributor to overall settlement failures."
-
-**A1, `alex.analyst`, `TRD030639` selected, 45 s:**
-> "I'll look at the data model first, then compare Beacon Finance's fail rate against the rest of the book. Beacon Finance is a clear outlier on the high side. Its settlement fail rate is **25.99%** (276 fails out of 1,062 trades) — more than double the **12.55%** fail rate across the rest of the book (6,140 fails out of 48,938 trades). That's roughly **2.1x** the book-wide benchmark, so the trade in question (TRD030639, ULVR LN) is with a counterparty carrying elevated settlement risk. … Given the 2+ row comparison with a clear metric, a visual makes the gap easy to read. … The chart makes the gap visually stark: Beacon Finance's fail rate towers over the rest of the book at essentially double the height. Given TRD030639 sits with this counterparty, it's worth treating with above-average settlement scrutiny."
-
-**GROUNDING CHECKED AGAINST RECORDED TRUTH, not taken on trust.** A1's own arithmetic: 276 + 6,140 = **6,416** fails over 1,062 + 48,938 = **50,000** trades — exactly the baseline CLAUDE.md records. S2's equity figures reconcile the same way (2,611 / 18,776 = 13.91%). And A1 names **Beacon Finance**, **TRD030639** and **ULVR LN**, all inherited from the selected row via `contextLine`. The answers are computed over the real book.
-
-**Latency**
-
-| Ref | Persona | Run | Latency |
-|---|---|---|---|
-| S1 | sam.supervisor | 1 | 36 s |
-| S2 | sam.supervisor | 1 | 22 s |
-| A1 | alex.analyst | 1 | 45 s |
-| FAIL | sam.supervisor | 1 | **1 s** (fails fast) |
-| *(earlier, pre-fix)* | sam.supervisor | 3 | 35 / 34 / 39 s |
-
-**Range 22–45 s.** Demo-viable but not brisk: a presenter must talk over it. That is a talk-track fact for Part 2, not a defect.
-
-## (e) Panel behaviour, evidenced
-
-**IDLE** — supervisor, before asking: chips render as `<click>` (were inert `a!tagItem`), the text field is no longer `[DISABLED]`, **Ask** is correctly `[DISABLED]` with an empty draft, and the idle line shows.
-
-**ANSWERED** — the question echoed in bold, the answer, then the provenance line with the snowchip: *"❄ Computed in Snowflake by Cortex over the live book — nothing copied, nothing synced."* Verified rendering on all three answers above.
-
-**FAILED** — exercised deliberately by repointing the integration at `ZZ_NO_SUCH_AGENT`, then restored. Result: **1 s**, and
-> "Snowflake did not return an answer. Nothing else on this screen is affected — ask again, or carry on."
-**The page stayed alive — 37 display values still rendering.** That matters because the earlier build *did* take the whole page down (see (g)). Restored and re-verified by a fresh 22 s answer.
-
-**ASKING — there is no such rendered state, and I did not fake one.** The call is synchronous, so no intermediate local can paint. I tried to add a per-button spinner: **`a!buttonWidget`'s `enableLoadingIndicator` is rejected by the object validator ("Unrecognized Keyword")** even though it appears in a rendered button's component tree — a fourth instance of the rendered-tree-is-not-a-parameter-list trap. Visible progress is whatever the platform paints during evaluation, and **confirming that it is adequate on stage is a browser check for Scott.**
-
-**Analyst panel placement** — a full-width card at the foot of the queues, per your ruling. Its blurb switches on selection ("Select a trade above…" → "…scoped to the trade selected above"), so it degrades to house-wide rather than to an error.
-
-## (f) Scott's browser script
-
-1. **Supervisor screen, panel geometry** — does the Ask card sit correctly in the right rail without crowding the trend/reason/queue cards below it?
-2. **Analyst watchlist, panel geometry** — the new card at the foot of the queues: does it crowd the three queues, and does it sit sensibly beside the 320px preview rail?
-3. **The asking state.** Press a chip and watch for ~30 s. **Is the platform's own progress rendering enough that it doesn't look frozen?** If not, that is a real finding — there is no per-button spinner available (above), so the fix would be structural.
-4. **Answer typography** — answers run several paragraphs; check line length and spacing at laptop width. **Known cosmetic defect: excess blank lines** between paragraphs (the `CHR(10)||CHR(10)` join compounds with the agent's own newlines).
-5. **Provenance line** — snowchip renders, line reads correctly beneath the answer.
-6. **Failure styling** — ask with the network throttled or simply trust the evidence in (e); confirm the amber one-liner reads calmly.
-7. **One free-typed question per panel**, your choice, as ad-lib insurance.
-
-## (g) Stopped on, and everything that is not done
-
-**1. Task 4 is 3 of 6 questions, run ONCE each — not 18 answers, not the three-run stability bar.** Each call costs 22–45 s plus retrieval, and the session ran out of room after the mechanism itself took four diagnostic rounds. **The stability bar is therefore unproven.** Nothing was fabricated to fill the gap.
-
-**2. No demo packet was loaded, so the analyst panel was verified against a FIXTURE row (`TRD030639`), not the hero.** The environment was at clean baseline and loading a packet costs ~2 minutes plus triage. The context-line mechanism is proven — the answer named the selected trade, its ticker and its counterparty — but **the hero specifically was not exercised.**
-
-**3. The brief's premise was wrong about the analyst panel, and you ruled on it mid-session.** There was only ever ONE dormant panel. The analyst watchlist had none — not in the built screen, not in `mockups/analyst_watchlist.html`, and BUILD_PLAN's Phase 6 line scopes only *"a supervisor Ask panel"*. So the analyst side is new design work, placed by your ruling at the foot of the queues.
-
-**4. Two content defects in the answers, both real and both for Part 2:**
-   - **The agent narrates its own process and references a chart that does not exist.** A1 contains *"I'll look at the data model first…"* and *"The chart makes the gap visually stark…"* — the panel renders no chart. On stage that reads as a broken promise. These arrive as `type:"text"` elements, so they cannot be filtered without also filtering answer prose; **the fix is the agent's instructions, not the panel.**
-   - Excess blank lines between paragraphs.
-
-**5. The 4000-character truncation is a live constraint, not a solved problem.** Extracting the answer server-side puts today's answers comfortably under it, but a long answer could still be cut. Unmeasured where the cap comes from.
-
-**6. `SO_zzAskProbe` and `SO_zzFastSqlProbe` deleted, both verified by absence (404 / absent from listing).**
+1. **Run `snowflake/agent-instructions.sql`** in Snowsight — one statement, worksheet role `FINSERVADMIN`, warehouse `COMPUTE_WH`. Expected: one row, *"Statement executed successfully."*
+2. **Browser, both panels** — click a chip and confirm: **within about a second the button shows a spinner and goes disabled**; it stays disabled for the whole wait; when the answer arrives the spinner clears and the question echoes above it. *Expect no separate "Asking…" line — see (c) for why; the standing "20–40 seconds" line under the buttons is what sets the expectation.*
+3. **Formatting** — no `**` markers anywhere, no large blank gaps between paragraphs.
+4. **Case detail placement** — does the Ask card read as part of the decision flow, sitting after the agent's assessment and timing?
+5. **Watchlist** — confirm the panel is gone and the screen reads as it did before Part 1.
 
 ---
-
-## Verified / not verified
-
-**Verified.** Object validator accepted every save; `SO_supervisorCommand` v9, `SO_analystWatchlist` v20, both **byte-identical** on readback. Three live grounded answers reconciling to recorded baseline truth. Failure path exercised and page survival confirmed. Idle state confirmed. Restore after the break-test confirmed by a fresh answer.
-
-**Not verified.** Three of six questions; the three-run stability bar; the hero with a packet loaded; all geometry; the asking state's adequacy; the agent's toolset (no Snowflake execution path from a session).
 
 ## Promotion candidates
 
-**4 found; 0 promoted, 3 staged, 1 correction to the supplemental.**
+**2 found; 1 is a correction to a Part 1 candidate.**
 
-1. **CORRECTION TO appian-supplemental §3, measured:** *"Design tooling caps one evaluation at 5 seconds; `testInterface` tolerates longer — the interface route is the only legal and measurable home for real model calls."* **`testInterface` timed out at 5001 ms here too**, identically to `testRule`. The real home for a long model call is a **persona session through sail**, which ran the same call for 45 s without complaint. *Staged for the supplemental with the measurement.*
-2. **STAGED (gate 1): a QUERY-usage integration's response is cached, and the cache survives a fresh page load.** Trap: "ask again" silently does not ask, and a repeat-run stability check passes without a second call leaving Appian. Tell: a call that took 35 s returns in 1 s. Working form: MODIFY usage for anything that must genuinely re-run. *Trigger: the next integration called repeatedly with identical inputs.*
-3. **STAGED (gate 1): an integration invoked as a smart service must be called through the `rule!` domain, or `fv!result` does not resolve.** The same integration under QUERY usage is called bare. Same object, two call syntaxes depending on usage. *Trigger: the next MODIFY integration called from an interface.*
-4. **`enableLoadingIndicator` — fourth instance of the existing rendered-tree trap.** Not new; it strengthens an entry already promoted.
+1. **CORRECTION, measured:** a rendered component tree prints **internal attribute names** that differ from the settable keyword — `enableLoadingIndicator` in the tree versus `loadingIndicator` in the documentation and in the object validator. The existing supplemental entry says a tree attribute is not proof of a *writable* one; this adds the sharper form: **the tree's name may not even be the parameter's name, so a rejection should send you to the docs rather than to the conclusion that the feature is absent.** Part 1 concluded "no spinner exists" on exactly that mistake. *Trigger: next session that touches the supplemental.*
+2. **STAGED (gate 1): `sail load` replays a cached interaction state and does not refetch; `--fresh` is required to see a redeployed build.** Measured twice: a panel rendered its previous answer and its pre-rebuild shape after a plain `load`, and sail said so explicitly — *"settlement-ops is loaded with 6 interactions already made; loading would fetch a new page and discard that."* Trap: verifying a rebuild against a cached render and concluding it did not deploy. *Trigger: the next session that redeploys an object and re-renders it through sail.*
 
 **Promotion checkpoint: current through this entry.**
 
 ## TODO changes
 
-Added 5: complete Task 4 (3 remaining questions + the three-run bar); verify the analyst panel on the hero with a packet loaded; **agent instructions leak process narration and promise a chart** (Part 2, agent-side); answer blank-line cosmetics; the 4000-char cap as an unmeasured constraint. Closed 1: the Phase 6 "Ask panel visibly unfinished" item — both panels are now live.
+Closed 2: the Ask-panel narration/chart defect (statement authored, pending Scott), the blank-line cosmetics (fixed in `SO_askAnswerText`). Added 3: chip 3 failed and must be re-run or replaced before it ships; the hero-with-packet verification still owed; the echo-and-asking-line is not achievable synchronously and is recorded as a known limit rather than an open task.
 
 ## BUILD_PLAN changes
 
-Phase 6: Ask panels wired; noted Part 1 as partially verified with the gaps named.
+Phase 6: Part 1b recorded — panel relocated to case detail, click feedback delivered via `loadingIndicator`, answer-quality statement authored and awaiting Scott.

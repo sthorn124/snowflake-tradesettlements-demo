@@ -17,16 +17,28 @@
  *             it says what happened, that the rest of the screen is unaffected,
  *             and invites a retry.
  *
- * ASKING is NOT a fourth rendered state, and pretending otherwise would be a
- * lie about how this evaluates. The call is synchronous: Appian blocks the
- * evaluation until Snowflake answers, so no intermediate local can render
- * mid-flight. Visible progress is whatever the PLATFORM paints while an
- * evaluation is in flight, and that is all it can be.
- * MEASURED 2026-09-24: a!buttonWidget's `enableLoadingIndicator` is NOT a
- * settable keyword — the object validator rejects it outright ("Unrecognized
- * Keyword") even though it appears as an attribute in a rendered button's
- * component tree. So there is no per-button spinner to add here. Do not add a
- * fake "Thinking…" local either: a synchronous evaluation would never paint it.
+ * ================= CLICK FEEDBACK, AND ITS EXACT LIMIT =================
+ * THE PARAMETER IS `loadingIndicator`, NOT `enableLoadingIndicator`. The Part 1
+ * session read the latter off a rendered button's component tree, and the object
+ * validator rejected it — concluding wrongly that no spinner existed. The tree
+ * prints an INTERNAL attribute name; the settable keyword is documented as
+ * `loadingIndicator` (Button Component: "the button will display a loading
+ * indicator on press and be disabled while processing"). It paints ON PRESS,
+ * before the call returns, which is the whole requirement.
+ *
+ * SO EVERY ASK PATH IS A BUTTON. The chips were rich-text a!dynamicLinks, which
+ * take no loading indicator and, worse, looked like prose — the panel offered
+ * nothing that read as pressable, and its one button-shaped control sat greyed
+ * until you typed. That combination is what read as "dead" on stage.
+ *
+ * WHAT STILL CANNOT HAPPEN, stated so nobody re-litigates it: the question echo
+ * and an "Asking…" line cannot appear BEFORE the answer. The call is synchronous
+ * and Appian paints once, when the evaluation returns, so any local set in the
+ * same saveInto is invisible until the answer is already there. The spinner is
+ * platform-painted and therefore the only pre-answer feedback available.
+ * THE WAIT IS INSTEAD MADE EXPECTED RATHER THAN SURPRISING: a standing line under
+ * the buttons states the duration before anyone clicks. Setting the expectation
+ * up front beats a progress message that cannot render.
  *
  * ================= PROVENANCE =================
  * Every answer carries the snowchip and a line naming where it was computed.
@@ -78,24 +90,25 @@ a!localVariables(
         value: a!richTextItem(text: ri!blurb, color: "#6E7885", size: "SMALL")
       ),
 
-      /* THE CHIPS ARE THE SEEDED QUESTIONS, and pressing one submits it.
-         They are links rather than tags now: a tag cannot be pressed, and an
-         unpressable suggestion on a live panel is the same unfinished tell the
-         disabled text field used to be. */
+      /* THE SEEDED QUESTIONS ARE BUTTONS, one per row so a long question keeps
+         its own line. Each carries loadingIndicator, so the one that was pressed
+         spins and disables itself while Snowflake works — which is both the
+         feedback and the guard against a second call being queued. */
       a!forEach(
         items: ri!questions,
-        expression: a!richTextDisplayField(
-          labelPosition: "COLLAPSED", marginBelow: "LESS",
-          value: a!richTextItem(
-            text: "•  " & fv!item,
-            color: "#2E5A88", size: "SMALL",
-            link: a!dynamicLink(
-              value: fv!item,
-              saveInto: {
-                a!save(local!draft, fv!item),
-                a!save(local!submitted, fv!item),
-                rule!SO_askSnowflake(
-                  question: if(a!isNullOrEmpty(ri!contextLine), fv!item, ri!contextLine & "  " & fv!item),
+        expression: a!buttonArrayLayout(
+          align: "START",
+          marginBelow: "LESS",
+          buttons: a!buttonWidget(
+            label: fv!item,
+            size: "SMALL",
+            style: "OUTLINE",
+            loadingIndicator: true,
+            saveInto: {
+              a!save(local!draft, fv!item),
+              a!save(local!submitted, fv!item),
+              rule!SO_askSnowflake(
+                question: if(a!isNullOrEmpty(ri!contextLine), fv!item, ri!contextLine & "  " & fv!item),
                   onSuccess: {
                     a!save(local!answered, true),
                     a!save(local!ok, true),
@@ -108,11 +121,20 @@ a!localVariables(
                     a!save(local!answer, ""),
                     a!save(local!failed, true)
                   }
-                )
-              }
-            ),
-            linkStyle: "STANDALONE"
+              )
+            }
           )
+        )
+      ),
+
+      /* THE WAIT, STATED BEFORE IT HAPPENS. This is standing copy, not a state:
+         a transient "Asking…" line cannot paint on a synchronous call, so the
+         honest substitute is to tell the reader the duration up front. */
+      a!richTextDisplayField(
+        labelPosition: "COLLAPSED", marginAbove: "LESS", marginBelow: "NONE",
+        value: a!richTextItem(
+          text: "Answers are computed live in Snowflake and take 20–40 seconds.",
+          color: "#9AA6B3", size: "SMALL"
         )
       ),
 
@@ -175,7 +197,11 @@ a!localVariables(
           label: "Ask",
           size: "SMALL",
           style: "OUTLINE",
-          disabled: a!isNullOrEmpty(local!draft),
+          /* NOT disabled on an empty draft any more. A permanently grey button
+             beside prose-looking chips is what made the panel read as dead; the
+             empty case is handled by asking nothing rather than by greying. */
+          disabled: false,
+          loadingIndicator: true,
           saveInto: {
                 a!save(local!submitted, local!draft),
                 rule!SO_askSnowflake(

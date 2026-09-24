@@ -1070,36 +1070,50 @@ a!localVariables(
               }
             ),
 
-            /* ---- 7c · ASK — PHASE 6 SHELL, DELIBERATELY INERT ----
-               The box and the button are here so the screen's shape is final
-               and the Act 2 beat has a home, but nothing is wired: no Cortex
-               call, no MCP tool, no saveInto that does anything. It is
-               disabled, so it cannot pretend to work.
+            /* ---- 7c · ASK ABOUT THIS CASE — LIVE, Phase 6 Part 1b ----
+               Was an inert shell: a disabled text field and an example question,
+               deliberately dead so it could not pretend to work. It is now the
+               shared rule!SO_askPanel against Snowflake Cortex.
 
-               NO WIRING NOTE ON SCREEN. It used to carry "Wired in Phase 6 —
-               questions will run against the Snowflake semantic model", which
-               is a message from the build to itself: it tells a client which
-               parts of their demo are unfinished and names an internal phase
-               number to do it. Build state belongs in build-log.md and TODO.md.
-               The disabled field and its example question are the whole
-               placeholder. */
-            a!cardLayout(
-              padding: "LESS", shape: "SEMI_ROUNDED", showBorder: true,
-              contents: {
-                a!richTextDisplayField(labelPosition: "COLLAPSED", marginBelow: "STANDARD",
-                  value: {
-                    a!richTextItem(text: "ASK ABOUT THIS CASE   ", color: "#454F5C", size: "SMALL", style: "STRONG"),
-                    rule!SO_snowflakeMark(showWhen: true)
-                  }),
-                a!textField(
-                  labelPosition: "COLLAPSED",
-                  placeholder: "e.g. How often has this counterparty failed on sells this size?",
-                  value: null,
-                  saveInto: {},
-                  disabled: true,
-                  marginBelow: "NONE"
-                )
-              }
+               WHY HERE, AND NOT ON THE WATCHLIST. The trade-scoped Ask lived on
+               the watchlist for one session and was removed (ruled 2026-09-24).
+               There, scope came from a GRID SELECTION: the panel said "about this
+               case" while its context was whatever row happened to be selected,
+               and deselecting left it silently asking house-wide under a heading
+               that claimed otherwise. Here the case IS the page — rv!record fixes
+               it for the whole screen, there is nothing to select, and the scope
+               cannot drift or empty. That is the whole reason for the move.
+
+               PLACEMENT: immediately after the agent's assessment (7a) and its
+               timing (7b), which is where the analyst's decision flow actually
+               sits — read what the machine concluded, check the window, then
+               interrogate the book before disposing. The disposition itself is a
+               RECORD ACTION in the record header (ratified 2026-09-09), not a card
+               on this view, so "before the disposition" means last in the reading
+               order rather than above a button.
+
+               THE CHIPS ARE COMPOSED FROM THIS CASE'S OWN DATA, so they name the
+               real counterparty, the real asset class and the real notional. The
+               agent is never left to infer what "this" refers to — and the same
+               facts go in the context line, so a free-typed question inherits them
+               too. */
+            rule!SO_askPanel(
+              title: "ASK ABOUT THIS CASE",
+              blurb: "Answers computed in Snowflake over all 50,000 trades — nothing copied, nothing synced.",
+              questions: {
+                "How does " & a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{eab4eb75-cb43-43fc-a4a5-bea724b02294}counterparty.fields.{fe62f734-a3ee-4804-82e1-f8ca342ef25e}name', ""), "this counterparty") & "'s settlement fail rate compare with the rest of the book?",
+                "Which risk factors most often drive settlement fails for " & rule!SO_assetClassDisplay(assetClass: local!ac) & " trades?",
+                "How does this trade's " & rule!SO_fmtMoney(amount: local!notional, currency: local!ccy, compact: true) & " notional compare with typical " & rule!SO_assetClassDisplay(assetClass: local!ac) & " trades?"
+              },
+              contextLine: "For context, the case in front of me is trade "
+                & a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{e030ef7d-9626-47f2-90ca-fe586a435e6f}tradeID', ""), "")
+                & " (" & a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{2cbb6339-86b2-4618-8f47-59aa1081075e}instrument.fields.{8efffa50-ca97-41a1-94e7-301837f8f02f}ticker', ""), "") & "), asset class "
+                & rule!SO_assetClassDisplay(assetClass: local!ac)
+                & ", notional " & rule!SO_fmtMoney(amount: local!notional, currency: local!ccy, compact: true)
+                & ", counterparty " & a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{eab4eb75-cb43-43fc-a4a5-bea724b02294}counterparty.fields.{fe62f734-a3ee-4804-82e1-f8ca342ef25e}name', ""), "unknown")
+                & ", desk " & a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{0653bdd6-0407-4cb1-a790-737cd07bef85}desk', ""), "") & ".",
+              idleText: "Pick a question above, or ask your own about this case.",
+              placeholder: "Ask about this counterparty, this instrument, or the book…"
             )
           })
         }

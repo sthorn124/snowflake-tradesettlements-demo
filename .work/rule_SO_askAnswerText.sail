@@ -1,26 +1,56 @@
 /*
  * SO_askAnswerText — the last guard between a Snowflake reply and the screen.
  *
- * IT USED TO PARSE JSON HERE, AND THAT WAS THE WRONG PLACE — measured 2026-09-24.
- * SNOWFLAKE.CORTEX.DATA_AGENT_RUN returns the WHOLE agent transcript as one JSON
- * string: the answer, plus every "thinking" and "tool_use" element. That
- * transcript arrived at Appian TRUNCATED AT EXACTLY 4000 CHARACTERS, so it was
- * never valid JSON, and a!fromJson threw — which took the entire supervisor page
- * down rather than showing a failure state. Two lessons, both now designed in:
+ * IT DOES NOT PARSE, AND IT DOES NOT FILTER NARRATION. Two deliberate limits:
  *
- *   1. THE ANSWER IS EXTRACTED IN SNOWFLAKE, not here. SO_askSnowflake's
- *      statement flattens the reply and keeps only the type:"text" elements, so
- *      what crosses the wire is the answer alone — comfortably under the cap,
- *      because the bulk of a transcript is reasoning, not answer. The agent's
- *      working-out now never leaves Snowflake at all, which is a better answer
- *      to "don't show working-out as findings" than filtering it on arrival.
- *   2. THIS RULE NO LONGER PARSES ANYTHING, so it can no longer throw. It trims
- *      and it guards. A rule whose stated contract is "degrades to empty, never
- *      to an error" must not contain a function that errors on bad input.
+ *   1. NO PARSING. SNOWFLAKE.CORTEX.DATA_AGENT_RUN returns the whole agent
+ *      transcript as one JSON string, and it arrived TRUNCATED AT EXACTLY 4000
+ *      CHARACTERS (measured 2026-09-24) — never valid JSON, so a!fromJson threw
+ *      and took the whole page down. Extraction moved into SO_askSnowflake's own
+ *      SELECT, so the answer text arrives plain and the agent's reasoning never
+ *      leaves Snowflake. A rule whose contract is "degrades to empty, never to an
+ *      error" must contain no function that errors on bad input, and this one now
+ *      contains none.
+ *   2. NO NARRATION FILTERING. The agent narrating its own process ("There's a
+ *      verified query for exactly this", "Let me run it") is a REAL defect, and it
+ *      is fixed in the agent's instructions, not here. Any display-side filter
+ *      would have to guess which sentences are narration, and the cost of a wrong
+ *      guess is deleting answer prose — silently. Formatting is safe to normalise;
+ *      meaning is not.
  *
- * Returns "" for anything empty, and the caller renders its failure state.
+ * WHAT IT DOES FIX is presentation only, both reported from the browser:
+ *   - MARKDOWN EMPHASIS. The agent emits **bold**, which SAIL rich text renders
+ *     literally as asterisks. Only UNAMBIGUOUS markers are stripped: **, __ and
+ *     backticks. A single * is left alone on purpose — it can be a footnote or a
+ *     multiplication sign, and stripping it would corrupt an answer to fix a
+ *     cosmetic.
+ *   - BLANK-LINE RUNS. Answers arrived with four to six consecutive newlines. The
+ *     lines are split, trimmed, emptied ones dropped, and the survivors rejoined
+ *     with exactly one blank line between them — so spacing is normalised by
+ *     construction rather than by chasing run lengths with repeated substitutions.
  */
 a!localVariables(
-  local!t: if(a!isNullOrEmpty(ri!raw), "", trim(ri!raw)),
-  if(a!isNullOrEmpty(local!t), "", local!t)
+  local!raw: if(a!isNullOrEmpty(ri!raw), "", ri!raw),
+
+  local!demarked: substitute(
+    substitute(
+      substitute(local!raw, "**", ""),
+      "__", ""
+    ),
+    "`", ""
+  ),
+
+  local!lines: reject(
+    a!isNullOrEmpty,
+    a!forEach(
+      items: split(local!demarked, char(10)),
+      expression: trim(fv!item)
+    )
+  ),
+
+  if(
+    a!isNullOrEmpty(local!lines),
+    "",
+    trim(joinarray(local!lines, char(10) & char(10)))
+  )
 )

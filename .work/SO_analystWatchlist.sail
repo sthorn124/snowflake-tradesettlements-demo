@@ -1333,51 +1333,6 @@ a!localVariables(
                   )
                 }
               )
-              ,
-
-              /* ---------- ASK ABOUT THIS CASE — Phase 6 Part 1 ----------
-                 NEW PANEL, not a dormant shell brought live: the analyst screen
-                 never had one. The supervisor's was built inert in Phase 4; this
-                 side was never designed, in the build or in the mockup, and
-                 BUILD_PLAN's Phase 6 line scopes only "a supervisor Ask panel".
-                 Placement ruled 2026-09-24: a full-width card at the FOOT OF THE
-                 QUEUES, not in the preview rail. The rail is the obvious home —
-                 it already carries the selected case — but it is NARROW_PLUS and
-                 its prose budget is ONE SENTENCE (CLAUDE.md, rail canon). A
-                 Cortex answer is multi-sentence analytical text; putting it in a
-                 320px column would have meant either breaking the rail's own
-                 rules or truncating the answer.
-                 THE CONTEXT LINE IS WHAT MAKES "THIS COUNTERPARTY" RESOLVE. It is
-                 built from the SELECTED row, so the analyst's question inherits
-                 the case she is looking at. With no row selected it is empty and
-                 the panel asks house-wide — the same rule, degrading to the
-                 supervisor's behaviour rather than to an error. */
-              rule!SO_askPanel(
-                title: "ASK ABOUT THIS CASE",
-                blurb: if(
-                  a!isNullOrEmpty(local!selected),
-                  "Select a trade above to ask about it, or ask across the book.",
-                  "Answers computed in Snowflake, scoped to the trade selected above."
-                ),
-                questions: {
-                  "How does this counterparty's settlement fail rate compare with the rest of the book?",
-                  "Which risk factors most often drive settlement fails for trades like this one?",
-                  "How does this trade's notional compare with typical trades of this asset class?"
-                },
-                contextLine: if(
-                  a!isNullOrEmpty(local!selected),
-                  "",
-                  "For context, the trade in question is "
-                    & a!defaultValue(index(local!selected, "tradeId", ""), "")
-                    & " ("
-                    & a!defaultValue(index(local!selected, "ticker", ""), "")
-                    & ") with counterparty "
-                    & a!defaultValue(index(local!selected, "counterparty", ""), "")
-                    & "."
-                ),
-                idleText: "Pick a question above, or ask your own.",
-                placeholder: "Ask about this counterparty, this instrument, or the book…"
-              )
             }
           ),
 

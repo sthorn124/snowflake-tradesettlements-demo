@@ -3669,3 +3669,61 @@ CLAUDE.md:266 "Reset/Verify and Admin page are **Demo Admins only**" and CLAUDE.
 - Unchanged: recency-not-presence; showWhen-vs-nested-locals; the rest.
 
 **Promotion checkpoint: current through this entry (2026-09-24, Ask panels).**
+
+---
+
+## 2026-09-24 — Phase 6 Part 1b: Ask relocation, click feedback, answer quality
+
+**Scope line.** Dev MCP as `scott.thorn` (full scope). Persona reads via sail as `alex.analyst` and `sam.supervisor`. Environment **verified at clean baseline** (zero `TRD9` rows); P4-VERIFY re-dated, all three CSVs applied.
+
+### What changed, by object
+
+- **`SO_analystWatchlist` v20 → v21** — Ask panel removed entirely; screen back to its pre-Part-1 structure.
+- **`SO_caseDetail` v9 → v10** — card `7c` replaced. **It was already an inert Ask shell** (disabled text field), sitting after `7a AGENT ASSESSMENT` and `7b TIMING`; neither the brief nor Part 1 knew it existed, so this was wiring a dormant shell in its designed home rather than inserting a card.
+- **`SO_askPanel` v2 → v3** — chips are now stacked `a!buttonWidget`s with `loadingIndicator: true`; Ask button likewise and no longer `disabled` on an empty draft; standing "20–40 seconds" line added.
+- **`SO_askAnswerText` v4 → v5** — strips `**`/`__`/backticks, normalises blank-line runs, trims.
+- **`snowflake/agent-instructions.sql`** — authored, **not executed**.
+- One read-only probe integration (`DESCRIBE AGENT`), deleted and **verified absent** from the listing.
+
+### The greyed-out finding — corrected mid-investigation
+
+**It does not reproduce from the terminal, and the first theory was wrong.** An apparent stale-context bug (answer naming `TRD030639` after I selected `TRD023894`) dissolved on checking the checkbox state: **`☑ TRD030639` was still set** — the `interact` had never moved the selection, and the panel had been correct. Reporting that as the cause would have been a fabrication built on an unverified premise. What is evidenced instead: the Ask button carried `disabled: a!isNullOrEmpty(local!draft)` so it rendered grey on every fresh page (observed as `"Ask" <click> [DISABLED]`); the chips were rich-text links that read as prose; and a click produced nothing for 20–45s. All three are fixed. The scope half is real: deselecting left `contextLine` empty under a heading still claiming "about this case".
+
+### Decisions and why
+
+- **THE KEYWORD IS `loadingIndicator`, NOT `enableLoadingIndicator`, AND PART 1 GOT THIS WRONG.** Part 1 read the latter off a rendered button's component tree, had it rejected by the object validator, and concluded **no spinner existed**. The tree prints an INTERNAL attribute name. The documented, settable keyword is `loadingIndicator` — "the button will display a loading indicator on press and be disabled while processing" — and it was **accepted by the object validator** this session. A rejection should send you to the docs, not to a negative capability claim.
+- **Every ask path is a button because the indicator is button-local.** Rich-text `a!dynamicLink` chips take no indicator and looked like prose.
+- **THE ECHO-AND-ASKING-LINE IS NOT ACHIEVABLE SYNCHRONOUSLY, and that is recorded rather than worked around.** Appian paints once, on evaluation return, so any local set in the same `saveInto` is invisible until the answer is already on screen. The async process-and-poll route was rejected by the brief (30-second minimum refresh would add up to 30s per answer). **The substitute is to make the wait expected rather than narrated**: standing copy under the buttons stating the duration before anyone clicks.
+- **Case-detail placement is last in the reading order, after assessment and timing.** "Before the disposition action" has no card to sit above — the disposition is a record action in the record header (ratified 2026-09-09).
+- **Chips are composed from the case's own fields, with asset class left in TITLE CASE.** Lower-casing the display label into the sentence would have produced "etf trades" and destroyed an initialism.
+- **The panel does NOT filter narration, deliberately.** A display-side filter must guess which sentences are working-out, and a wrong guess silently deletes answer prose. Formatting is safe to normalise; meaning is not. Fixed at the agent instead.
+- **Whole-spec restatement is forced, not chosen.** `ALTER AGENT … MODIFY LIVE VERSION SET SPECIFICATION` "completely replaces the existing one. Fields that are not included in the new specification are removed." Every other field is reproduced character-for-character from `DESCRIBE`; no `models` or top-level `orchestration` block is added, because adding one would be a change.
+
+### Measured
+
+- **The agent's specification, read in full.** `instructions.response` was one generic sentence — which is why it narrates. **Its ONLY tool is `cortex_analyst_text_to_sql`** over `TRADE_SETTLEMENT_ANALYTICS`, warehouse `COMPUTE_WH`, `query_timeout` 299. **That closes the read-only gap the Part 1 close-out flagged as unverifiable from a session**: text-to-SQL over a semantic view cannot emit DML.
+- **`sail load` REPLAYS A CACHED INTERACTION STATE AND DOES NOT REFETCH.** A panel rendered its pre-rebuild shape and a previous answer after a plain `load`; sail then said so outright — *"settlement-ops is loaded with 6 interactions already made; loading would fetch a new page and discard that."* `--fresh` is required. Trap: verifying a redeploy against a cached render and concluding it did not deploy.
+
+### Verified (how, with scope)
+
+- Watchlist as `alex.analyst`: **0** panel occurrences, page alive (35 displays). Byte-identical readback, v21.
+- Supervisor panel: three **buttons**, standing wait line, `"Ask"` **no longer `[DISABLED]`**. One chip answered in **23 s** with **no `**` and no `\n\n\n`**.
+- Case chips composed live: "How does **Vanguard Prime**'s…", "…for **Equity** trades?", "…this trade's **11.8M EUR** notional…".
+- Case chip 1: **27 s**, names Vanguard Prime, TRD026800, ENGI FP, 11.8M EUR Equity on EQ_FLOW. Its arithmetic — 240 + 6,176 = **6,416 / 50,000** — reconciles to the recorded baseline.
+- Case chip 2: **24 s**, answered, names the case.
+- `SO_askAnswerText` verified by `testRule`: six newlines + `**` + `__` + backticks in, clean two-paragraph prose out.
+- All three interface saves byte-identical on readback.
+
+### Not verified / open
+
+- **CASE CHIP 3 FAILED ON ITS ONLY RUN** — 46 s, then the panel's plain failure line, page intact. That is the failure path working in production conditions rather than only under break-test, **and it means the notional-comparison question is suspect**: under the Part 1 bar, a question that cannot clear stable substance is replaced, not shipped. Unknown whether intermittent or structural.
+- **Narration still present**, as expected until Scott runs the statement: chip 1 opened "I'll look at the settlement data model…", chip 2 referred to a breakdown it never rendered.
+- **Hero-with-packet** not exercised (fixture case used; clean baseline, and a packet costs ~2 min plus triage). **All geometry and paint.** The three-run stability bar.
+
+### Promotion candidates (staging)
+
+- **CORRECTION to the rendered-tree entry, measured:** the tree may print an **internal attribute name that is not the parameter's name** — `enableLoadingIndicator` versus the documented, settable `loadingIndicator`. The existing entry says a tree attribute is not proof of a writable one; the sharper form is that **a validator rejection should send you to the docs, not to "the feature does not exist"**. Part 1 shipped a negative capability claim on exactly that mistake. *Trigger: next session that touches the supplemental.*
+- **STAGED (gate 1): `sail load` replays cached interaction state; `--fresh` is required after a redeploy.** *Trigger: the next session that redeploys an object and re-renders it through sail.*
+- Unchanged: QUERY-integration caching; `rule!` domain for smart-service integrations; recency-not-presence; `showWhen`-vs-nested-locals.
+
+**Promotion checkpoint: current through this entry (2026-09-24, Part 1b).**
