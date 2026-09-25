@@ -1,133 +1,149 @@
-# Closeout — 2026-09-24 — Ask panel relocation, click feedback, answer quality (Part 1b)
+# Closeout — 2026-09-24 — Ask completion: instructions verified, stability bar, the 46-second failure
 
-**Scope.** `SO_analystWatchlist` v20→**v21** (panel removed), `SO_caseDetail` v9→**v10** (panel added, replacing an inert shell that already existed there), `SO_askPanel` v2→**v3** (click feedback), `SO_askAnswerText` v4→**v5** (formatting defence), `snowflake/agent-instructions.sql` (authored, **not executed**). No process model, security or identity change. One read-only Snowflake probe, deleted and verified absent.
+**Scope.** `SO_caseDetail` v10→**v11** (one chip replaced, with evidence), `SO_askPanel` v3→v4→**v5** (diagnostic added for Task 2, then restored). Two throwaway read-only probes, both deleted and verified absent. **No Snowflake change beyond `DESCRIBE AGENT`.** No connected-system, security or identity change. Demo loaded and reset through the console path.
 
-**Identity.** Dev MCP as `scott.thorn`. Persona reads via sail as `alex.analyst` and `sam.supervisor`. Environment **verified at clean baseline** (zero `TRD9` rows); P4-VERIFY re-dated, all three CSVs applied.
+**Identity.** Dev MCP as `scott.thorn`. Persona reads via sail as `alex.analyst` and `sam.supervisor`. **21 live Cortex calls** this session.
 
 ---
 
-## (a) The greyed-out root cause — and an honest correction
+## (a) Agent readback — PASSES, checked field by field
 
-**"Greyed out and does not work" does NOT reproduce from the terminal, and I am not going to invent a cause that fits.** Measured as `alex.analyst`: no `[DISABLED]` marker anywhere on the page with a row selected; the panel answered correctly with context. My first attempt to switch rows appeared to prove a stale-context bug — until I checked the checkbox state and found **`☑ TRD030639` still set**: my `interact` had never moved the selection, and the panel had been right all along. Reporting that as the cause would have been a fabrication.
+`instructions.response` is the authored text, **847 characters, exact match** to `snowflake/agent-instructions.sql`. Preservation verified programmatically rather than by eye:
 
-**What IS evidenced, and it explains the report without needing a disable bug:**
-
-1. **The one thing in the panel that greys is the Ask button** — it carried `disabled: a!isNullOrEmpty(local!draft)`. On any fresh page the draft is empty, so Ask renders grey. I observed exactly that as `"Ask" <click> [DISABLED]` on the supervisor panel's first render this session.
-2. **Nothing else looked pressable.** The chips were `a!richTextItem` + `a!dynamicLink` — they render as prose-coloured text, not controls.
-3. **Clicking one produced no feedback for 20–45 seconds** (finding 1).
-
-So the panel presented prose that did not look clickable, one grey button, and no response to a click. "Greyed out and does not work" is a fair description of that from the user's seat, and all three are now fixed.
-
-**The scope half of the finding is real and structural.** The watchlist auto-selects row 1, so context usually existed — but deselecting left `contextLine` empty while the panel still read "ASK ABOUT THIS CASE", asking house-wide under a heading that claimed otherwise. Scope was invisible and could silently be nothing.
-
-**None of it can travel to case detail, by construction: there is no selection there.** `rv!record` fixes the case for the whole page.
-
-## (b) Case detail placement and composed chips
-
-**The shell was already there.** `SO_caseDetail` carried card `7c · ASK — PHASE 6 SHELL, DELIBERATELY INERT` (a disabled text field), sitting after `7a · AGENT ASSESSMENT` and `7b · TIMING`. Neither the brief nor Part 1 knew it existed. So this was replacing a dormant shell in its designed home, not inserting a new card.
-
-**Placement, and why:** immediately after the agent's assessment and its timing, in the main `AUTO` column (full width of the content area). That is the analyst's actual decision order — read what the machine concluded, check the window, then interrogate the book before disposing. **"Before the disposition action" resolves to "last in the reading order":** the disposition is a *record action in the record header* (ratified 2026-09-09), not a card on this view, so there is no button to sit above.
-
-**Composed chips, rendered live on case `TRD026800`:**
-
-```
-How does Vanguard Prime's settlement fail rate compare with the rest of the book?
-Which risk factors most often drive settlement fails for Equity trades?
-How does this trade's 11.8M EUR notional compare with typical Equity trades?
-```
-
-Counterparty, asset class and notional all come from the case's own fields. The asset class is rendered through `SO_assetClassDisplay` and **left in title case on purpose** — lower-casing it into the sentence would have produced "etf trades" and destroyed an initialism.
-
-**Context line** carries the same facts plus trade id, ticker and desk, so a free-typed question inherits them too.
-
-## (c) Click feedback — mechanism found; Part 1 had the wrong keyword
-
-**The documented parameter is `loadingIndicator`, not `enableLoadingIndicator`.**
-
-> **Show loading indicator on press** — `loadingIndicator` [Boolean] — "Determines whether the button will display a loading indicator on press **and be disabled while processing**." — [Button Component, 26.6](https://docs.appian.com/suite/help/26.6/Button_Component.html#parameters)
-
-Part 1 read `enableLoadingIndicator` off a rendered button's component tree, had it rejected by the object validator, and concluded no spinner existed. **The tree prints an internal attribute name; the settable keyword is different.** `loadingIndicator: true` was accepted by the object validator this session — so the mechanism was there all along.
-
-**It is button-local, so every ask path is now a button.** The chips became stacked `a!buttonWidget`s, each with its own indicator; the Ask button has one too and **is no longer disabled on an empty draft**.
-
-**What the browser should show, precisely:**
-- **On press, within ~1 s:** the pressed button shows a spinner and becomes disabled. It stays that way for the whole call. A second click on *that* button cannot queue a second call.
-- **On return (20–45 s):** the spinner clears, the question echoes in bold, the answer appears beneath it with the snowchip provenance line.
-
-**What it will NOT show, and I am not going to claim otherwise:** the question echo and an "Asking Snowflake…" line **cannot** appear before the answer. The call is synchronous — Appian paints once, when the evaluation returns — so any local set in the same `saveInto` is invisible until the answer is already on screen. There is no documented mechanism that repaints mid-evaluation short of the async process-and-poll route the brief explicitly forbade.
-
-**So the wait is made expected instead of narrated.** A standing line sits under the buttons, visible before anyone clicks: *"Answers are computed live in Snowflake and take 20–40 seconds."* Setting the expectation up front beats a progress message that cannot render. **This is a partial satisfaction of Task 3 and should be read as such**: the disable and the spinner are delivered; the echo-and-asking-line is not achievable synchronously.
-
-## (d) The agent's current specification, and the authored change
-
-Read through a throwaway read-only probe (`DESCRIBE AGENT`), now deleted and **verified absent**. Current spec:
-
-- **`instructions.response`**: *"You are a trade settlement risk analyst. Answer questions about settlement failures, counterparty risk, and trade predictions concisely with data-backed answers."* — that is all of it, which is why the agent narrates freely.
-- **`instructions.orchestration`**: use the Analyst tool for settlement data questions.
-- **`instructions.sample_questions`**: five.
-- **`tools`**: exactly one — `cortex_analyst_text_to_sql`, "SettlementAnalyst".
-- **`tool_resources`**: semantic view `FINSERV.TRADE_SETTLEMENT.TRADE_SETTLEMENT_ANALYTICS`, warehouse `COMPUTE_WH`, `query_timeout` 299.
-- No `models` block, no top-level `orchestration` block. Owner `FINSERVADMIN`, single version `VERSION$1`.
-
-**This closes the read-only gap Part 1 flagged as unverifiable.** The agent's only tool is text-to-SQL over a semantic view, which cannot emit DML — now measured rather than assumed.
-
-**Preservation argument.** Snowflake's docs are explicit: `ALTER AGENT … MODIFY LIVE VERSION SET SPECIFICATION` **"completely replaces the existing one. Fields that are not included in the new specification are removed."** There is no partial edit. So preservation is achieved by restating every other field character-for-character as `DESCRIBE` returned it, and changing only `instructions.response`. No `models` or top-level `orchestration` block is added, because adding one would itself be a change.
-
-**The new response instruction, quoted in full:**
-
-> You are a trade settlement risk analyst answering a colleague on a settlements desk. Lead with the answer in your first sentence. Keep the whole reply to two to four sentences. Write plain text only: no markdown, no asterisks, no bold, no bullet points, no headings. Never describe your own process - do not mention verified queries, semantic models, logical or physical column names, SQL, tools, or what you are about to do, and never write phrases like 'let me', 'I will look at', 'first I need to', or 'here is'. Never refer to a chart, graph, table or any visual, because the answer is shown as text only and no visual exists. Whenever you give a rate or a percentage, state the numerator and denominator that produced it, for example '24.37 percent, 240 of 985 trades'. If the data cannot answer the question, say so in one sentence and stop.
-
-Saved as `snowflake/agent-instructions.sql` with the full header. **Not executed.**
-
-## (e) `SO_askAnswerText` changes
-
-Strips **only unambiguous** markdown — `**`, `__`, backticks. **A single `*` is deliberately left alone**: it can be a footnote or a multiplication sign, and stripping it would corrupt an answer to fix a cosmetic.
-
-Blank-line runs are normalised **by construction** rather than by chasing run lengths: split on newline, trim each line, drop the empties, rejoin with exactly one blank line. Verified by `testRule` — six consecutive newlines, `**bold**`, `__under__` and backticks in, clean two-paragraph prose out.
-
-**It does not filter narration, on purpose.** Any display-side filter would have to guess which sentences are working-out, and a wrong guess silently deletes answer prose. Formatting is safe to normalise; meaning is not. That is the agent statement's job.
-
-## (f) Verification
-
-| Check | Result |
+| field | result |
 |---|---|
-| Watchlist without panel, `alex.analyst` | **0** occurrences of the panel; page alive, 35 displays |
-| Supervisor panel shape | 3 **buttons**, standing wait line, `"Ask"` **no longer `[DISABLED]`** |
-| Supervisor answer, markdown | 23 s; **no `**`, no `\n\n\n`**. "Jade Capital leads at a 27.23% fail rate (281 of 1,032 trades failed)…" |
-| Case chips composed | Vanguard Prime / Equity / 11.8M EUR — all from case fields |
-| Case chip 1 | **27 s**, answered. Names Vanguard Prime, TRD026800, ENGI FP, 11.8M EUR Equity on EQ_FLOW. 240 + 6,176 = **6,416 / 50,000** — reconciles to recorded baseline |
-| Case chip 2 | **24 s**, answered, names the case |
-| Case chip 3 | **FAILED — 46 s, then the plain failure line; page intact** |
+| `tools` | identical |
+| `tool_resources` | identical |
+| `instructions.orchestration` | identical |
+| `instructions.sample_questions` | identical |
+| top-level keys | identical — `['instructions','tool_resources','tools']`, so no `models` block crept in |
+| `instructions` keys | identical |
 
-**Chip 3 failing is a real result, not a blip to hide.** It is also the failure path working in production conditions rather than only under break-test: one calm amber line, everything else on the screen untouched. Under the Part 1 bar — *"a question that cannot clear that bar is replaced, not shipped"* — **the notional-comparison question is now suspect and must be re-run or replaced** in the completion session.
+Also unchanged in the raw readback: `owner` FINSERVADMIN, the comment, `profile` null, `created_on` 1787759099.277, and **`versions: ["VERSION$1"]`** — `MODIFY LIVE VERSION` edited in place without minting a version. **Nothing but `instructions.response` moved.**
 
-**Narration is still present**, as expected — chip 1 opened *"I'll look at the settlement data model…"* and chip 2 *"I'll analyze what risk factors…"*, and chip 2 referred to a breakdown it never rendered. That is exactly what the agent statement fixes, and it is why it exists.
+## (b) The 46-second failure
 
-**Not verified:** the hero with a packet loaded (case detail was proved on fixture case `TRD026800`; no packet was loaded, and loading costs ~2 min plus triage); all geometry and paint; the three-run stability bar; whether chip 3's failure is intermittent or structural.
+**1. It does not reproduce.** Chip 3 on the original specimen (`TRD026800`) ran twice at **25 s and 23 s**, both clean, then three more times on the hero at **19/19/23 s**. Five consecutive successes. **I could not capture the error detail because there was no error to capture** — a temporary diagnostic was built into the panel's failed branch (status, Snowflake `code`/`sqlState`/`message`, `numRows`, cell length) and never fired. That build is in git history for re-use if it recurs.
 
-## (g) Scott's steps
+**2. No ceiling below 120 s exists on this path.** Quoted:
 
-1. **Run `snowflake/agent-instructions.sql`** in Snowsight — one statement, worksheet role `FINSERVADMIN`, warehouse `COMPUTE_WH`. Expected: one row, *"Statement executed successfully."*
-2. **Browser, both panels** — click a chip and confirm: **within about a second the button shows a spinner and goes disabled**; it stays disabled for the whole wait; when the answer arrives the spinner clears and the question echoes above it. *Expect no separate "Asking…" line — see (c) for why; the standing "20–40 seconds" line under the buttons is what sets the expectation.*
-3. **Formatting** — no `**` markers anywhere, no large blank gaps between paragraphs.
-4. **Case detail placement** — does the Ask card read as part of the decision flow, sitting after the agent's assessment and timing?
-5. **Watchlist** — confirm the panel is gone and the screen reads as it did before Part 1.
+- **Appian integration `Timeout (sec)`** — *"the time… after which an integration should time out… This time pertains to the entire integration runtime (prepare + execute + transform). If left blank, the integration will run indefinitely."* Ours is 120. ([Integration Object 26.6](https://docs.appian.com/suite/help/26.6/Integration_Object.html#http-integration-definition))
+- **The 90-second limit is real but does not apply here** — *"all nodes time out after 90 seconds"* is scoped to **autoscaled process models**. ([Autoscale Patterns 26.6](https://docs.appian.com/suite/help/26.6/autoscale-patterns-practices.html)) We call from an interface `saveInto`, not a process node.
+- **65 s** applies to `a!queryRecordType` / `a!recordData`, not integrations.
+- **Snowflake:** the agent's `query_timeout` is **299 s**; our statement `timeout` is **120 s**.
+
+**Every ceiling sits above 46 s. The failure was not a timeout.**
+
+**3. Most probable mechanism — stated as inference, not measurement.** Under the old instructions the agent ran long multi-step explorations. Our statement keeps only `type:"text"` elements; a reply whose `content` array carries none yields `ARRAY_AGG` over an empty set → **NULL → empty cell → the panel's failed branch**. The new instructions ("two to four sentences", "say so in one sentence and stop") make long exploratory runs rare, which is consistent with five clean runs and with latency dropping. **I cannot prove this without a recurrence.**
+
+**Consequence for the demo:** low but non-zero. The panel degrades correctly — one calm amber line, the rest of the screen untouched — and a retry works. **Worth knowing: the panel renders "call errored" and "call succeeded but returned nothing" identically.** That is right for an audience and wrong for diagnosis; if it recurs, the first move is to re-add the diagnostic, not to guess.
+
+**Nothing was changed.** No connected system, no timeout, no platform setting.
+
+## (c) Latency — all 21 runs
+
+| question | run 1 | run 2 | run 3 |
+|---|---|---|---|
+| Case Q1 · Diamond Trust fail rate | 33 s | 24 s | 35 s |
+| Case Q2 · risk factors *(original)* | 34 s | 36 s | 20 s |
+| Case Q2 · **replacement** | 26 s | 18 s | 24 s |
+| Case Q3 · notional comparison | 19 s | 19 s | 23 s |
+| Sup Q1 · top counterparties | 17 s | 21 s | 23 s |
+| Sup Q2 · fail rate by asset class | 15 s | 19 s | 13 s |
+| Sup Q3 · notional at risk | 12 s | 14 s | 12 s |
+| *(chip 3 reproduction attempts)* | 25 s | 23 s | — |
+
+**Range 12–36 s, against Part 1's 22–45 s.** Both the floor and the ceiling came down — the shorter-answer instruction made the agent do less work. The supervisor lookups are now genuinely quick (12–23 s); the comparative case questions remain the slow end (19–36 s).
+
+## (d) The eighteen answers, and the bar
+
+Facts were **stable on all six questions across all three runs**. Every failure below is a *style* failure, not a substance one.
+
+**PASS — Sup Q2 · "What is the settlement fail rate by asset class?"** (15/19/13 s) — clean on all three.
+> "Equity has the highest settlement fail rate at 13.91 percent, 2,611 of 18,776 trades, followed by fx_forward at 12.29 percent, 977 of 7,948, bonds at 12.24 percent, 2,043 of 16,697, and etf at 11.93 percent, 785 of 6,579."
+
+**PASS — Sup Q3 · "What is the total notional at risk for High and Critical risk trades?"** (12/14/12 s) — clean on all three.
+> "Total notional at risk for High and Critical risk trades is 25.62 billion across 12,464 trades, made up of 20.86 billion from 10,638 High risk trades and 4.77 billion from 1,826 Critical risk trades."
+
+**FAIL (narration 1/3, duplication 1/3) — Case Q1 · Diamond Trust.**
+> Run 1: *"I'll compare Diamond Trust's settlement fail rate against the rest of the book.\n\nI need to use the logical column name counterparty_name.\n\n"* then "Diamond Trust runs materially hotter than the book, with a 22.51 percent fail rate, 228 of 1,013 trades, versus 12.63 percent for the rest of the book, 6,188 of 48,987 trades."
+> Run 2 (clean): "Diamond Trust runs a settlement fail rate of 22.51 percent, 228 of 1,013 trades, versus 12.63 percent for the rest of the book, 6,188 of 48,987 trades…"
+> Run 3: clean prose, but **the entire paragraph is emitted twice.**
+
+**FAIL (narration 3/3, chart reference, duplication) — Case Q2 · risk factors. REPLACED.**
+> Run 2 contained: *"I need to actually generate the chart before citing it."* — a chart reference the instructions explicitly forbid, and the panel renders no chart.
+> All three narrated. Facts were identical throughout: insufficient securities 34.93% (912 of 2,611), funding gap 29.87% (780), operational error 20.57% (537), counterparty default 14.63% (382).
+
+**MARGINAL (narration 1/3) — Case Q3 · notional comparison.** The question that failed in Part 1b **passed 3/3 here** (19/19/23 s).
+> Run 2 (clean): "This trade's 18.7M EUR notional is exceptionally large for an Equity trade, landing above the 99th percentile at 18,769 of 18,784 Equity trades at or below it (99.92 percent)… median of about 164,652 and an average of about 527,725."
+
+**MARGINAL (narration 1/3) — Sup Q1 · top counterparties.**
+> Run 1: *"There's a verified query matching this exactly. Let me run it.\n\nI need to use the logical column names from the model.\n\n"* — **verbatim the narration Scott reported.**
+> Runs 2–3 clean: "Jade Capital tops the list at 27.23 percent, 281 of 1,032 trades, followed by Beacon Finance at 25.99 percent, 276 of 1,062, and Liberty Trust at 25.28 percent, 251 of 993."
+
+### The replacement, and why only one
+
+**Case Q2 → "What are the most common fail reasons for &lt;asset class&gt; trades?"** — three runs at 26/18/24 s, narration on **1 of 3** instead of 3 of 3, facts identical to the original.
+
+Two reasons, and the second matters more than the first:
+
+1. **Measured improvement.** Flatter, lookup-shaped phrasing narrates less. The two questions that passed cleanly (Sup Q2, Sup Q3) are the flattest of the six; the ones that narrate are comparative and analytical. That is a real correlation with question *shape*.
+2. **THE OLD WORDING ASKED THE WRONG QUESTION.** "Risk factors" names `TOP_RISK_FACTORS`, which `CLAUDE.md` records as holding risk **drivers** (Counterparty Risk, Large Notional…), *not* fail reasons. The agent answered with **fail reasons** on every single run. The chip was asking for one thing and being answered with another, and nobody had noticed.
+
+**I did not rewrite the other three.** Case Q1, Case Q3 and Sup Q1 narrate on 1 of 3 runs — **the same rate the rewritten alternative achieves**. Swapping their wording has no demonstrated benefit, and six cosmetic rewrites I cannot show improve anything would be motion, not progress.
+
+**The residual is an instructions problem, not a wording problem**, and it is Snowflake-side and outside this session's scope. The evidence: explicit prohibitions ("never write phrases like 'let me'", "never refer to a chart") were violated on 5 of 21 runs *after* the instruction landed. Phrasing modulates compliance; it does not enforce it.
+
+## (e) Arithmetic reconciliations
+
+| answer | check | result |
+|---|---|---|
+| Case Q1 | 228 + 6,188 = **6,416** fails; 1,013 + 48,987 = **50,000** trades | exact baseline |
+| Case Q2 | 912 + 780 + 537 + 382 = **2,611** | exactly the equity fail count |
+| Sup Q2 | 2,611 + 977 + 2,043 + 785 = **6,416**; 18,776 + 7,948 + 16,697 + 6,579 = **50,000** | exact baseline |
+| **Sup Q3** | reports **10,638 High / 1,826 Critical** against recorded baseline **10,637 / 1,824** | **+1 and +2 — exactly the packet's 3 seeded High/Critical stories** |
+
+**Sup Q3 is the strongest evidence of the session.** The discrepancy is not an error: it is the loaded DEMO packet showing up in Cortex's own count. It proves the answer is computed live over the current book, not cached and not synced — which is the entire argument the demo exists to make.
+
+## (f) The six questions as they now ship
+
+**Supervisor — "Ask across the book":**
+1. Which counterparties have the highest settlement fail rates?
+2. What is the settlement fail rate by asset class?
+3. What is the total notional at risk for High and Critical risk trades?
+
+**Case detail — "Ask about this case"** (composed from the case's own fields; hero values shown):
+4. How does **Diamond Trust**'s settlement fail rate compare with the rest of the book?
+5. What are the most common fail reasons for **Equity** trades? *(replaced)*
+6. How does this trade's **18.7M EUR** notional compare with typical **Equity** trades?
+
+## (g) Environment restored, evidenced
+
+Loaded: `OK run=DEMO trades=15 predictions=15 high_or_critical=3`; intake created 3 cases; hero `TRD9DEMO01` present.
+Reset: `OK run=DEMO trades_deleted=15 predictions_deleted=15`, cases 93/94/95 deleted, `errDelete: false`.
+After: **0 `TRD9` rows**, watchlist back to **10 open** fixture cases with live cutoffs, `Straight-through today —`, page renders clean as `alex.analyst`.
+Both throwaway probes deleted and **verified absent** from the integration listing.
 
 ---
+
+## Two defects found that were not in the brief
+
+1. **THE AGENT WRITES RAW STORED ENUMS ONTO AN ANALYST SCREEN.** Sup Q2 renders **`fx_forward`**, **`etf`**, **`bond`** — the stored values, not the display labels. `CLAUDE.md`'s display-vocabulary canon is explicit that every enum reaching a screen goes through an `SO_*Display` rule, and this is the exact failure it exists to prevent ("Fx_forward" was the original offender). **It arrives through a door the canon never anticipated: agent prose.** The panel cannot map it without parsing answers, so the fix belongs in the agent instructions — "write asset classes as Equity, Bond, ETF, FX forward".
+2. **SUP Q3 STATES A HOUSE TOTAL IN NO CURRENCY.** "25.62 billion" — summing notionals across a book that runs EUR/GBP/JPY/CHF. `CLAUDE.md` already ruled that a house value-at-risk **is not computable from the data alone** because nothing carries an FX rate, which is why `SO_fxToUsd` exists and why every screen figure renders "USD eq." with its basis. The Ask panel bypasses that ruling entirely. On stage this is a number a settlements audience may well challenge.
 
 ## Promotion candidates
 
-**2 found; 1 is a correction to a Part 1 candidate.**
+**1 found; 1 carried.**
 
-1. **CORRECTION, measured:** a rendered component tree prints **internal attribute names** that differ from the settable keyword — `enableLoadingIndicator` in the tree versus `loadingIndicator` in the documentation and in the object validator. The existing supplemental entry says a tree attribute is not proof of a *writable* one; this adds the sharper form: **the tree's name may not even be the parameter's name, so a rejection should send you to the docs rather than to the conclusion that the feature is absent.** Part 1 concluded "no spinner exists" on exactly that mistake. *Trigger: next session that touches the supplemental.*
-2. **STAGED (gate 1): `sail load` replays a cached interaction state and does not refetch; `--fresh` is required to see a redeployed build.** Measured twice: a panel rendered its previous answer and its pre-rebuild shape after a plain `load`, and sail said so explicitly — *"settlement-ops is loaded with 6 interactions already made; loading would fetch a new page and discard that."* Trap: verifying a rebuild against a cached render and concluding it did not deploy. *Trigger: the next session that redeploys an object and re-renders it through sail.*
+1. **STAGED (gate 1): an LLM instruction is a strong prior, not a constraint, and compliance must be measured per-run rather than assumed from a successful deployment.** Measured: explicit prohibitions ("never write phrases like 'let me'", "never refer to a chart") were verified present in the deployed specification character-for-character, and were still violated on **5 of 21 runs**. The trap is treating a verified deployment as a verified behaviour — the readback proves the text is there, not that it is obeyed. Working form: sample N runs per prompt and report a compliance *rate*; where a behaviour must be guaranteed, enforce it downstream of the model rather than by instructing it. *Trigger: the next build that depends on an LLM obeying a formatting or content prohibition.*
+2. **Carried:** `sail load` replays cached interaction state; `--fresh` is required after a redeploy. Used repeatedly this session and it held every time.
 
 **Promotion checkpoint: current through this entry.**
 
 ## TODO changes
 
-Closed 2: the Ask-panel narration/chart defect (statement authored, pending Scott), the blank-line cosmetics (fixed in `SO_askAnswerText`). Added 3: chip 3 failed and must be re-run or replaced before it ships; the hero-with-packet verification still owed; the echo-and-asking-line is not achievable synchronously and is recorded as a known limit rather than an open task.
+Closed 3: chip 3's 46-second failure (investigated — no ceiling, does not reproduce, mechanism inferred); the hero-with-packet verification (done, 9 runs on `TRD9DEMO01`); the agent-instructions item (verified by readback). Added 3: residual narration on 5 of 21 runs needs an instructions strengthening; raw stored enums in agent prose; the uncurrencied house total in Sup Q3.
 
 ## BUILD_PLAN changes
 
-Phase 6: Part 1b recorded — panel relocated to case detail, click feedback delivered via `loadingIndicator`, answer-quality statement authored and awaiting Scott.
+Phase 6: Part 1c recorded — instructions verified by readback, stability bar run at 21 calls, one question replaced with evidence, environment restored.

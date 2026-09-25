@@ -1102,7 +1102,18 @@ a!localVariables(
               blurb: "Answers computed in Snowflake over all 50,000 trades — nothing copied, nothing synced.",
               questions: {
                 "How does " & a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{eab4eb75-cb43-43fc-a4a5-bea724b02294}counterparty.fields.{fe62f734-a3ee-4804-82e1-f8ca342ef25e}name', ""), "this counterparty") & "'s settlement fail rate compare with the rest of the book?",
-                "Which risk factors most often drive settlement fails for " & rule!SO_assetClassDisplay(assetClass: local!ac) & " trades?",
+                /* REPLACED 2026-09-24 (Part 1c). Was "Which risk factors most often drive
+                   settlement fails for <class> trades?", and it failed the stability bar
+                   by narrating on 3 of 3 runs. Two reasons for this wording:
+                   1. MEASURED: the flatter, lookup-shaped phrasing narrated on 1 of 3
+                      runs instead of 3 of 3, with identical facts (912/780/537/382 of
+                      2,611). Phrasing modulates narration; it does not remove it.
+                   2. THE OLD WORDING ASKED THE WRONG QUESTION. "Risk factors" names
+                      TOP_RISK_FACTORS, which holds risk DRIVERS (Counterparty Risk,
+                      Large Notional...), not fail reasons - CLAUDE.md is explicit. The
+                      agent answered with FAIL REASONS every time, so the chip asked for
+                      one thing and was answered with another. */
+                "What are the most common fail reasons for " & rule!SO_assetClassDisplay(assetClass: local!ac) & " trades?",
                 "How does this trade's " & rule!SO_fmtMoney(amount: local!notional, currency: local!ccy, compact: true) & " notional compare with typical " & rule!SO_assetClassDisplay(assetClass: local!ac) & " trades?"
               },
               contextLine: "For context, the case in front of me is trade "

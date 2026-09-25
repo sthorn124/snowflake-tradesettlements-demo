@@ -3727,3 +3727,54 @@ CLAUDE.md:266 "Reset/Verify and Admin page are **Demo Admins only**" and CLAUDE.
 - Unchanged: QUERY-integration caching; `rule!` domain for smart-service integrations; recency-not-presence; `showWhen`-vs-nested-locals.
 
 **Promotion checkpoint: current through this entry (2026-09-24, Part 1b).**
+
+---
+
+## 2026-09-24 — Phase 6 Part 1c: instructions verified, stability bar, the 46-second failure
+
+**Scope line.** Dev MCP as `scott.thorn` (full scope). Persona reads via sail as `alex.analyst` and `sam.supervisor`. **21 live Cortex calls.** Environment verified clean at start, DEMO packet loaded and reset through the console path, restoration evidenced. P4-VERIFY re-dated, all three CSVs.
+
+### What changed, by object
+
+- **`SO_caseDetail` v10 → v11** — case chip 2 replaced (see below). Byte-identical readback.
+- **`SO_askPanel` v3 → v4 → v5** — a temporary failure diagnostic added for Task 2, then **restored from backup**; v5 is byte-identical to v3's content with zero diagnostic references remaining.
+- Two throwaway read-only probes (`DESCRIBE AGENT`), both deleted and **verified absent** from the listing.
+- **No Snowflake change beyond `DESCRIBE AGENT`.** No connected-system, security, identity or timeout change.
+
+### Agent readback — verified programmatically, not by eye
+
+`instructions.response` = the authored text, **847 characters, exact match** to `snowflake/agent-instructions.sql`. `tools`, `tool_resources`, `instructions.orchestration`, `sample_questions`, top-level key set and `instructions` key set all **identical** to the Part 1b pre-change readback. `owner`, comment, `profile`, `created_on` and **`versions: ["VERSION$1"]`** unchanged — `ALTER AGENT … MODIFY LIVE VERSION` edited in place without minting a version. Nothing but the response instruction moved.
+
+### The 46-second failure — investigated, not reproduced
+
+- **Five consecutive clean runs** of the previously-failing question: 25 s and 23 s on the original specimen `TRD026800`, then 19/19/23 s on the hero.
+- **A diagnostic was built and never fired.** The panel's failed branch was temporarily given status code, Snowflake `code`/`sqlState`/`message`, `numRows` and cell length. No failure occurred, so **the error detail could not be captured** — that is a gap, not a finding, and the build is in git history for re-use.
+- **NO CEILING BELOW 120s EXISTS ON THIS PATH.** Appian's integration `Timeout (sec)` covers *"the entire integration runtime (prepare + execute + transform)"* and is 120 here; the **90-second node timeout is scoped to AUTOSCALED PROCESS MODELS**, and this path is an interface `saveInto`; the 65-second limit applies to `a!queryRecordType`/`a!recordData`, not integrations. Snowflake: agent `query_timeout` **299 s**, statement `timeout` **120 s**. Every ceiling is above 46 s. **It was not a timeout.**
+- **Most probable mechanism, recorded as INFERENCE:** under the old instructions the agent ran long multi-step explorations; a reply whose `content` array carries no `type:"text"` element yields `ARRAY_AGG` over an empty set → NULL → empty cell → the panel's failed branch. Consistent with five clean runs and with latency falling once answers were capped at two to four sentences. **Unproven without a recurrence.**
+- **Worth knowing:** the panel renders "call errored" and "call succeeded but returned nothing" identically. Correct for an audience, wrong for diagnosis.
+
+### Decisions and why
+
+- **ONE QUESTION REPLACED, NOT SIX.** Case Q2 → *"What are the most common fail reasons for &lt;asset class&gt; trades?"*. Two reasons: (1) measured — narration fell from **3/3 to 1/3** with identical facts; (2) **the old wording asked the wrong question.** "Risk factors" names `TOP_RISK_FACTORS`, which this file records as holding risk DRIVERS, not fail reasons — and the agent answered with FAIL REASONS on every run. The chip asked for one thing and was answered with another.
+- **THE OTHER THREE FAILING QUESTIONS WERE LEFT ALONE, DELIBERATELY.** They narrate on 1 of 3 runs — the same rate the rewritten alternative achieves. Rewriting them has no demonstrated benefit, and six cosmetic rewrites that cannot be shown to help would be motion rather than progress. **The residual is instruction compliance, not question wording**, and that is Snowflake-side.
+
+### Verified (how, with scope)
+
+- **Facts stable on all six questions across all three runs.** Every failure recorded is style, never substance.
+- **Latency 12–36 s across 21 runs**, against Part 1's 22–45 s — both floor and ceiling down, consistent with the shorter-answer instruction.
+- **Arithmetic reconciled four ways.** Case Q1: 228 + 6,188 = **6,416** over 1,013 + 48,987 = **50,000**. Case Q2: 912 + 780 + 537 + 382 = **2,611** equity fails. Sup Q2: 2,611 + 977 + 2,043 + 785 = **6,416** over 18,776 + 7,948 + 16,697 + 6,579 = **50,000**.
+- **SUP Q3 IS THE STRONGEST EVIDENCE OF THE SESSION.** It reported **10,638 High / 1,826 Critical** against this file's recorded baseline of **10,637 / 1,824** — **+1 and +2, exactly the packet's three seeded High/Critical stories.** The discrepancy is not an error; it is the loaded packet showing up in Cortex's own count, which proves the answer is computed live over the current book rather than cached or synced. That is the demo's entire argument, measured.
+- **Environment restored:** `OK run=DEMO trades_deleted=15 predictions_deleted=15`, cases 93/94/95 deleted, `errDelete: false`; afterwards 0 `TRD9` rows and the watchlist back to 10 open fixture cases with live cutoffs.
+
+### Two defects found that were not in the brief
+
+- **THE AGENT WRITES RAW STORED ENUMS ONTO AN ANALYST SCREEN** — `fx_forward`, `etf`, `bond` in the asset-class answer. The display-vocabulary canon requires every enum reaching a screen to pass through an `SO_*Display` rule; **agent prose is a door the canon never anticipated**, and the panel cannot map it without parsing answers. Fix belongs in the agent instructions.
+- **A HOUSE TOTAL IN NO CURRENCY** — Sup Q3's "25.62 billion" sums notionals across a EUR/GBP/JPY/CHF book. This file already ruled a house value-at-risk is **not computable from the data alone**, which is why `SO_fxToUsd` exists and why every screen figure carries "USD eq." and its basis. The Ask panel bypasses that ruling.
+
+### Promotion candidates (staging)
+
+- **NEW, STAGED (gate 1): an LLM instruction is a strong prior, not a constraint, and compliance is measured per-run rather than inferred from a successful deployment.** Measured: prohibitions verified present in the deployed specification character-for-character were still violated on **5 of 21 runs**. Trap: treating a verified readback as verified behaviour — the readback proves the text is there, not that it is obeyed. Working form: sample N runs and report a compliance RATE; where a behaviour must be guaranteed, enforce it downstream of the model rather than by instructing it. Survives the noun test. *Trigger: the next build that depends on an LLM obeying a formatting or content prohibition.*
+- **Carried and re-confirmed:** `sail load` replays cached interaction state; `--fresh` is required after a redeploy. Used throughout this session.
+- Unchanged: QUERY-integration caching; `rule!` domain for smart-service integrations; rendered-tree attribute names differing from settable keywords; recency-not-presence.
+
+**Promotion checkpoint: current through this entry (2026-09-24, Part 1c).**
