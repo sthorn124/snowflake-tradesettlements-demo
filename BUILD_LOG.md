@@ -3778,3 +3778,74 @@ CLAUDE.md:266 "Reset/Verify and Admin page are **Demo Admins only**" and CLAUDE.
 - Unchanged: QUERY-integration caching; `rule!` domain for smart-service integrations; rendered-tree attribute names differing from settable keywords; recency-not-presence.
 
 **Promotion checkpoint: current through this entry (2026-09-24, Part 1c).**
+
+---
+
+## 2026-09-24 — Phase 6 Part 1d: chips, narration enforced downstream, agent instructions v2
+
+**Scope line.** Dev MCP as `scott.thorn` (full scope). Persona reads via sail as `alex.analyst` and `sam.supervisor`. **30 live Cortex calls.** Environment verified clean at start; DEMO packet loaded and reset through the console path; restoration evidenced. P4-VERIFY re-dated, all three CSVs.
+
+### What changed, by object
+
+- **`SO_askPanel` v5 → v6** — new `labels` input; chips are `style: "LINK"`, `size: "SMALL"`, `width: "MINIMIZE"`, each with the full question as `tooltip`. `loadingIndicator` retained and re-accepted by the validator.
+- **`SO_caseDetail` v11 → v12** — chip labels composed from case fields.
+- **`SO_supervisorCommand` v9 → v10** — chip labels, and chip 3's question changed to "…by currency?".
+- **`SO_askSnowflake` v7 → v8 (diagnostic) → v9** — extraction rewritten; the v8 statement swap was the Task 2 diagnostic and was replaced, not left in place.
+- **`snowflake/agent-instructions-v2.sql`** — authored here, **run by Scott in Snowsight**, verified by readback.
+- **`CLAUDE.md`** — currency list corrected (see below).
+- Three throwaway read-only probes, all deleted and **verified absent**.
+
+### Decisions and why
+
+- **THE TOOLTIP WAS NEVER SET, AND THAT WAS THE WHOLE BUG.** The docs give cause and cure in one sentence: *"If a button's label is too wide for its container, the text will truncate. If the tooltip parameter is configured, users can hover over the button (web) or long press (mobile) to see the full label."* Nothing was broken; a parameter was missing.
+- **`style: "LINK"` is the lightest of the four documented options** — *"transparent background and border that switches to a colored border when highlighted"* — against `OUTLINE`'s permanent border. The **Ask** button keeps `OUTLINE` so the one real action still outranks three suggestions.
+- **UPPERCASE IS SITE-LEVEL AND UNREACHABLE FROM A SESSION.** *"You can configure this in a site object"*; `updateSite` exposes no branding fields over the Dev MCP. **Labels were therefore written in sentence case on purpose** — they render uppercase today and read correctly the moment the Designer box is unticked, with no code change.
+- **CONSTRAINT DEVIATION, DELIBERATE AND FLAGGED:** the brief limited interface changes to `SO_askPanel` and `SO_caseDetail`, but the supervisor chips live in `SO_supervisorCommand`, and Tasks 1.1 and 3.3 both require changing them. Treated as an oversight; only the `rule!SO_askPanel(…)` call there was touched.
+
+### The raw-response structure — measured, and it overturned a Part 1c assumption
+
+Six runs captured through a temporary statement swap. **Narration is NOT always in `thinking`.** On the supervisor side it is, and the `WHERE type='text'` filter already excluded it. **On the case side it arrives as `type:"text"`** — which is why it reached the screen. All three case runs were structurally identical:
+
+```
+0 text  "I'll look into Vanguard Prime's fail rate versus the re…"  ← NARRATION, type=text
+1 tool_use SettlementAnalyst        2 tool_result
+3 tool_use system_execute_sql       4 tool_result
+5 text  "I need to use the logical column name counterparty_name"   ← NARRATION, type=text
+6 tool_use system_execute_sql       7 tool_result                   ← BOUNDARY
+8 text  "Vanguard Prime fails at 24.37 percent, 240 of 985 trade…"  ← THE ANSWER
+9 suggested_queries / table
+```
+
+**Across all six runs every narration `text` precedes the last `tool_result` and every answer `text` follows it.** So the extraction now keeps only text after that boundary. Two implementation points that mattered:
+
+- **`COALESCE(last_tool, -1)`** — with no tool_result, `MAX(...)` is NULL and `i > NULL` matches nothing, which would have silently swallowed a one-sentence "the data cannot answer this" reply.
+- **FLATTEN RUNS ONCE, VIA A WINDOW FUNCTION.** The obvious CTE form references the flattened set twice and Snowflake may re-evaluate it — **calling `DATA_AGENT_RUN` a second time**, doubling latency and cost and filtering one answer against a different answer's tool index.
+
+**Duplication did not reproduce** in these six runs, so whether the Part 1c duplicate was two post-boundary `text` elements is unknown. **The new rule does not address duplication and is not claimed to.**
+
+### Verified (how, with scope)
+
+- **Agent v2 readback:** `instructions.response` matches the authored `.sql` character for character, 1,201 chars (v1: 847). `tools`, `tool_resources`, `orchestration`, `sample_questions`, both key sets, `owner`, comment, `profile`, `created_on` and `versions: ["VERSION$1"]` all unchanged.
+- **18 verification runs. NARRATION: 0 OF 18.** Latency 12–32 s.
+- **Both Part 1c canon defects closed.** Asset classes now render **"FX forward", "Bond", "ETF"** (3/3). Notional is reported **per currency** with an explicit statement that the amounts cannot be combined (3/3).
+- **v2's currency rule improved the analysis, not just the wording:** the notional-comparison answer now scopes to **6,280 EUR-denominated Equity trades** rather than Part 1c's undifferentiated 18,784.
+- **Four arithmetic reconciliations**, including **S3's per-currency trade counts summing to 12,464** — exactly Part 1c's High+Critical total (10,638 + 1,826), itself baseline 12,461 plus the packet's three seeded stories. That reconciliation crosses both panels and two sessions.
+- **Environment restored:** `trades_deleted=15 predictions_deleted=15`, cases 96/97/98 deleted, `errDelete: false`; 0 `TRD9` rows afterwards, watchlist back to 10 fixture cases.
+
+### Not fixed / residual
+
+- **1 of 18 referred to a table** ("The full top ten is below."). **Not a hallucination:** the raw response genuinely carries a `table` element after the answer text, which the extraction drops — the agent points at something it produced and we discard. v2 forbids visual references and this still slipped through.
+- **One mislabelled denominator:** "roughly 37 times the median" where 37x is the multiple of the **average**. Figures identical across all three runs, so a wrong word on a right number.
+- Cosmetic: two runs gave per-currency figures to the cent; one gave the rounded form, which reads far better.
+
+### A documentation defect found by the agent's own answer
+
+**`CLAUDE.md` described the book as "EUR/GBP/JPY/CHF". It runs SEVEN currencies** — EUR, USD, GBP, JPY, AUD, CAD, CHF — read off the per-currency breakdown of the 12,464 High and Critical trades. USD, AUD and CAD were absent from the project's own description of its data. **Checked before raising an alarm: there is no live defect.** `SO_fxToUsd` already covers ten currencies (AUD, CAD, CHF, EUR, GBP, HKD, JPY, SEK, SGD, USD), a superset of what the data holds, so every "USD eq." figure was always computed correctly. Only the prose was wrong, and it is corrected in place.
+
+### Promotion candidates (staging)
+
+- **NEW, STAGED (gate 1): where an LLM's output must obey a hard rule, enforce it on the RESPONSE STRUCTURE rather than in the prompt.** Measured across two sessions on one agent: an explicit prohibition in the deployed instructions was violated on **5 of 21** runs; a structural filter on the response — keep only the text elements after the last tool call — produced **0 of 18**. Trap: escalating prompt wording when the failure is non-compliance rather than misunderstanding. Working form: find a boundary in the response shape that separates wanted from unwanted, verify it holds across N runs, filter on it, and keep the prompt rule as belt and braces. Survives the noun test.
+- **[MERGED] The Part 1c candidate "an LLM instruction is a strong prior, not a constraint" is superseded by the entry above**, which carries the same observation plus its working form. Recorded as merged, not dropped.
+- **Carried and re-confirmed:** `sail load` replays cached interaction state; `--fresh` is required after a redeploy.
+
+**Promotion checkpoint: current through this entry (2026-09-24, Part 1d).**
