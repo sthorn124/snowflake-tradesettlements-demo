@@ -879,10 +879,21 @@ a!localVariables(
               /* SHORT LABEL ON THE CHIP, FULL QUESTION SENT AND IN THE TOOLTIP.
                  Paired by position. The full text still reaches the agent and
                  still echoes in bold above the answer. */
+              /* LABELS READ AS QUESTIONS, NOT REPORT TITLES — ruled 2026-09-24.
+                 The Part 1d labels ("Highest fail-rate counterparties") were
+                 accurate and read like column headings on a report; a panel whose
+                 whole premise is "ask the book something" should offer questions.
+                 Sentence case is deliberate: the site's uppercase button setting
+                 is being unticked in Designer, and these are written for that.
+                 LENGTH NOTE: this panel sits in a MEDIUM_PLUS column, and the
+                 longest label previously shipped here was 32 characters. Two of
+                 these are 40 and 42, so they are the truncation risk on this
+                 screen rather than the composed case labels in their full-width
+                 card. The tooltip carries the full question either way. */
               labels: {
-                "Highest fail-rate counterparties",
-                "Fail rate by asset class",
-                "At-risk notional by currency"
+                "Who has the highest fail rates?",
+                "How do fail rates differ by asset class?",
+                "How much notional is at risk, by currency?"
               },
               questions: {
                 "Which counterparties have the highest settlement fail rates?",

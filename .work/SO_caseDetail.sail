@@ -1104,10 +1104,22 @@ a!localVariables(
                  questions and paired to them by position. The chip stays legible
                  at laptop width; the full question rides in the tooltip and is
                  what actually reaches the agent. */
+              /* LABELS READ AS QUESTIONS, NOT REPORT TITLES — ruled 2026-09-24.
+                 Composed from the same case fields as the questions, so the chip
+                 names the real counterparty and asset class. Sentence case, for
+                 the site setting being unticked in Designer.
+                 LENGTH MEASURED against the data rather than guessed: the longest
+                 counterparty name is "Iron Gate Securities" (20) and the longest
+                 asset class label is "FX forward" (10), giving worst cases of 52,
+                 38 and 45 characters. That is longer than the 31 shipped in Part
+                 1d, and NOT shortened, because this panel is a full-width card in
+                 the main column - 31 was never near its limit, so exceeding it is
+                 not evidence of truncation. The narrow-rail supervisor labels are
+                 the ones to watch. */
               labels: {
-                a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{eab4eb75-cb43-43fc-a4a5-bea724b02294}counterparty.fields.{fe62f734-a3ee-4804-82e1-f8ca342ef25e}name', ""), "This counterparty") & " vs the book",
-                "Common fail reasons: " & rule!SO_assetClassDisplay(assetClass: local!ac),
-                "This notional vs typical " & rule!SO_assetClassDisplay(assetClass: local!ac)
+                "How does " & a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{eab4eb75-cb43-43fc-a4a5-bea724b02294}counterparty.fields.{fe62f734-a3ee-4804-82e1-f8ca342ef25e}name', ""), "this counterparty") & " compare with the book?",
+                "Why do " & rule!SO_assetClassDisplay(assetClass: local!ac) & " trades usually fail?",
+                "Is this trade unusually large for " & rule!SO_assetClassDisplay(assetClass: local!ac) & "?"
               },
               questions: {
                 "How does " & a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{eab4eb75-cb43-43fc-a4a5-bea724b02294}counterparty.fields.{fe62f734-a3ee-4804-82e1-f8ca342ef25e}name', ""), "this counterparty") & "'s settlement fail rate compare with the rest of the book?",

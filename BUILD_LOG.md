@@ -3849,3 +3849,50 @@ Six runs captured through a temporary statement swap. **Narration is NOT always 
 - **Carried and re-confirmed:** `sail load` replays cached interaction state; `--fresh` is required after a redeploy.
 
 **Promotion checkpoint: current through this entry (2026-09-24, Part 1d).**
+
+---
+
+## 2026-09-24 — Chip labels become natural-language questions
+
+**Scope line.** Dev MCP as `scott.thorn` (full scope). Persona renders via sail as `sam.supervisor` and `alex.analyst`. Environment verified clean (0 `TRD9` rows); P4-VERIFY re-dated per the ritual. **No Cortex calls** — none needed for a string change.
+
+### What changed, by object
+
+- **`SO_supervisorCommand` v10 → v11** — the three `labels` strings passed to `rule!SO_askPanel`.
+- **`SO_caseDetail` v12 → v13** — the three composed `labels` expressions.
+- **Nothing else.** `SO_askPanel`, `SO_askSnowflake`, the extraction and the agent are untouched, and the `questions` each chip sends, echoes and shows as a tooltip are **byte-identical to Part 1d** — confirmed by reading the deployed source of both screens, not by assertion.
+
+### Labels, as rendered through sail
+
+Supervisor: `Who has the highest fail rates?` / `How do fail rates differ by asset class?` / `How much notional is at risk, by currency?`
+Case (`TRD026800`, Vanguard Prime / Equity): `How does Vanguard Prime compare with the book?` / `Why do Equity trades usually fail?` / `Is this trade unusually large for Equity?`
+
+All six render as `<click>` buttons; all six tooltips confirmed individually on `tooltip:` lines carrying the full unchanged question.
+
+### THE LENGTH CHECK INVERTED THE BRIEF'S ASSUMPTION, AND THAT IS THE FINDING
+
+The brief asked whether any **composed** label exceeded "the length that fit untruncated in Part 1d". Measured against the data: longest counterparty name across all 50 is **`Iron Gate Securities` (20)**, longest asset-class display label is **`FX forward` (10)**, giving worst cases of **52 / 38 / 45** for the case chips and fixed **31 / 40 / 42** for the supervisor chips.
+
+**But the two panels sit in different containers, verified in the source rather than assumed:**
+
+- **Supervisor Ask panel: `a!columnLayout(width: "MEDIUM_PLUS")`** — a narrow rail. Longest label previously shipped there: **32**. Two new labels are **40 and 42**, i.e. 25% and 31% over the only length proven to fit in that container. **That is the real truncation risk.**
+- **Case Ask panel: the full-width `AUTO` column.** Its Part 1d label was 31 characters, but in a card that wide 31 was never near the limit — it was simply short. **Exceeding it therefore carries no signal**, and 52 is plausible there.
+
+**So "the length that fit untruncated" is only a meaningful ceiling where the container is tight.** The general shape, worth keeping: *a string-length baseline is evidence about a container, not about a string — carrying it to a different container proves nothing.*
+
+**NOTHING WAS SHORTENED.** Trimming a 52-character label in a wide card while leaving a 42-character one in a narrow rail would have satisfied the instruction's letter and missed its purpose. Both are reported instead; geometry is a browser check by project rule (§4) and sail carries no pixel widths. **Shorter supervisor alternatives are worded and banked in TODO** (`Which asset class fails most?` 29, `How much is at risk, by currency?` 33) so the fix is a two-string change rather than a re-derivation.
+
+**And the failure mode is already covered:** even if a rail label truncates, hovering shows the full question — the gap Part 1d closed by setting `tooltip`.
+
+### Verified / not verified
+
+**Verified.** Both saves byte-identical on readback; questions confirmed unchanged in deployed source; six labels rendered as the correct persona; six tooltips confirmed present with full question text.
+
+**Not verified.** All geometry — whether any label truncates at laptop width. Answer behaviour unchanged by construction (no integration, extraction or agent change) rather than re-measured.
+
+### Promotion candidates (staging)
+
+- **None staged.** The container-versus-string-length observation above is stated in general form in this entry, but it has not been measured twice and it is close to the existing `AUTO`/`NARROW` grid-width entry in the project file, so it is recorded here rather than staged. *Trigger: if a second session hits it, promote the general form.*
+- Unchanged: response-structure enforcement over prompt wording; `sail load` cache requiring `--fresh`.
+
+**Promotion checkpoint: current through this entry.**
