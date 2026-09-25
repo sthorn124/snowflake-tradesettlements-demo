@@ -40,6 +40,30 @@
  * the buttons states the duration before anyone clicks. Setting the expectation
  * up front beats a progress message that cannot render.
  *
+ * ================= CHIP DESIGN (Part 1d) =================
+ * SHORT LABEL ON THE CHIP, FULL QUESTION IN THE TOOLTIP AND IN THE CALL.
+ * The chips carried the whole question as their label, which truncated at laptop
+ * width with no way to read the rest. The documented cause and cure are the same
+ * sentence: "If a button's label is too wide for its container, the text will
+ * truncate. If the tooltip parameter is configured, users can hover over the
+ * button (web) or long press (mobile) to see the full label." The tooltip was
+ * simply never set. Now `labels` carries a short complete phrase, `questions`
+ * carries the full text, and the two are indexed together - the chip is legible,
+ * the hover explains it, and the agent still receives the full question.
+ *
+ * STYLE IS "LINK", THE LIGHTEST DOCUMENTED OPTION: "transparent background and
+ * border that switches to a colored border when highlighted". OUTLINE (the old
+ * value) draws a permanent border, which made three stacked chips read as three
+ * primary actions competing with the screen's real ones. These are suggestions.
+ *
+ * UPPERCASE IS NOT SETTABLE FROM HERE. "By default, all buttons ... use uppercase
+ * capitalization for labels. You can configure this in a site object" - and
+ * updateSite exposes no branding fields over the Dev MCP (CLAUDE.md). So the
+ * labels are written in sentence case and the site renders them uppercase until
+ * someone deselects "Use uppercase capitalization for button labels" in Designer.
+ * Written in sentence case deliberately: the day that box is unticked, these read
+ * correctly with no code change.
+ *
  * ================= PROVENANCE =================
  * Every answer carries the snowchip and a line naming where it was computed.
  * This is the same governance rule as the AI attribution on agent-authored
@@ -96,19 +120,28 @@ a!localVariables(
          feedback and the guard against a second call being queued. */
       a!forEach(
         items: ri!questions,
-        expression: a!buttonArrayLayout(
+        expression: a!localVariables(
+          /* The chip's short label, paired to this question by POSITION. Falls
+             back to the question itself if a caller passes no labels, so an
+             older caller degrades to the previous behaviour rather than to a
+             blank button. */
+          local!chipLabel: a!defaultValue(index(ri!labels, fv!index, fv!item), fv!item),
+          local!fullQuestion: fv!item,
+          a!buttonArrayLayout(
           align: "START",
           marginBelow: "LESS",
           buttons: a!buttonWidget(
-            label: fv!item,
+            label: local!chipLabel,
+            tooltip: local!fullQuestion,
             size: "SMALL",
-            style: "OUTLINE",
+            style: "LINK",
+            width: "MINIMIZE",
             loadingIndicator: true,
             saveInto: {
-              a!save(local!draft, fv!item),
-              a!save(local!submitted, fv!item),
+              a!save(local!draft, local!fullQuestion),
+              a!save(local!submitted, local!fullQuestion),
               rule!SO_askSnowflake(
-                question: if(a!isNullOrEmpty(ri!contextLine), fv!item, ri!contextLine & "  " & fv!item),
+                question: if(a!isNullOrEmpty(ri!contextLine), local!fullQuestion, ri!contextLine & "  " & local!fullQuestion),
                   onSuccess: {
                     a!save(local!answered, true),
                     a!save(local!ok, true),
@@ -124,6 +157,7 @@ a!localVariables(
               )
             }
           )
+        )
         )
       ),
 

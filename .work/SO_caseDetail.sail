@@ -1100,6 +1100,15 @@ a!localVariables(
             rule!SO_askPanel(
               title: "ASK ABOUT THIS CASE",
               blurb: "Answers computed in Snowflake over all 50,000 trades — nothing copied, nothing synced.",
+              /* SHORT LABELS, composed from the same case fields as the
+                 questions and paired to them by position. The chip stays legible
+                 at laptop width; the full question rides in the tooltip and is
+                 what actually reaches the agent. */
+              labels: {
+                a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{eab4eb75-cb43-43fc-a4a5-bea724b02294}counterparty.fields.{fe62f734-a3ee-4804-82e1-f8ca342ef25e}name', ""), "This counterparty") & " vs the book",
+                "Common fail reasons: " & rule!SO_assetClassDisplay(assetClass: local!ac),
+                "This notional vs typical " & rule!SO_assetClassDisplay(assetClass: local!ac)
+              },
               questions: {
                 "How does " & a!defaultValue(index(local!c, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{eab4eb75-cb43-43fc-a4a5-bea724b02294}counterparty.fields.{fe62f734-a3ee-4804-82e1-f8ca342ef25e}name', ""), "this counterparty") & "'s settlement fail rate compare with the rest of the book?",
                 /* REPLACED 2026-09-24 (Part 1c). Was "Which risk factors most often drive

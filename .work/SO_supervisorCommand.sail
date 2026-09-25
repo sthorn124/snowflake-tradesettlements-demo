@@ -876,10 +876,25 @@ a!localVariables(
             rule!SO_askPanel(
               title: "ASK ACROSS THE BOOK",
               blurb: "Answers computed in Snowflake over all 50,000 trades — nothing copied, nothing synced.",
+              /* SHORT LABEL ON THE CHIP, FULL QUESTION SENT AND IN THE TOOLTIP.
+                 Paired by position. The full text still reaches the agent and
+                 still echoes in bold above the answer. */
+              labels: {
+                "Highest fail-rate counterparties",
+                "Fail rate by asset class",
+                "At-risk notional by currency"
+              },
               questions: {
                 "Which counterparties have the highest settlement fail rates?",
                 "What is the settlement fail rate by asset class?",
-                "What is the total notional at risk for High and Critical risk trades?"
+                /* CHANGED Part 1d: was "...total notional at risk for High and
+                   Critical risk trades?", which the agent answered by SUMMING
+                   NOTIONALS ACROSS EUR/GBP/JPY/CHF and reporting "25.62 billion"
+                   with no unit. CLAUDE.md already ruled a house value-at-risk is
+                   not computable from the data alone, because nothing in the
+                   source carries an FX rate. Asking BY CURRENCY makes the answer
+                   arithmetically honest without needing a rate. */
+                "What is the notional at risk for High and Critical risk trades, by currency?"
               },
               contextLine: "",
               idleText: "Pick a question above, or ask your own.",
