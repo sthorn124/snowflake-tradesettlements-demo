@@ -3896,3 +3896,38 @@ The brief asked whether any **composed** label exceeded "the length that fit unt
 - Unchanged: response-structure enforcement over prompt wording; `sail load` cache requiring `--fresh`.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-10-05 — Identity probe on fixture case 00037, and its cleanup
+
+**Scope.** Not a build session. The probe ran from the method template's Dev MCP update session (DevMCP 26.6.105, build `20260930-110421`). The write ran as `test.presenter` via sail (`~/.sail-test.presenter`). Every Dev MCP read and both deletes ran as the design account `scott.thorn@appian.com`, full scope.
+
+### What changed, by object
+
+- **Process `SO_addCommentCase`.** One related-action submit as `test.presenter` via sail on case 00037 (id 37, P4-VERIFY). It ran as process 40360 at 2026-10-05 15:39 UTC.
+  - It wrote SO Case Comment row **105** (author `test.presenter`, text beginning "zz identity probe").
+  - It wrote SO Settlement Case Event History row **268** (Comment Added, user `test.presenter`, recordId 37).
+  - Purpose: a method question, whether the Dev MCP's `initiator` names the persona behind a sail submit. It did: `initiator: "test.presenter"`. Recorded in the method template, commit `0eb0c18`.
+- **Cleanup.** `deleteRecordData` by explicit id, event before comment: Event History `id 268`, then SO Case Comment `id 105`. No query, no range.
+
+### Decisions
+
+- **Why Add Comment on 00037.** It was the smallest write a persona could reach: it changes no case field.
+- **Why delete by hand.** `SO_resetRun` refuses P4-VERIFY, so Reset Demo would not have cleared these rows. Deleted on the operator's instruction.
+
+### Verified (as `scott.thorn@appian.com`, full scope, unless stated)
+
+- **Absence.** Event History is back to exactly rows 111–124, with 268 absent. SO Case Comment is back to exactly rows 41–52, with 105 absent.
+- **Case 37's row is unchanged.** Status New, unassigned, P4-VERIFY, `modifiedOn` 2026-09-24 23:30, identical before and after.
+- **No dependent rows.** The Reply Thread and Subscriber tables were empty before the delete, so the event left nothing behind.
+- **As `test.presenter` via sail,** a fresh read of 00037 shows "No activity recorded on this case yet.", with no probe text and no Comment Added entry in the stored YAML.
+
+### Not verified
+
+- **Process instance 40360 remains in process history.** It cannot be deleted over MCP, and no screen in this build reads process history.
+- **Ids 105 and 268 are consumed.** The fixtures do not reference either id, so `fixtures/p4-verify-redate.py` is unaffected; that was not re-run.
+
+### Promotion candidates (staging)
+
+- **None from this entry.** The identity finding belongs to the method template and is recorded there.
+
+**Promotion checkpoint: current through this entry.**
