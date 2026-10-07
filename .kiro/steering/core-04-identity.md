@@ -1,0 +1,62 @@
+---
+inclusion: always
+---
+
+# Operating core — §6 Identity
+
+## 6. Identity discipline
+
+- **Know which MCP server and which identity every tool call runs as.** A tool's name announces its server only through the name the server was registered under, and the client's server listing may not show every server.
+  - **Name servers by role:** `appian` for the Dev MCP (the name in Appian's documented registration, `reference/toolchain.md` §1) and `appian-runtime` for a runtime server.
+  - **How Kiro names tools.** Kiro's configuration, hooks, and permission rules name a tool by its server: `@appian/listRecordTypes` (permissions drop the `@`). The form the session itself sees is recorded by first-session measurement M8.
+  - **Two servers under one name.** Under Claude Code they failed silently in either direction [S34]. One session carried only the desktop-inherited server's 10 tools under the name, with the design tools absent; another carried both sets merged.
+    - **In Kiro, a same-named entry at a higher configuration level replaces the lower one whole:** workspace `.kiro/settings/mcp.json` over user `~/.kiro/settings/mcp.json` (documented, unmeasured). So the failure that remains is the shadow, where the Dev MCP disappears behind another server.
+  - **How it is caught:**
+    - the preflight's design-surface check (§2 step 2);
+    - the session-start report's registration check (§2 step 5);
+    - the tool-family tell: camelCase unprefixed design tools versus snake_case, product-prefixed runtime tools plus `ping`.
+  - **Confirming the executing identity.** When in doubt, use a throwaway rule returning `loggedInUser()`, then delete it. The delete needs the operator's permission switch (below).
+- **Design work goes through the Dev MCP as the designer account.**
+  - Processes are driven through `testProcessModel`; reads go through `testRule` or wrapper interfaces.
+  - A runtime or service-account MCP never executes design-session work: not for tests, not for break-tests, not "just to check".
+  - The service account is granted no group membership or scope in the application.
+  - **This is enforced by the operator's `~/.kiro/settings/permissions.yaml`,** which denies `appian-runtime/*`; a refusal is the ban working, never something to route around. The deny was measured refusing before the call reaches the server (M2c, the delete-deny on the same mechanism) and matches on the stable `appian/<tool>` form. A PreToolUse hook once duplicated this guard but was removed: a hook matcher keyed on the tool-name form is fragile — the form changed between sessions (M8) — while the permission rule is stable. **Where a permission rule and a hook cover the same guard, rely on the permission rule.**
+- **Why this is binding:** under a foreign identity, row-secured reads return empty silently while primary-key-targeted writes still succeed.
+  - A process completes green having read nothing.
+  - Anything downstream that reasons over the empty read, an LLM especially, confabulates rather than fails, writing plausible rows into the audit trail.
+  - The tell: text composed from the process's own parameters is correct while every record read is blank.
+- **Deletes are denied by default.** `~/.kiro/settings/permissions.yaml` denies the Dev MCP's delete and remove tools, listed one by one in `kiro-setup/permissions.yaml`.
+  - **When a session needs one** (throwaway cleanup under §12, or an owner-approved deletion), it stops, names the objects, and asks the operator to change that rule's `effect` from `deny` to `ask`.
+  - **Each delete then prompts,** and the operator changes the rule back afterwards.
+  - **A session cannot make the change itself:** Kiro denies agent writes to `~/.kiro/settings/`.
+  - **A refused delete is never retried another way.** Not through another tool, not as an overwrite, not by the runtime server.
+- **Switching the Dev MCP's identity takes `logout` plus a restart of the `appian` server process,** then an identity check.
+  - **Why the restart is needed.** `logout` deletes the session files only; the running server keeps the session it loaded into memory and keeps serving as that account. This was measured on DevMCP 26.6.105 (`reference/toolchain.md` §1); it is the server's behaviour and does not depend on the client.
+  - **The session cannot restart the server,** so the operator does.
+  - **Prove the restart by a new process id:** `pgrep -f lcp_mcp_server` before and after.
+  - **Reconnect the `appian` server from the MCP panel replaces the process** (measured M6, 2026-10-05) and is the cheapest action that does. Disable/Enable and a full quit and reopen also replace it; a full quit and reopen is the fallback if Reconnect does not change the PID.
+- **Connected systems and integrations run under their own configured credential, not the session's**, and a session cannot always see which. State which identity a probe or a process ran under, and never assume a connected system's scope from the design account's.
+- **sail is a third identity path.** Beside the Dev MCP (the designer) and a runtime MCP (a service account), the sail CLI drives published pages as whichever account its session holds.
+  - **Where its identity lives:**
+    - It is whichever `session.json` sits in the data directory in effect [S25, S26].
+    - That file is a portable bearer credential: a copy authenticated from another directory [S27].
+    - No sail command prints the acting identity, and the file's `username` is only the name typed at login [S2, S25].
+    - Persona-scoped reads look like plain facts: the same KPI read 94.41 as a persona and 126.01 as the designer, with nothing on screen saying which [S32].
+  - **Therefore:**
+    - Every sail observation states its account ("as `<persona>` via sail").
+    - Each persona has its own data directory, passed on every command (`--data-dir ~/.sail-<persona>`).
+    - The default directory stays empty, so a command that forgets the flag fails with "no session found" instead of running as someone [S26].
+    - Identity is confirmed by observation — the pages that resolve [S4], an activity entry naming the acting user after a write [S13] — never assumed from a directory's name.
+    - **A sail write that starts a process is also an identity check, after the fact.** sail prints the process id, and the Dev MCP reads it: `getProcessInstance(<that id>)` (DevMCP 26.6.105) returns `initiator`, the account the server authenticated for the submit, not the name typed at login. It named the persona on a related-action submit, measured 2026-10-05.
+      - It holds only for the process the submit itself started: a subprocess reports its top-level initiator.
+      - In `listProcessEvents` only the process start, the first node, and the variable changes carried the persona; later nodes and the completion were attributed to `Administrator`. Read `initiator`, not the events.
+      - It costs a write, so it confirms the account behind writes a session makes anyway; it is not a preflight read.
+- **Persona logins are the operator's.** sail's password login reads `SAIL_USERNAME` and `SAIL_PASSWORD` from the environment and, per its help, works only for local Appian accounts.
+  - The operator logs each persona in once, in a terminal outside Kiro, and the session persists on disk [S25, S29].
+  - A session never asks for, types, or stores a password.
+  - When a persona's session is missing or rejected, the session reports "no live session for `<persona>`, run the login" and skips that verification, with no fallback to another identity (§2, step 9).
+- **`--from-devmcp` is reserved for deliberate designer-versus-persona diffs, never routine verification.**
+  - It imports the designer's session, so every read through it has the design account's scope [S32].
+  - The import is not a copy of that session. All three cookie values are the Dev MCP's own, and `sail logout` on the import revoked the Dev MCP's server session as well [S31].
+  - Import into a throwaway data directory, and discard it by deleting that directory, never by `logout`.
+- **The design account is usually full-scope**, so a design-account render, count, or click proves nothing about what a persona sees [S32]. Persona checks run through sail as the persona, from sessions the operator logged in, for content, state, and behaviour. Geometry, and whatever sail cannot reach, stay browser checks owned by a human (§4).

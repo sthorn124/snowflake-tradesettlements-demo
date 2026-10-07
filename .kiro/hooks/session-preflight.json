@@ -1,0 +1,12 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Session preflight (machine-side checks)",
+      "description": "Runs the core §2 checks that need only the filesystem, git and sail, and puts the report in the agent's context. The Dev MCP steps stay with the agent.",
+      "trigger": "SessionStart",
+      "action": { "type": "command", "command": "python3 .kiro/scripts/preflight.py" },
+      "timeout": 180
+    }
+  ]
+}

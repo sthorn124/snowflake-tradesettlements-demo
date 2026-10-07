@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "appian": {
+      "command": "uv",
+      "args": ["run", "--directory", "/ABSOLUTE/PATH/TO/appian-dev-mcp-server", "python", "-m", "lcp_mcp_server"],
+      "env": { "LCP_URL": "https://<site>.appiancloud.com" },
+      "requestTimeout": 330000
+    },
+    "appian-public-docs": { "url": "https://appian-docs-public.mcp.kapa.ai" }
+  }
+}

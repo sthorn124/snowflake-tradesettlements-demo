@@ -1,95 +1,25 @@
-# Closeout — 2026-09-24 — chip labels become natural-language questions
+# Closeout — 2026-10-07 — migrated to the Kiro method
 
-**Scope.** Label strings only. `SO_supervisorCommand` v10→**v11**, `SO_caseDetail` v12→**v13**. Nothing else touched: the questions sent, echoed and shown as tooltips are byte-identical to Part 1d, and `SO_askPanel`, `SO_askSnowflake`, the extraction and the agent are all unchanged. **No Cortex calls made** — none were needed.
+**Scope.** Maintenance only, run from the claude.ai Project with push access to this repo, following `maintenance/migrate-from-claude-code.md` (Kiro template `appian-fs-sc/appian-devmcp-method-kiro`, commit `eda5386`). No Dev MCP call, no object changed, no data touched. The last build session remains 2026-09-24 (chip labels become natural-language questions; `SO_supervisorCommand` v11, `SO_caseDetail` v13); the 2026-10-05 identity probe and its cleanup are logged separately.
 
-**Identity.** Dev MCP as `scott.thorn`. Persona renders via sail as `sam.supervisor` and `alex.analyst`. Environment verified clean (0 `TRD9` rows); P4-VERIFY fixtures re-dated per the ritual, since this session renders Phase 4 screens.
+**Why.** Appian policy no longer allows building Appian applications from Claude Code over the Dev MCP. This build continues under the Kiro IDE, with planning and prompts still in the claude.ai Project.
 
----
+**What changed, by file.**
+- Added `.kiro/` (hooks, scripts, steering), `kiro-setup/`, `CREDITS.md`, `maintenance/kiro-port.md`, `maintenance/migrate-from-claude-code.md`; `.gitignore` gained the Kiro lines.
+- Replaced the template-owned files with the Kiro template's copies: `GETTING_STARTED.md`, `reference/`, `examples/`, `maintenance/dev-mcp-update.md`, `skills/appian-supplemental/SKILL.md` (now version 2026-10-05.2). The build's one local addition, the demo-presenter note in `GETTING_STARTED.md`, was promoted into the template first, so it is still here.
+- Moved the build's project sections from `CLAUDE.md` into `.kiro/steering/project.md`, unchanged except four reference fixes (core pointers, the files-list line, Kiro's tool-name forms, the runtime ban's enforcement). The Build parameters table is outside any code fence, where the session-start hook reads it.
+- Removed `CLAUDE.md`. Regenerated `PROJECT_INSTRUCTIONS.md` from the Kiro block with the existing BUILD CONTEXT.
 
-## The six labels, as rendered
+**How the build runs now.** Every Kiro session on this folder gets the operating core from `.kiro/steering/`, a session-start report from the hook (plan status, Build parameters, BUILD_LOG tail, TODO counts, git state, credits), a plan gate that allows Dev MCP writes because `BUILD_PLAN.md` is populated, a Stop hook that re-checks the close-out push, and the operator's permission rules denying the runtime server and the Dev MCP's deletes. Close-out is core §10 as before, with `CREDITS.md` rebuilt from Kiro's own records.
 
-**Supervisor**, as `sam.supervisor`:
-```
-Who has the highest fail rates?
-How do fail rates differ by asset class?
-How much notional is at risk, by currency?
-```
+**Verified.** `preflight.py` reads every Build parameter by name and finds the plan populated; `plan_gate.py` exits 0 on a write; `project.md` mentions `CLAUDE.md` once, in its files list; the working tree held exactly the listed changes before the commit; push verified by `HEAD` equal to `origin/main`.
 
-**Case detail**, as `alex.analyst` on fixture case `TRD026800` (Vanguard Prime / Equity):
-```
-How does Vanguard Prime compare with the book?
-Why do Equity trades usually fail?
-Is this trade unusually large for Equity?
-```
+**Not verified.** Nothing has run in Kiro on this repo yet. The first Kiro session records the B-checks in `maintenance/kiro-port.md`.
 
-All six render as `<click>` buttons. `LINK` style, `SMALL`, `MINIMIZE`, `loadingIndicator` and `tooltip` all retained.
+**Rulings needed.** None.
 
-**Tooltips verified individually**, each found on a `tooltip:` line in the rendered YAML carrying its full, unchanged question:
+**Promotion candidates.** None found; the presenter note was promoted during the migration.
 
-| chip | tooltip |
-|---|---|
-| Who has the highest fail rates? | Which counterparties have the highest settlement fail rates? |
-| How do fail rates differ by asset class? | What is the settlement fail rate by asset class? |
-| How much notional is at risk, by currency? | What is the notional at risk for High and Critical risk trades, by currency? |
-| How does Vanguard Prime compare with the book? | How does Vanguard Prime's settlement fail rate compare with the rest of the book? |
-| Why do Equity trades usually fail? | What are the most common fail reasons for Equity trades? |
-| Is this trade unusually large for Equity? | How does this trade's 11.8M EUR notional compare with typical Equity trades? |
+**TODO changes:** added three items under Before demo: the first Kiro session on this build (with the B-checks), paste the regenerated Project instructions, make the repository private.
 
-## The length check — and it inverts the brief's assumption
-
-Measured against the data rather than estimated. **Longest counterparty name across all 50: `Iron Gate Securities` (20 chars)**; longest asset-class display label: `FX forward` (10).
-
-| label | worst case | chars |
-|---|---|---|
-| Supervisor 1 | fixed | 31 |
-| Supervisor 2 | fixed | **40** |
-| Supervisor 3 | fixed | **42** |
-| Case 1 | Iron Gate Securities | **52** |
-| Case 2 | FX forward | 38 |
-| Case 3 | FX forward | 45 |
-
-**The brief asked me to check the composed case labels against "the length that fit untruncated in Part 1d". That comparison does not mean what it looks like, and the risk is on the other panel.**
-
-The two panels sit in different containers, which I verified in the source rather than assumed:
-
-- **Supervisor Ask panel: `a!columnLayout(width: "MEDIUM_PLUS")`** — a narrow rail. The longest label previously shipped there was **32** chars. Supervisor labels 2 and 3 are **40 and 42** — 25% and 31% over the only length proven to fit in that container. **This is the genuine truncation risk.**
-- **Case Ask panel: the full-width `AUTO` column** of case detail. Its Part 1d label was 31 chars, but in a card that wide, 31 was nowhere near the limit — it was simply short. **Exceeding it is not evidence of truncation**, so 52 chars is plausible there and I did not shorten it.
-
-**Nothing was shortened.** Shortening a 52-character label in a wide card while leaving a 42-character one in a narrow rail would have followed the instruction's letter and missed its point. Both are reported instead, and geometry is a browser check by project rule (CLAUDE.md §4) — sail carries no pixel widths.
-
-**The tooltip covers the failure mode either way.** Even if a supervisor label truncates, hovering now shows the full question — which is precisely the gap Part 1d closed.
-
-**Drop-in shorter alternatives, if your browser check shows truncation in the rail** (same voice, both ≤32):
-
-| current (chars) | shorter (chars) |
-|---|---|
-| How do fail rates differ by asset class? (40) | Which asset class fails most? (29) |
-| How much notional is at risk, by currency? (42) | How much is at risk, by currency? (33) |
-
-Say the word and it is a two-string change.
-
-## Browser check for Scott
-
-1. **Both panels** — do the labels now read as questions rather than report titles?
-2. **Sentence case** — after you untick *Use uppercase capitalization for button labels* on `SO_SettlementOperations`, the labels should render exactly as written above. They were authored in sentence case for this.
-3. **Truncation, supervisor panel specifically** — labels 2 and 3 are 40 and 42 characters in the MEDIUM_PLUS rail, against 32 previously proven. If either truncates, the alternatives above are ready.
-4. **Truncation, case panel** — worst case is 52 chars on a counterparty named `Iron Gate Securities`; the fixture cases show shorter names, so this one only appears on the right case.
-5. **Hover** — every chip should show its full question.
-
-## Verified / not verified
-
-**Verified.** Both saves byte-identical on readback; questions confirmed unchanged in the deployed source of both screens; all six labels rendered as `<click>` buttons through sail as the correct persona; all six tooltips confirmed present and carrying the full question.
-
-**Not verified.** All geometry — whether any label truncates at laptop width, which is browser-only. No Cortex call was made, so answer behaviour is unchanged by construction rather than re-measured.
-
-## Promotion candidates
-
-**None.** This was a string change. The container-versus-string-length observation below is a project fact, not a portable one, and is recorded in `BUILD_LOG.md` rather than staged.
-
-## TODO changes
-
-Updated 1: the uppercase-button-labels item now records that Scott is doing it in Designer. Added 1: watch the two over-length supervisor labels in the rail, with the shorter alternatives recorded so the fix is a two-string change rather than a re-derivation.
-
-## BUILD_PLAN changes
-
-Phase 6: label change recorded against Part 1d.
+**BUILD_PLAN.md changes:** none; no plan item was built.

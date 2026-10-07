@@ -1,6 +1,6 @@
 # Worked example: verifying as the persona with the sail CLI
 
-This is the worked example behind the verification split in `CLAUDE.md` §4, the sail identity rules in `CLAUDE.md` §6, and `reference/patterns.md` §12–13. It records one evaluation of the sail CLI that ships in the Dev MCP bundle. The evaluation ran against a delivered demo application on a live site, from two accounts: a persona with a local password, logged in by the operator, and the design account, imported from the Dev MCP. Every rule, boundary, and taxonomy entry elsewhere in this repo that cites an S-number points at a row of the measurement record at the end of this file. The application, the client, the records, and every person are removed; the numbers are as measured (sail 26.6.90 and DevMCP 26.6.90, one site, one day).
+This is the worked example behind the verification split in core §4, the sail identity rules in core §6, and `reference/patterns.md` §12–13. It records one evaluation of the sail CLI that ships in the Dev MCP bundle. The evaluation ran against a delivered demo application on a live site, from two accounts: a persona with a local password, logged in by the operator, and the design account, imported from the Dev MCP. Every rule, boundary, and taxonomy entry elsewhere in this repo that cites an S-number points at a row of the measurement record at the end of this file. The application, the client, the records, and every person are removed; the numbers are as measured (sail 26.6.90 and DevMCP 26.6.90, one site, one day).
 
 ## The question
 
@@ -30,7 +30,7 @@ Record views, their tabs, related-action forms, and a process launch's start for
 
 The listing is a summary. The complete page is the YAML sail stores beside it. The grid's rows past the second, every tag value, each milestone's name and date, and a new sort order are there and nowhere else [S7]. That YAML carries style (hex colours, size and style enums) and the layout parameters the interface requested. It carries nothing a browser computes: no pixel sizes, positions, line breaks, or truncation [S8]. Some things are out of reach altogether: document downloads, an action repeated per grid row under one label, and, per sail's help, plain URL links [S9].
 
-That is the split `CLAUDE.md` §4 now states:
+That is the split core §4 now states:
 
 - **Terminal-verifiable per persona:** content, field state, visibility, conditional rendering, navigation, and behaviour, reading the YAML where the listing stops.
 - **Browser-only:** wrapping, truncation, overflow, alignment, card heights, chart drawing, and branding.
@@ -53,7 +53,7 @@ The same pages were loaded as the persona and as the design account. The stored 
 
 Both KPI gaps are 31.6, exactly the restricted record's value. The roll-ups are security-aware, and the persona's tiles carry a tooltip saying restricted records are excluded, text that exists only in the YAML. The rows were not the difference: row security returned the same eight records to both accounts. Everything else was.
 
-**The trap runs both ways.** Read from the design seat, this site over-reports what the persona sees: six extra pages, higher totals, and real values where the persona sees `Restricted`. It also under-reports what the persona can do: the attention band offers the persona an action the design account does not get. A readback that states no account is wrong in both directions at once, and nothing on the screen says whose view it is. That is why every sail observation states its account. It is also why `--from-devmcp`, which imports exactly that design seat, is kept for deliberate diffs like this one (`CLAUDE.md` §6).
+**The trap runs both ways.** Read from the design seat, this site over-reports what the persona sees: six extra pages, higher totals, and real values where the persona sees `Restricted`. It also under-reports what the persona can do: the attention band offers the persona an action the design account does not get. A readback that states no account is wrong in both directions at once, and nothing on the screen says whose view it is. That is why every sail observation states its account. It is also why `--from-devmcp`, which imports exactly that design seat, is kept for deliberate diffs like this one (core §6).
 
 Where the differences showed also matters. The KPI values and the actions differed in the listing itself. The restricted record, however, sat in row 7 of a 7-row grid, and the listing previews only two rows. Its masked cells, and the difference between the two accounts, appeared only in the YAML [S7, S32].
 
@@ -90,7 +90,7 @@ The surrounding failures are all quiet at the exit code:
 - An out-of-range dropdown index cleared the field [S17].
 - A picker suggestion batched after a field that restructured the form was dropped without a mention [S18].
 
-These are the basis for `CLAUDE.md` §4's write rule and for the sail section of the taxonomy (M).
+These are the basis for core §4's write rule and for the sail section of the taxonomy (M).
 
 ## Sessions and identity
 
@@ -103,7 +103,7 @@ These are the basis for `CLAUDE.md` §4's write rule and for the sail section of
   - `sail logout` on the import then left the Dev MCP's cookie file byte-identical but its session dead. The Dev MCP server's next call hit a 401, reopened its browser, and recaptured a session in 3.1 s [S31].
   - That recovery was silent only because the browser profile's identity-provider session was still alive. Without it, the build's next design call would have stopped on an SSO and MFA prompt.
 
-These are the basis for `CLAUDE.md` §6:
+These are the basis for core §6:
 
 - every observation states its account;
 - each persona has its own directory;

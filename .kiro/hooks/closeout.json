@@ -1,0 +1,12 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Close-out push check",
+      "description": "core §10 steps 6-7. Silent unless a close-out is in progress; if it has not landed on the upstream, keeps the turn going with the git facts. Never pushes.",
+      "trigger": "Stop",
+      "action": { "type": "command", "command": "python3 .kiro/scripts/closeout_check.py" },
+      "timeout": 60
+    }
+  ]
+}

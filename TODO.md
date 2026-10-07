@@ -200,6 +200,10 @@ Open items by class. Sessions add discovered items unprompted; any response that
 
 ## Before demo
 
+- [ ] **First Kiro session on this build** — *Scott; trigger: the next build session.* Pull `main` (the 2026-10-07 migration), open the folder in Kiro, trust the workspace, say "run the preflight". Record the B-checks in `maintenance/kiro-port.md` as each is reached (skill load, auto steering, plan gate allowing a write, Stop-hook reset, credits rebuilt from Kiro's store, close-out commit prompt, which delete deny rule matches).
+- [ ] **Paste the regenerated `PROJECT_INSTRUCTIONS.md` block into the claude.ai Project** — *Scott; trigger: before the next Project conversation.* The current Project instructions say the build runs in Claude Code.
+- [ ] **Make this repository private** — *Scott; trigger: now.* It is public and carries the partner Snowflake account URLs, the `FINSERVADMIN` role and the open network policy in `BUILD_LOG.md`, `deploy-notes.md` and the project sections.
+
 - [ ] **Persona sail sessions** — *Scott.* The retrofit's core (§4, §6) moves persona content/state/behaviour checks to sail, which needs `alex.analyst` and `sam.supervisor` to be local-password accounts, each logged in once into `~/.sail-alex.analyst` / `~/.sail-sam.supervisor` (`GETTING_STARTED.md` §1, "once per persona"). Not yet recorded whether either is local-password. Trigger: the first build prompt that ends with persona-scoped sail steps; until then those checks stay on the browser list.
 
 - ✅ 2026-08-31 — `left(..., 255)` caps raised to 4000 across all six models (SO_triageCase ×4 details, SO_createTriageCase, SO_assignCase, SO_addCommentCase, SO_escalateCase, SO_recordDispositionCase); each confirmed by readback.

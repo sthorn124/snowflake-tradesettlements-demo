@@ -3931,3 +3931,38 @@ The brief asked whether any **composed** label exceeded "the length that fit unt
 - **None from this entry.** The identity finding belongs to the method template and is recorded there.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-10-07 — Migrated to the Kiro method (maintenance, no build work)
+
+**Scope.** Not a build session, and no Dev MCP call. Run from the claude.ai Project with push access to this repo, following `maintenance/migrate-from-claude-code.md` from `appian-fs-sc/appian-devmcp-method-kiro` at commit `eda5386`. Starting point: HEAD `84a4f0f`, clean tree, equal to `origin/main`. Reason: Appian policy no longer allows building from Claude Code over the Dev MCP; this build continues under the Kiro IDE.
+
+### What changed, by file
+
+- **Added** `.kiro/hooks/` (session preflight, plan gate, close-out check), `.kiro/scripts/` (`preflight.py`, `plan_gate.py`, `closeout_check.py`, `credits.py`, `method_lib.py`), `.kiro/steering/core-00` to `core-06`, the `ref-*` and procedure steering files, `kiro-setup/` (the two settings files the operator installs), `CREDITS.md`, `maintenance/kiro-port.md`, `maintenance/migrate-from-claude-code.md`, and the `.gitignore` lines for `.kiro/settings/`, `.kiro/state/`, `__pycache__/`.
+- **Replaced with the Kiro template's copies:** `GETTING_STARTED.md`, `reference/` (five files), `examples/` (three), `maintenance/dev-mcp-update.md`, `skills/appian-supplemental/SKILL.md` (2026-09-24.2 → 2026-10-05.2). Each of the build's copies matched a version in the Claude Code template's history except two: `reference/toolchain.md` (its vendor-pack paragraph was an older template version, seven lines) and `GETTING_STARTED.md`, whose extra section "The demo presenter's own account" was noun-free and went into the Kiro template's `GETTING_STARTED.md` (commit `eda5386`) before the copy, so this build keeps it.
+- **Moved** the project sections of `CLAUDE.md` (from "# Project sections — Settlement Operations Demo" to the end) into `.kiro/steering/project.md`, below the template's §13 text. Four edits inside the moved text: the skill-precedence pointer (`core-00-preamble.md`, core §9); the files-list line for this file; the MCP-servers paragraph now names Kiro's tool-name forms beside Claude Code's; the runtime-server ban now also names its enforcement (`permissions.yaml` denies `appian-runtime/*`). Nothing else in the sections changed: Build parameters, vocabulary canon, Snowflake environment, business rules, repeatability, known data artifacts, working style, Demo Admin site, files, session close-out are byte-for-byte.
+- **Removed** `CLAUDE.md` (`git rm`; history keeps it). No `.claude/` folder existed.
+- **Regenerated** `PROJECT_INSTRUCTIONS.md` from the Kiro template's §2 block with the 2026-09-21 BUILD CONTEXT values carried over. The operator pastes the block into the Project's instructions; the old block says the build runs in Claude Code.
+
+### Decisions
+
+- **Historical mentions of `CLAUDE.md` stay.** The plan, this log, `TODO.md`, `packet-spec.md` and the SQL comments name the file that held the ruling on that date. The files list in `project.md` says what they mean.
+- **The build's project sections were not rewritten for Kiro beyond the four edits.** They describe the application and its rules, which did not change.
+
+### Verified (by readback, in the clone that made the change)
+
+- `python3 .kiro/scripts/preflight.py`: plan populated; every Build parameter read by name from `project.md` (Application UUID, Design account, Security groups, Per-session ritual, Persona site stub; none `UNSET`); BUILD_LOG tail found. The machine-side checks that need Kiro, sail, the skills and the session store reported them absent, as expected on a machine that is not the operator's.
+- `echo '{"tool_name":"mcp_appian_createfolder"}' | python3 .kiro/scripts/plan_gate.py` exits 0: the gate allows writes because the plan is real.
+- `grep -c 'CLAUDE.md' .kiro/steering/project.md` = 1, the files-list line.
+- `git status` lists exactly the files above.
+
+### Not verified
+
+- **Nothing has run in Kiro on this repo yet.** The hooks, the steering inclusion, the skill load and the credits rebuild are measured on the template (`maintenance/kiro-port.md` M1–M9); their first run on this build is the B-checks in that file. The first Kiro session here says "run the preflight" and records them.
+- **The operator's machine setup** (`GETTING_STARTED.md` §1 steps e–j) is already in place for the Kiro template repo on the same machine; nothing in it is per-build.
+
+### Promotion candidates (staging)
+
+- **None from this entry.** The presenter-account note was promoted into the template as part of the migration.
+
+**Promotion checkpoint: current through this entry.**

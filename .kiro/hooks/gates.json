@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Plan gate: Dev MCP reads only until BUILD_PLAN.md is populated",
+      "description": "core §2 step 1. Exit 2 blocks the call; the script fails closed on its own errors. Matcher covers every Dev MCP tool-name form seen or expected (mcp_appian_<tool> measured 2026-10-06 M8a; also appian/, appian::, @appian/), scoped to exclude the appian-runtime and appian-public-docs servers.",
+      "trigger": "PreToolUse",
+      "matcher": "^(@?appian(/|::)|mcp_appian_).*",
+      "action": {
+        "type": "command",
+        "command": "python3 .kiro/scripts/plan_gate.py"
+      },
+      "timeout": 15
+    }
+  ]
+}

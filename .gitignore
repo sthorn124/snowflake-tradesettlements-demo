@@ -12,3 +12,11 @@ uploads/
 scratch/
 # macOS Finder metadata
 .DS_Store
+
+# Kiro: MCP registration and permissions are per machine and live in ~/.kiro/settings/
+# (GETTING_STARTED.md §1, step g). A workspace mcp.json would also launch in cloud sessions.
+.kiro/settings/
+# Hook state and logs written by .kiro/scripts/ (closeout counter, hook-events.log).
+.kiro/state/
+# Python bytecode from the hook scripts
+__pycache__/

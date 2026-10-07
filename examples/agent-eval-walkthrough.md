@@ -1,6 +1,6 @@
 # Worked example: regressing an agent's instructions against held-constant specimens
 
-This is the worked example behind the regression-specimen discipline in `reference/patterns.md` §3 and `CLAUDE.md` §11. It follows one agent's instruction text through six versions, probed each time against the same two cases, and shows what the discipline bought: a definition that discriminates, a threshold that never moved, and a variance finding that would otherwise have been filed as a regression. Identifiers, counterparties, desks, and the application's names are removed; every number is as measured.
+This is the worked example behind the regression-specimen discipline in `reference/patterns.md` §3 and core §11. It follows one agent's instruction text through six versions, probed each time against the same two cases, and shows what the discipline bought: a definition that discriminates, a threshold that never moved, and a variance finding that would otherwise have been filed as a regression. Identifiers, counterparties, desks, and the application's names are removed; every number is as measured.
 
 ## The agent and the gate it feeds
 

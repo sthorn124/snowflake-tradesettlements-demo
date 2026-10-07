@@ -1,0 +1,69 @@
+# ~/.kiro/settings/permissions.yaml — the operator installs this file; a session never writes it.
+# Kiro hard-denies agent writes to ~/.kiro/settings/ (kiro.dev/docs/permissions), which is what
+# makes these rules binding on a session rather than advisory.
+#
+# Precedence: deny > ask > allow, with no precedence between scopes, so the deny rules below
+# win over the allow-everything rule. The deny mechanism was measured refusing a call before it
+# reached the server (maintenance/kiro-port.md M2, Kiro IDE 1.2.4, 2026-10-05/06), matching on
+# the stable `appian/<tool>` form (M8). If this file already exists, merge these rules into it.
+
+rules:
+  # Unattended sessions, the equivalent of Claude Code's bypass mode. Kiro still asks before
+  # writes to .git/**, .kiroignore and .kiro/{agents,hooks,workflows,powers}, whatever this says.
+  - capability: all
+    effect: allow
+
+  # Identity discipline (core §6): the runtime server executes as a service account and is
+  # never used in a build session. This rule is the only guard; the PreToolUse hook that once
+  # duplicated it was removed as fragile (M8: the hook-facing tool-name form changes between sessions).
+  - capability: mcp
+    match: ["appian-runtime/*"]
+    effect: deny
+
+  # The same guard as a pattern. kiro.dev/docs/permissions says `*` matches any character
+  # sequence in an MCP match, so these two rules would also cover delete and remove tools a
+  # future bundle adds. Documented, unmeasured (maintenance/kiro-port.md B7): the named list
+  # below is the measured form and stays. A denial names the rule that matched.
+  - capability: mcp
+    match: ["appian/delete*", "appian/remove*"]
+    effect: deny
+
+  # Additive by default (core §6, §12): the Dev MCP's delete and remove tools, named one by one
+  # because the docs show only `server/*` globs. The list is the DevMCP 26.6.105 inventory
+  # (build 20260930-110421); the update procedure regenerates it when the server changes.
+  # For an owner-approved delete, the operator changes `deny` to `ask` here, and back afterwards.
+  - capability: mcp
+    match:
+      - "appian/deleteApplication"
+      - "appian/deleteConnectedSystem"
+      - "appian/deleteConstant"
+      - "appian/deleteCustomDataType"
+      - "appian/deleteCustomDataTypeField"
+      - "appian/deleteCustomRecordField"
+      - "appian/deleteDataStore"
+      - "appian/deleteDocument"
+      - "appian/deleteExpressionRule"
+      - "appian/deleteExpressionRuleTestCase"
+      - "appian/deleteFolder"
+      - "appian/deleteGroup"
+      - "appian/deleteIntegration"
+      - "appian/deleteInterface"
+      - "appian/deleteInterfaceTestCase"
+      - "appian/deletePackage"
+      - "appian/deletePortal"
+      - "appian/deleteProcessModel"
+      - "appian/deleteProcessModelNode"
+      - "appian/deleteRecordData"
+      - "appian/deleteRecordType"
+      - "appian/deleteRecordTypeAction"
+      - "appian/deleteRecordTypeField"
+      - "appian/deleteRecordTypeRelationship"
+      - "appian/deleteRecordTypeUserFilter"
+      - "appian/deleteRecordTypeView"
+      - "appian/deleteRelease"
+      - "appian/deleteSite"
+      - "appian/deleteWebApi"
+      - "appian/removeGroupMember"
+      - "appian/removePackageDbScript"
+      - "appian/removePackageObjects"
+    effect: deny
