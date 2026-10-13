@@ -124,6 +124,35 @@ Snowflake, direct access, never synced: TRADES, TRADE_PREDICTIONS (1:1), COUNTER
 - [ ] Wire 3 verified-query questions (fail rate trend, top failing counterparties, notional at risk) as suggested prompts in a supervisor Ask panel (agentChatField scoped to analyst tool)
 - [ ] Verify answers against worksheet ground truth; add to eval suite
 
+### Phase 6.5 — Case outcome and audit trail (added 2026-09-25, found in demo prep; committed to the plan 2026-10-13 from the drafting chat)
+
+Agent card and Activity panel
+- [ ] SEVERE for the governance story: an analyst's disposition note renders inside the agent card, under "SO Triage Agent", replacing the agent's own rationale (observed 2026-09-25, case SO-99). Suspected cause: the card shows the latest case comment rather than the agent-authored one. Confirm before fixing. Fix: the agent card shows only agent-authored rationale.
+- [ ] The disposition note is saved (SO Case Comment, by design) but never appears in the Activity panel, which reads only case events. Merge case comments into the Activity feed in time order, attributed to the analyst.
+- [ ] Event text shows raw stored codes ("insufficient_securities" in the Case Created and agent-assessed entries). Route through SO_failReasonDisplay per the display-vocabulary canon (same class as the open escalate-path item).
+- [ ] "Disposition: ... by scott.thorn@appian.com" shows the username in the body while the entry header already shows the display name. Drop the "by <username>" tail.
+- [ ] Two "Agent Triage Complete" entries at the same minute say nearly the same thing. Consolidate to one entry (decision, confidence vs gate, proposed fix), or give them distinct titles.
+
+Resolution panel
+- [ ] A resolution card directly under the trade banner, shown only on resolved cases: disposition, resolved by (analyst name, or "the agent" for straight-through), resolved at, and "Resolved <Xh Ym> before cutoff" (the live countdown freezes into this once resolved).
+- [ ] One row comparing the agent's proposal and confidence with the final disposition (accepted as proposed / different outcome chosen).
+- [ ] The analyst's disposition note renders here, attributed to the analyst. Together with the agent-card fix, this is where human reasoning lives on the case.
+- [ ] Banner while resolved: no live countdown, no "Urgent" state; the agent card's hold reasoning stays as history.
+- [ ] Verify on both paths: the hero after Record Disposition with a note, and story 03 straight-through.
+
+Watchlist (added 2026-10-09)
+- [ ] Needs Your Action sorts by time to cutoff only, so low-risk rows with earlier clocks and rows already past cutoff sit above the hero (observed 2026-09-25: hero below the top 6). Sort by risk and time together, as the one-pager promises ("risk × time-to-cutoff"). Do not sort by created date: the batch tag and band already mark new arrivals.
+- [ ] Rows past their cutoff are realized fails, not prevention work. Move them out of Needs Your Action into a compact "Missed cutoff" line, with a count and view-all.
+- [ ] Verify the hero ranks first with a demo loaded, at two different times of day (fixture cutoffs are fixed clock times, so the order currently shifts through the day).
+
+Hero story
+- [ ] The hero's scripted analyst action is now Record Disposition → Settled - Partial Release (ruled 2026-09-25; supersedes Borrow Executed in TODO).
+- [ ] The hero is a BUY, so the agent's proposed "cover borrow" only makes sense if the firm has an onward sale of those shares. Before client ops audiences, fix the packet story: give the hero an onward sale in the settlement window (the case page's onward-deliveries card would then show it), or make the hero a sell where our own desk is short.
+
+Documents
+- [ ] One-pager Act 1 says the demo shows "a feed arrival scores new trades in real time"; the demo now opens on the finished batch (ruled 2026-09-23), with the live moment moved to Phase 9. The architecture section says the agent's tools come from Snowflake's MCP server; the Ask panels run through Snowflake's SQL API. Bring both lines in line with the build, or rule them as intended roadmap.
+- [ ] TODO sweep: close items resolved weeks ago that still read as open (Part A grid run, check-12 ruling, the check-12 pair count, the deleted SO_zz_probeQuery, the ZZ-CLICK question, the superseded Borrow Executed decision).
+
 ### Phase 7 — Governance layer (1 day)
 - [ ] Evaluate tab: full test suite (Phases 3+6), bulk run, accuracy metrics
 - [ ] AI Guardrails configured in Admin Console
@@ -136,6 +165,11 @@ Snowflake, direct access, never synced: TRADES, TRADE_PREDICTIONS (1:1), COUNTER
 - [ ] Rewrite run_inference.sql: TRADE_FAIL_CLASSIFIER!PREDICT_PROBA replaces the SQL heuristic; heuristic kept commented as documented fallback; re-verify tier distribution, adjust thresholds if the model's spread differs. **Write `SCORED_AT` explicitly as `SYSDATE()`** — the column defaults to `CURRENT_TIMESTAMP()`, the Pacific session clock, which Appian reads as UTC (measured 2026-09-10)
 - [ ] On-demand single-trade scoring exposed as a custom MCP tool; wired into SO Triage Agent + feed simulation (live scoring on arrival)
 - [ ] Stretch (cut first): Kafka event intake — trades.pending consumer trigger + Publish Event resolution loop-back to Snowflake
+
+### Phase 9 — Late-trade live beat (later, ruled 2026-09-25; committed to the plan 2026-10-13 from the drafting chat)
+- [ ] One late trade booked mid-demo with ~40 minutes to cutoff: scored, case opened, agent decision made, and landing at the top of Needs Your Action within about a minute. The drama is the cutoff clock, not rows appearing.
+- [ ] A second one-trade packet in Snowflake whose cutoff is set relative to the moment of the press, plus one "Book a late trade" button on the Demo Admin console.
+- [ ] Slots mid-Act 1, after the hero. Optional beat; the aftermath opening stands without it.
 
 ## Open dependencies
 - Daniel: permanent network policy (only hard blocker)
