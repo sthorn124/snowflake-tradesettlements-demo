@@ -2,10 +2,7 @@
 
 *Presenter script for a first-time demoer. Written 2026-10-15 for the NAIC awareness session. Built from `talk-track-10min-internal.md`; every click and label below was checked against the deployed screens on that date.*
 
-**Scott fills in before handing this over:**
-
-- Environment URL: `________________________`
-- Presenter account: `________________________` (must be in both `SO Supervisors` and `SO Demo Admins`)
+**Environment:** `https://ny.appiancloud.com`. Sign in with SSO (your normal Appian login). Scott adds your account to the two groups the demo needs.
 
 ---
 
@@ -19,10 +16,10 @@ You do not need to explain how anything is built. If someone asks a technical qu
 
 ## Before the day
 
-1. **Get access.** You need an account that is in two groups: `SO Supervisors` and `SO Demo Admins`. Scott sets this up. Test it by opening both links below. If the Demo Admin page shows a single card telling you to request a group, you are missing one; tell Scott.
-2. **The two sites.**
-   - Settlement Operations (the demo): `<environment URL>/suite/sites/settlement-ops`. Three pages: Watchlist, Cases, Supervisor.
-   - Demo Admin (setup only, never shown to the client): `<environment URL>/suite/sites/settlement-ops-admin`.
+1. **Get access.** Sign in to `https://ny.appiancloud.com` with SSO. Your account must be in two groups: `SO Supervisors` and `SO Demo Admins`. Scott adds you. Test it by opening both links below. If the Demo Admin page shows a single card telling you to request a group, you are missing one; tell Scott.
+2. **The two sites.** Bookmark both.
+   - Settlement Operations (the demo): https://ny.appiancloud.com/suite/sites/settlement-ops. Three pages: Watchlist, Cases, Supervisor.
+   - Demo Admin (setup only, never shown to the client): https://ny.appiancloud.com/suite/sites/settlement-ops-admin.
 3. **Do one full dry run at least a day before**, including the setup steps and the Reset at the end. Recording the disposition in Beat 4 resolves the hero case, so after a rehearsal you must Reset and Load again or the case will already be closed when you present.
 4. **Read the Watchlist and the hero case once on your own**, so the screens are familiar before anyone is watching.
 
