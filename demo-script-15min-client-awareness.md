@@ -1,27 +1,24 @@
 # Pre-Settlement Fail Prevention: 15-Minute Client Awareness Demo
 
-*Presenter script for a first-time demoer. Written 2026-10-15 for the NAIC awareness session. Built from `talk-track-10min-internal.md`; every click and label below was checked against the deployed screens on that date.*
+*Written 2026-10-15 for the NAIC awareness session. Built from `talk-track-10min-internal.md`; every click and label below was checked against the deployed screens on that date.*
 
-**Environment:** `https://ny.appiancloud.com`. Sign in with SSO (your normal Appian login). Scott adds your account to the two groups the demo needs.
+**Environment:** `https://ny.appiancloud.com`, SSO sign-in. Scott adds the presenter's account to the two groups the demo needs.
 
 ---
 
-## What you are showing, in one paragraph
+## The demo in one paragraph
 
-This is a joint Appian and Snowflake demo. The example is a settlements desk at a bank: Snowflake predicts which trades will fail to settle, Appian turns each prediction into a piece of governed work before the cutoff, and an AI agent handles the easy ones while people handle the hard ones. The client is not a settlements desk, and you do not need to pretend they are. The point of the demo is the pattern: the data never leaves the data platform, AI does the first pass, and every AI decision is gated and recorded. You will say that at the start and again at the end.
-
-You do not need to explain how anything is built. If someone asks a technical question you cannot answer, say "I'll get you a precise answer from our team" and move on.
+Joint Appian and Snowflake demo. The example is a settlements desk at a bank: Snowflake predicts which trades will fail to settle, Appian turns each prediction into governed work before the cutoff, an AI agent handles the straightforward cases and people handle the rest. NAIC is not a settlements desk; the pattern is the point, and the script says so in the open and the close: the data never leaves the data platform, AI does the first pass, every AI decision is gated and recorded.
 
 ---
 
 ## Before the day
 
-1. **Get access.** Sign in to `https://ny.appiancloud.com` with SSO. Your account must be in two groups: `SO Supervisors` and `SO Demo Admins`. Scott adds you. Test it by opening both links below. If the Demo Admin page shows a single card telling you to request a group, you are missing one; tell Scott.
-2. **The two sites.** Bookmark both.
+1. **Access.** Sign in to `https://ny.appiancloud.com` with SSO. The account must be in both `SO Supervisors` and `SO Demo Admins`. Check by opening both links below; if the Demo Admin page shows a single card asking for a group, one is missing.
+2. **The two sites.**
    - Settlement Operations (the demo): https://ny.appiancloud.com/suite/sites/settlement-ops. Three pages: Watchlist, Cases, Supervisor.
    - Demo Admin (setup only, never shown to the client): https://ny.appiancloud.com/suite/sites/settlement-ops-admin.
-3. **Do one full dry run at least a day before**, including the setup steps and the Reset at the end. Recording the disposition in Beat 4 resolves the hero case, so after a rehearsal you must Reset and Load again or the case will already be closed when you present.
-4. **Read the Watchlist and the hero case once on your own**, so the screens are familiar before anyone is watching.
+3. **Dry run** the full sequence, setup through Reset. Recording the disposition in Beat 4 resolves the hero case, so after any rehearsal, Reset and Load again before presenting.
 
 ---
 
@@ -32,7 +29,7 @@ You do not need to explain how anything is built. If someone asks a technical qu
 - Open the Demo Admin site. Read the status line at the top.
 - If it says **"No demo data loaded."** click **Load the demo**.
 - If it says **"Loaded before today. Reset, then Load for fresh dates."** click **Reset the demo**, wait until the status line changes, then click **Load the demo**.
-- If it says **"Demo loaded"** with today's date and you have not touched the hero case since, you are already set. If you rehearsed today and resolved the hero, Reset then Load.
+- If it says **"Demo loaded"** with today's date and the hero case is still open, nothing to do. If the hero was resolved in a rehearsal today, Reset then Load.
 - Wait about 2 minutes. The console should report 15 demo trades and 3 cases loaded now.
 - **Never click Load twice.** A second click re-stamps the scoring time and the screens stop matching the story.
 
@@ -40,23 +37,21 @@ You do not need to explain how anything is built. If someone asks a technical qu
 
 - **Tab A:** the **Supervisor** page.
 - **Tab B:** the **Watchlist** page.
-- **Tab C:** the hero case. On the Watchlist, under **Needs your action**, find the row for **SAP GY** with counterparty **Diamond Trust** (trade id `TRD9DEMO01`). It may not be the top row; its position moves with the time of day, so find it by name. Click it to open the case and leave this tab open.
+- **Tab C:** the hero case. On the Watchlist, under **Needs your action**, find the row for **SAP GY** with counterparty **Diamond Trust** (trade id `TRD9DEMO01`). Its position in the list moves with the time of day. Click it and leave this tab open.
 
-**Step 3. Tidy up.**
+**Step 3. Before sharing.**
 
-- Close the Demo Admin tab. The client should never see it.
-- Zoom the browser to 110 to 125 percent so the screens read well on a shared screen.
-- Put Tab A on screen. Share only the browser window.
+- Close the Demo Admin tab.
+- Browser zoom 110 to 125 percent.
+- Tab A on screen. Share the browser window only.
 
 ---
 
 ## The demo (about 12 minutes plus questions)
 
-Each beat tells you which tab, what to click, and what to say. The quoted lines are a guide; say them in your own words.
-
 ### Beat 1: Why this exists (0:00 to 2:00)
 
-**Tab A, Supervisor page. Don't click anything yet.**
+**Tab A, Supervisor page. No clicks in this beat.**
 
 > "What I'm going to show you is a joint demo from Appian and Snowflake. The example is a settlements operation at a bank. Every trade a bank does has to settle, usually the next day, and when settlement fails it costs real money and real client trust. Most firms still find out a trade failed on the day it was supposed to settle.
 >
@@ -64,13 +59,11 @@ Each beat tells you which tab, what to click, and what to say. The quoted lines 
 >
 > The settlements example isn't your business. The pattern is what matters: predictions you already have, or could have, becoming governed action."
 
-*If you know NAIC runs on Snowflake, add: "and because you're on Snowflake, this is exactly the shape it would take for you." If you don't know, leave it out.*
+*If NAIC is confirmed to run on Snowflake, add: "and because you're on Snowflake, this is exactly the shape it would take for you."*
 
 ### Beat 2: The supervisor's view (2:00 to 4:30)
 
-**Still Tab A.**
-
-Point with your cursor as you go. Don't click.
+**Still Tab A. Cursor only, no clicks.**
 
 - The small **Snowflake mark** next to numbers across the page.
 - **Value at risk** at the top.
@@ -81,11 +74,11 @@ Point with your cursor as you go. Don't click.
 >
 > Overnight, Snowflake scored every pending trade. Appian took the risky ones and made them cases, each with an owner and a cutoff. A prediction on its own is a row in a table. The moment it becomes a case, somebody is accountable for it."
 
-**Optional, only if the dry run went smoothly:** click the question **"How do fail rates differ by asset class?"** under **Ask across the book**. It takes 15 to 35 seconds. While it runs:
+**Optional:** click **"How do fail rates differ by asset class?"** under **Ask across the book**. 15 to 35 seconds. While it runs:
 
 > "The supervisor can also ask questions in plain English. This goes to Snowflake, runs against the full history, and comes back as an answer. Nobody wrote a report."
 
-When the answer lands, read one number from it out loud. If it shows an error, say "live call, let me try again," click once more, and if it fails again move on. Nothing else depends on it.
+When the answer lands, read one number from it. On an error, click once more; on a second error, move on. Nothing later depends on it.
 
 ### Beat 3: The analyst's morning (4:30 to 7:00)
 
@@ -99,7 +92,7 @@ Scroll to **Escalated, with supervisor**. Point at the row (BATS LN, Horizon Sec
 
 > "This one escalated by policy, not by the AI's opinion. The broker confirmation is 26 hours late and there's less time than that to the cutoff. There's no fix inside the window, so the rules send it straight to a supervisor, every time. The AI advises. The rules decide what it's allowed to do on its own."
 
-Scroll to **Cleared this batch**. It is collapsed; point at its summary line (how many cleared by Snowflake scoring) without expanding it. Then go to Tab C.
+Scroll to **Cleared this batch** (collapsed) and point at its summary line. Then Tab C.
 
 ### Beat 4: The hero case (7:00 to 11:00)
 
@@ -107,38 +100,38 @@ Scroll to **Cleared this batch**. It is collapsed; point at its summary line (ho
 
 > "This is the one that needed a person. 210,000 shares of SAP, 18.7 million euros, with a counterparty called Diamond Trust. Snowflake put the chance of this failing at 83 percent."
 
-Scroll slowly down the page. Point at each section as you name it.
+Scroll down the page, pointing at each section:
 
 - **Trade & counterparty** and the **Counterparty** card with **Recent settlement fails** (the line says *Live from Snowflake*).
 - **Timing** with the time remaining to cutoff.
-- **Agent assessment**: the agent's reasoning and the line **"auto-release score NN, releases at 80."** The score will read somewhere around 60 to 66. Say "around 60."
+- **Agent assessment**: the agent's reasoning and the line **"auto-release score NN, releases at 80."** The score varies run to run, 60 to 66.
 
 > "Look at what's on this one page. The trade and the prediction, from Snowflake. The counterparty's recent fails, from Snowflake's settlement history. The time left to the cutoff. And the agent's assessment: it worked out a fix, but its score is around 60 and the rule is it only acts on its own above 80. So it held the case for a human and laid out its reasoning. That gate is set by the firm, not by the AI."
 
-Scroll to **Ask about this case**. Click **"How does Diamond Trust compare with the book?"** It takes 15 to 35 seconds. While it runs:
+Scroll to **Ask about this case**. Click **"How does Diamond Trust compare with the book?"** 15 to 35 seconds. While it runs:
 
 > "Before deciding, the analyst can ask about this specific case. Same thing: Snowflake, the full history, answered live."
 
-When the answer lands, read the two fail rates off the screen (Diamond Trust's and the rest of the book's). Don't quote numbers from memory; read what's there.
+When the answer lands, read the two fail rates off the screen (Diamond Trust's and the rest of the book's).
 
 > "So Diamond Trust fails a lot more often than the book, and mostly for this same reason. The flag is credible. The analyst accepts the agent's proposal: a partial release. Diamond Trust delivers the shares it has today, the rest follows, and most of the trade settles on time instead of all of it failing."
 
-Now record the decision. **Scroll back to the top of the case.**
+**Scroll back to the top of the case.**
 
 1. In the case header, click **Record Disposition**.
 2. In the **Disposition** dropdown choose **Settled - Partial Release**.
-3. Leave **Resolution note** empty. (Do not type a note. A known display issue shows the note under the agent's name, which contradicts the point you just made.)
+3. Leave **Resolution note** empty. (Known display issue: a note renders under the agent's name.)
 4. Click **Record Disposition** to submit.
 
 Scroll down to **Activity**.
 
 > "Done. And here's the record: the prediction, what the agent recommended and why it held, and what the analyst decided, each with a time and a name. Nobody assembles this afterwards. It's the audit trail compliance asks for, written as the work happened."
 
-Point at the sequence of entries. Don't read them word for word; some entries show internal codes.
+Point at the sequence of entries rather than reading them out; some carry internal codes.
 
 ### Beat 5: What this means for you (11:00 to 13:00)
 
-**Any tab. Stop scrolling.**
+**Any tab.**
 
 > "Three things to take away.
 >
@@ -152,7 +145,7 @@ Point at the sequence of entries. Don't read them word for word; some entries sh
 
 ---
 
-## Questions you may get, and short answers
+## Likely questions
 
 **Is the data copied into Appian?** No. Appian reads it from Snowflake when the screen loads. The Snowflake mark shows exactly which numbers came from there.
 
@@ -160,7 +153,7 @@ Point at the sequence of entries. Don't read them word for word; some entries sh
 
 **What is Snowflake doing and what is Appian doing?** Snowflake stores the data, scores the trades, and answers the plain-English questions. Appian makes cases, assigns owners, runs the agent and the rules, and keeps the audit trail.
 
-**How is the prediction model built?** Say: "The scoring runs inside Snowflake against the trade history. I'll have our team walk you through the model itself." Don't describe the model.
+**How is the prediction model built?** "The scoring runs inside Snowflake against the trade history. I'll have our team walk you through the model itself."
 
 **Could this work on our data?** Yes. The pattern works with any data that already lives in Snowflake, or any data platform Appian can read live. The settlements example is one use case built on it.
 
@@ -172,15 +165,15 @@ Point at the sequence of entries. Don't read them word for word; some entries sh
 
 ## If something goes wrong
 
-- **An Ask shows an amber error.** Say "live call, let me ask again" and click the question once more. If it fails twice, move on; nothing else depends on it.
-- **An Ask takes longer than 30 seconds.** Keep talking. They have never gone past about 36 seconds.
-- **The agent's score on the hero is different from your rehearsal.** It's a live agent. It will be somewhere in the sixties and still below 80, which is all that matters.
-- **The hero case isn't in Needs your action.** It was already resolved, probably in a rehearsal. Go to Demo Admin, Reset the demo, then Load the demo, wait 2 minutes, and re-open the three tabs. This takes about 4 minutes, so check before the meeting starts.
-- **Record Disposition isn't in the case header.** The case is already resolved. Same fix as above, or skip the click and talk through the Activity panel instead.
-- **A screen looks empty or shows zeros.** Reload the page once. If it stays empty, say "let me come back to that" and move to the next beat.
+- **An Ask shows an amber error.** Click the question once more. If it fails twice, move on; nothing later depends on it.
+- **An Ask takes longer than 30 seconds.** Longest observed is about 36 seconds.
+- **The agent's score on the hero differs from the rehearsal.** Live agent; it lands in the sixties and stays below 80.
+- **The hero case isn't in Needs your action.** It was resolved, probably in a rehearsal. Demo Admin: Reset the demo, Load the demo, wait 2 minutes, re-open the three tabs. About 4 minutes end to end.
+- **Record Disposition isn't in the case header.** The case is already resolved. Same fix as above, or skip the click and go to the Activity panel.
+- **A screen is empty or shows zeros.** Reload once. If it stays empty, move to the next beat.
 
 ---
 
 ## After the demo
 
-Open the Demo Admin site and click **Reset the demo**. Wait for the status line to confirm. The next presenter starts clean.
+Demo Admin site, **Reset the demo**, wait for the status line to confirm.
