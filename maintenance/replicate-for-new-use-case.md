@@ -137,7 +137,7 @@ Then, on Path A, the five views in `LIFESCI.TRADE_SETTLEMENT`, one per table, na
 
 ## 6. Appian, Path A: your own environment
 
-Everything in this section was checked against the deployed objects on 2026-10-22. Where Appian's documentation is silent, the step says so and tells you what to confirm.
+Everything in this section was checked against the deployed objects on 2026-10-22. Where Appian's documentation is silent, the step says so and tells you what to confirm. The files this guide names (`snowflake/*.sql`, `agent/instructions.md`, `packet-spec.md`, `mockups/`, the talk track and script) are in Scott's repository; he sends them or grants read access. You do not need a repository of your own to follow this path.
 
 **Step 1. Export (Scott, in NY).**
 - In the Settlement Operations application, run the Missing Precedents check and add what it finds. The known outside references are the Snowflake logo document and its folder (another application owns them) and any group not already in the application. A package that imports with a missing precedent fails loudly on that object, which is safe but costs a round trip.
@@ -185,13 +185,13 @@ Everything in this section was checked against the deployed objects on 2026-10-2
 
 **Step 11. Talk track and script.** From `talk-track-10min-internal.md` and `demo-script-15min-client-awareness.md`, every line rewritten.
 
-**Step 12. Your repo.** Start it as a copy of this one: refresh `.work/` from your environment after the rename, rewrite `.kiro/steering/project.md` (Build parameters, vocabulary canon, data model, business rules) for your build, reset `BUILD_PLAN.md`, `TODO.md`, `BUILD_LOG.md` and `Closeout.md` to your own, and replace the project files (`packet-spec.md`, `hero-trade-spec.md`, the one-pager) with yours. The method files (`.kiro/steering/core-*`, `reference/`, `examples/`, `maintenance/`, `GETTING_STARTED.md`) stay as they are; they belong to the template.
+**Step 12. Your records, optional.** Nothing in the demo needs a repo. What the next LS SC needs from you is four documents: the vocabulary canon, the packet spec (your three stories and the twelve background rows), the Snowflake scripts you ran (DDL, views, procedures, semantic view YAML, agent instructions), and the presenter script. Keep them wherever your team keeps such things. If you do want the Kiro method Scott uses for building and close-outs, start a repo from this one and ask him for the walkthrough.
 
 ---
 
 ## 7. Appian, Path B: NY
 
-Work through the Kiro method Scott uses: clone the `appian-devmcp-method-kiro` template for your build repo, then copy these from this repo into a `reference/settlement-source/` folder as porting sources: `.work/`, `snowflake/`, `agent/`, `packet-spec.md`, `hero-trade-spec.md`, `mockups/`, `.kiro/steering/project.md`. Your Kiro sessions do the mechanical work below against the Dev MCP; you do the Designer work it cannot (connected systems, record type wizard, groups, sites, Agent Studio).
+Two ways to do the mechanical part. With the Kiro method Scott uses: clone the `appian-devmcp-method-kiro` template for a build repo, copy `.work/`, `snowflake/`, `agent/`, `packet-spec.md`, `hero-trade-spec.md`, `mockups/` and `.kiro/steering/project.md` from his repo into a `reference/settlement-source/` folder, and let sessions do step 6 against the Dev MCP. Without it, step 6 is done by hand in Designer: Save As each `SO_` rule and interface into its `CQ_` name, then replace every record reference through the expression editor's picker, display rules first. Budget twice the time for the hand version; 38 objects, several hundred references. Everything else in this path is Designer work either way.
 
 **Step 1. Application, groups, sites (Designer).**
 - Application `Complaint Quality`, prefix `CQ`.
@@ -216,7 +216,7 @@ Work through the Kiro method Scott uses: clone the `appian-devmcp-method-kiro` t
 
 **Step 5. Constants.** Recreate these ten under your prefix: `CQ_CONFIDENCE_THRESHOLD` (0.80), `CQ_DEMO_RUN_NAME` (`DEMO`), `CQ_DISPOSITION_CODES` (your list from §4), `CQ_ANALYSTS_GROUP`, `CQ_SUPERVISORS_GROUP`, `CQ_PM_SIMULATE_RUN`, `CQ_PM_RESET_RUN`, `CQ_SNOWFLAKE_LOGO` (point at the same PNG document Scott's uses, or upload your own), `CQ_MARK_USE_LOGO`, `CQ_PENALTY_BP_PER_DAY` (rename to whatever your "cost of another day" is, or drop the penalty card).
 
-**Step 6. Port the rules and interfaces (Kiro session, Dev MCP).**
+**Step 6. Port the rules and interfaces (Kiro session over the Dev MCP, or Save As by hand).**
 - Source: the 38 files in `.work/` (20 `rule_SO_*.sail`, 18 `SO_*.sail`).
 - Build a substitution map: every `recordType!{uuid}` and every `.fields.{uuid}` / `.relationships.{uuid}` in those files, keyed by the name that follows the UUID, mapped to your UUIDs from steps 3 and 4 by the same field or relationship name (or by your rename mapping). Then `SO_` → `CQ_` on every `rule!`, `cons!` and object name.
 - Apply the map to every file, then create the objects in this order: display-vocabulary rules first (`statusDisplay`, `riskTierDisplay`, `failReasonDisplay`, `assetClassDisplay`, `regionDisplay`, `quantityDisplay`), then the other rules, then interfaces. Each object is verified by reading it back, not by the create call succeeding.
@@ -265,6 +265,7 @@ Then a day on the packet and verification and a day on the talk track and script
 - A Snowflake database created as `ACCOUNTADMIN` and granted to `FINSERVADMIN` (§5 step 2).
 - Whether a second Appian environment exists for you (§1). This one question decides a week of work.
 - `run_inference.sql`, `semantic_view.yaml` and `agent_config.sql` from the Snowflake kit (not in this repo).
-- Path A: the export with precedents added, the import customization file template, and the DDL of the `SO_` tables from NY's Cloud Database console. Path B: the Kiro template link and a walkthrough of the session loop.
+- Path A: the export with precedents added, the import customization file template, and the DDL of the `SO_` tables from NY's Cloud Database console. Path B: the Kiro template link and a walkthrough of the session loop, if you want the sessions to do the port.
+- Read access to his repository, or the files it names sent over: `snowflake/*.sql`, `agent/instructions.md` and `agent/tools.md`, `packet-spec.md`, `hero-trade-spec.md`, `mockups/`, the two talk-track files.
 - Before the export, three values moved out of the source build's SAIL and into constants, so the customization file sets them per environment: the console's baseline count, the two persona usernames, the analyst persona's desk. Small session; without it, Path A step 5 edits them by hand.
 - A read of your vocabulary canon and your three stories before you build; those two documents decide whether the port lands first time.
