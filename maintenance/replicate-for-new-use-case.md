@@ -17,6 +17,8 @@ How much of the Appian side you can copy depends on one thing: whether you have 
 
 A personal Appian cloud sandbox, a second demo cluster environment, or any environment you can import into makes Path A available. Ask Scott and the SC leads before assuming you are stuck on NY.
 
+**Recommendation for a reusable life sciences asset: Path A, treated as a starting point, not a reskin.** The import gives you working screens, process models, the agent and the console in a day, and the view layer keeps the settlements names out of your real tables. What makes the result an LS asset rather than a settlements demo with new labels is the pass after import: rename the objects and the record fields so the next LS SC never meets `SO_` or `notional`; replace the rules that only mean something on a settlements desk (`SO_fxToUsd`, `SO_penaltyAccrual`, `SO_onwardDeliveries`, `SO_quantityDisplay`, the hours-to-cutoff runway) with their complaint equivalents (units at risk, days to reporting deadline, related complaints on the lot); and rewrite the agent's timing arithmetic from hours to days. That work is the same on either path. Path B only adds the port on top of it. The one condition on Path A is step 5.4 in §6: confirm on day one that the imported record types resolve through your connected system; if they do not, the five Snowflake record types take Path B's wizard step and the port that follows.
+
 ---
 
 ## 2. Isolation rules
