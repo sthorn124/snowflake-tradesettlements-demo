@@ -1,6 +1,8 @@
 # Replicating the Appian + Snowflake demo for a new use case
 
-*Written 2026-10-22 for the Boston Scientific complaint-classification build (hazard / harm / severity with human review). Checked against this repo, the NY environment and Appian's deployment documentation on that date. Scott owns the original; questions about it go to him.*
+*Written 2026-10-22 for the Boston Scientific complaint-classification build (hazard / harm / severity with human review). Checked against the source repository, the NY environment and Appian's deployment documentation on that date. Scott owns the original; questions about it go to him.*
+
+**Source repository:** https://github.com/sthorn124/snowflake-tradesettlements-demo. Every file path in this guide (`snowflake/…`, `agent/…`, `.work/…`, `mockups/…`, `packet-spec.md`, the talk-track files) is a path in that repository. It is public as of this writing; if that changes, Scott grants read access.
 
 The settlements demo is a pattern, and the pattern is what you are copying: Snowflake holds the data and scores it, Appian turns each score into a case with an owner and a deadline, an AI agent handles the confident cases, people handle the rest, policy overrides the agent when a window is breached, and every decision is on the record. The complaint use case fits that pattern closely. This guide says what to copy, what to recreate, what to author, and how to keep the two builds apart.
 
@@ -137,7 +139,7 @@ Then, on Path A, the five views in `LIFESCI.TRADE_SETTLEMENT`, one per table, na
 
 ## 6. Appian, Path A: your own environment
 
-Everything in this section was checked against the deployed objects on 2026-10-22. Where Appian's documentation is silent, the step says so and tells you what to confirm. The files this guide names (`snowflake/*.sql`, `agent/instructions.md`, `packet-spec.md`, `mockups/`, the talk track and script) are in Scott's repository; he sends them or grants read access. You do not need a repository of your own to follow this path.
+Everything in this section was checked against the deployed objects on 2026-10-22. Where Appian's documentation is silent, the step says so and tells you what to confirm. The files this guide names (`snowflake/*.sql`, `agent/instructions.md`, `packet-spec.md`, `mockups/`, the talk track and script) are in the source repository linked at the top. You do not need a repository of your own to follow this path.
 
 **Step 1. Export (Scott, in NY).**
 - In the Settlement Operations application, run the Missing Precedents check and add what it finds. The known outside references are the Snowflake logo document and its folder (another application owns them) and any group not already in the application. A package that imports with a missing precedent fails loudly on that object, which is safe but costs a round trip.
@@ -185,7 +187,7 @@ Everything in this section was checked against the deployed objects on 2026-10-2
 
 **Step 11. Talk track and script.** From `talk-track-10min-internal.md` and `demo-script-15min-client-awareness.md`, every line rewritten.
 
-**Step 12. Your records, optional.** Nothing in the demo needs a repo. What the next LS SC needs from you is four documents: the vocabulary canon, the packet spec (your three stories and the twelve background rows), the Snowflake scripts you ran (DDL, views, procedures, semantic view YAML, agent instructions), and the presenter script. Keep them wherever your team keeps such things. If you do want the Kiro method Scott uses for building and close-outs, start a repo from this one and ask him for the walkthrough.
+**Step 12. Your records, optional.** Nothing in the demo needs a repo. What whoever runs this after you needs from you is four documents: the vocabulary canon, the packet spec (your three stories and the twelve background rows), the Snowflake scripts you ran (DDL, views, procedures, semantic view YAML, agent instructions), and the presenter script. Keep them wherever your team keeps such things. If you do want the Kiro method Scott uses for building and close-outs, start a repo from this one and ask him for the walkthrough.
 
 ---
 
@@ -266,6 +268,6 @@ Then a day on the packet and verification and a day on the talk track and script
 - Whether a second Appian environment exists for you (§1). This one question decides a week of work.
 - `run_inference.sql`, `semantic_view.yaml` and `agent_config.sql` from the Snowflake kit (not in this repo).
 - Path A: the export with precedents added, the import customization file template, and the DDL of the `SO_` tables from NY's Cloud Database console. Path B: the Kiro template link and a walkthrough of the session loop, if you want the sessions to do the port.
-- Read access to his repository, or the files it names sent over: `snowflake/*.sql`, `agent/instructions.md` and `agent/tools.md`, `packet-spec.md`, `hero-trade-spec.md`, `mockups/`, the two talk-track files.
+- Read access to the source repository if it has gone private.
 - Before the export, three values moved out of the source build's SAIL and into constants, so the customization file sets them per environment: the console's baseline count, the two persona usernames, the analyst persona's desk. Small session; without it, Path A step 5 edits them by hand.
 - A read of your vocabulary canon and your three stories before you build; those two documents decide whether the port lands first time.
