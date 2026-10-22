@@ -57,7 +57,7 @@ Both builds share the Snowflake account. Whatever path you take on Appian, these
 | Scoring | Heuristic SQL (Scott has `run_inference.sql` from the Snowflake kit) or Cortex `AI_CLASSIFY` over the narrative | Same | Thresholds, tier bands |
 | Whole Appian application | Export from NY, import once, set credentials in the import customization file | Not available | |
 | Record types on Snowflake (5) | Come across in the import; the connected system's Database setting is what should point them at your tables (confirm on `SO Trade` first, §6 step 5) | Wizard regenerates them from your tables; same column names give the same field names | Row security rule (your persona's product line) |
-| Record types, Appian-native (2 plus events) | Come across; generate their tables on your environment with Update Table | Recreate from the field list in §7 | Nothing |
+| Record types, Appian-native (2 plus events) | Come across; their cloud-database tables are created from NY's DDL before the import | Recreate from the field list in §7 | Nothing |
 | Interfaces (18) and rules (20) | Come across | Port `.work/*.sail` by UUID and prefix substitution | Labels and vocabulary |
 | Process models (4) | Come across | Save As from `SO_`, re-point every node | Nothing |
 | Agent Studio agent | Confirm it came across; recreate from `agent/instructions.md` if not | Recreate from `agent/instructions.md` and `agent/tools.md` | Domain instructions |
@@ -129,21 +129,41 @@ Two things in the Boston Scientific document do not become demo beats. Stages 2 
 
 ## 6. Appian, Path A: your own environment
 
-**Step 1. Export.** In NY, export the Settlement Operations application package with its dependencies (the Snowflake logo document lives in another application's folder and must come along), and download the import customization file template with it.
+Everything in this section was checked against the deployed objects on 2026-10-22. Where Appian's documentation is silent, the step says so and tells you what to confirm.
 
-**Step 2. Import customization file.** Fill in both connected systems: `SO Snowflake Data Source` with your account URL, your user, your PAT, role `FINSERVADMIN`, warehouse `COMPUTE_WH`, and Database `LIFESCI`; `SO Snowflake SQL API` with your PAT as the bearer token. The Database setting is what should point every Snowflake record type at your tables, since a record type stores its schema and table and the connected system holds the database. Appian's documentation does not state this outright, so step 5 confirms it on one record type before anything else is touched.
+**Step 1. Export (Scott, in NY).**
+- In the Settlement Operations application, run the Missing Precedents check and add what it finds. The known outside references are the Snowflake logo document and its folder (another application owns them) and any group not already in the application. A package that imports with a missing precedent fails loudly on that object, which is safe but costs a round trip.
+- Export the application. Keep both files: the package zip and the import customization file template. Users are never exported, and group membership comes across only for members that exist on the target, so plan on step 2 regardless.
 
-**Step 3. Import** into your environment with the customization file. Read the import log to the end; a failed precedent names the object to fix.
+**Step 2. Prepare your environment before importing.**
+- **Demo users.** Create `alex.analyst` and `sam.supervisor`. Two screens name them (`SO_supervisorCommand` lines 27 to 28, `SO_caseDetail` lines 691 and 713); different usernames mean editing those lines after import.
+- **Cloud database tables.** The Appian-native record types are synced, and a synced record type full-syncs when it is deployed, so its table must exist first. In NY's Cloud Database console, export the structure (no data) of every table whose name starts with `SO_`: `SO_SETTLEMENT_CASE`, `SO_CASE_COMMENT`, `SO_SETTLEMENT_CASE_EVENT_HISTORY`, and the generated event type, reply thread and subscriber tables beside them. Run that script in your environment's Cloud Database console. If a sync still fails on import, the import log names the record type; create its table and run a full sync from the record type.
+- **Snowflake ready.** §5 through step 9, so the connected system has something to connect to.
 
-**Step 4. Native tables.** `SO Settlement Case`, `SO Case Comment` and the generated event record types need tables in your environment's cloud database. Open each record type's data model and save with Update Table selected; Appian creates the table from the record type ([Update a Database Table from Your Record Type](https://docs.appian.com/suite/help/25.4/update-source-from-record-type.html)). Confirm the seven event types are present (Case Created, Agent Triage Complete, Straight-Through Resolution, Assigned, Comment Added, Disposition Recorded, Escalated).
+**Step 3. Import customization file.**
+- Fill in every line the template offers. Expect entries for the two connected systems' plain fields and for the integrations; encrypted fields (the PAT) come through blank by design and are typed by hand, either here or in Designer after import.
+- Constants: `SO_CONFIDENCE_THRESHOLD` and `SO_DEMO_RUN_NAME` keep their values. `SO_SNOWFLAKE_LOGO` resolves to the imported document and needs nothing.
+- Only one customization file is applied per deployment.
 
-**Step 5. Smoke test, in this order.** Open `SO Trade` in Designer and view data: rows from `LIFESCI`. Open the Demo Admin console as an account holding both `SO Demo Admins` and `SO Supervisors`: the readiness line reads your baseline counts. Load the demo: 15 rows and 3 cases. Open the hero case. Reset.
+**Step 4. Import.** Read the import log to the end, not just the summary. Synced record types report their full sync; a connected system that could not validate reports it here too.
 
-**Step 6. Agent Studio.** Confirm `SO Triage Agent` imported with its tools pointing at the rules. If the agent did not come across, recreate it from `agent/instructions.md` and `agent/tools.md`.
+**Step 5. Post-import edits, in this order.**
+1. `SO Snowflake Data Source`: Account URL `a2770166725871-appian-partner.snowflakecomputing.com`, your user, your PAT, role `FINSERVADMIN`, warehouse `COMPUTE_WH`, Database `LIFESCI`. Test the connection from the connected system.
+2. `SO Snowflake SQL API`: your PAT as the bearer token, one `Bearer` prefix. Test it.
+3. Three integrations carry the database name in their body text: `SO_simulateFeed` and `SO_resetSession` (`"statement":"CALL FINSERV.TRADE_SETTLEMENT.SIMULATE_FEED(?)"` and `"database":"FINSERV"`, likewise for `RESET_SESSION`) and `SO_askSnowflake` (same body shape; the `database` field, and the agent's qualified name if the `DATA_AGENT_RUN` statement spells it out). Replace `FINSERV` with `LIFESCI` in each, nothing else. Test `SO_simulateFeed` with run name `SMOKE`; the procedure's own message comes back verbatim.
+4. Confirm the Snowflake record types resolve to your tables: open `SO Trade` in Designer and view its data. Rows from `LIFESCI` means the connected system's Database setting carries the record types, as expected from how Appian stores the source (schema and table on the record type, database on the connected system; Appian's documentation does not state this outright). A schema mismatch error or `FINSERV` rows means it does not, in which case stop and tell Scott rather than improvising; the fallback is Path B's record type step for those five record types plus re-pointing their references, and that decision is his to make with you.
+5. Groups: your account into `SO Demo Admins` and `SO Supervisors`; `alex.analyst` into `SO Analysts`; `sam.supervisor` into `SO Supervisors`.
+6. Event types: the event type table must hold exactly seven rows, ids 1 to 7: Case Created, Agent Triage Complete, Straight-Through Resolution, Assigned, Comment Added, Disposition Recorded, Escalated. Insert them if the import left the table empty.
+7. The Demo Admin console asserts a baseline of exactly 50,000 trades and 50,000 predictions (`SO_demoAdminConsole`, the verdict line and the two Details lines). Either generate exactly 50,000 complaints and predictions, or change those numbers in the console. Until one or the other, the verdict reads Not ready.
+8. Row-level security on `SO Trade` hardcodes the analyst persona's desk to `EQ_FLOW`. Keep that `DESK` value in your data for the investigator persona, or edit the rule.
+9. Agent Studio: open `SO Triage Agent` and confirm it imported with its two tools pointing at `SO_caseContext` and `SO_remediationForReason`. If it did not come across, recreate it from `agent/instructions.md` and `agent/tools.md`; the process model `SO_triageCase` then needs its agent node re-pointed.
+10. Sites: `settlement-ops` and `settlement-ops-admin` must be unique URL stubs on your environment; rename them in step 7 anyway.
 
-**Step 7. Rename and reskin.** Rename the application and the objects (`SO` → `CQ`) in Designer at your own pace; Appian keeps references by UUID, so renames break nothing. Rewrite the vocabulary canon in the display rules (statuses, severity tiers, hazard codes, actions, dispositions, product families, countries), then the labels on every interface, the site names and URL stubs, the group names, the site header badge. Density and type follow Scott's mockups; replace the vocabulary, keep the layout.
+**Step 6. Smoke test, in this order.** `SO Trade` data from `LIFESCI`. The Demo Admin console as your presenter account: the readiness line is green. Load the demo: the procedure reports 15 trades and 3 cases, and three cases appear within about two minutes. Open the hero: held for review below 0.80. Record Disposition on it. The supervisor page as `sam.supervisor`. Reset: baseline restored, zero open demo cases.
 
-**Step 8. Verify as personas** (§8, step 12).
+**Step 7. Rename and reskin.** Rename the application and the objects (`SO` to your prefix) in Designer at your own pace; references are by UUID, so renames break nothing. Rewrite the vocabulary canon in the display rules (statuses, severity tiers, hazard codes, actions, dispositions, product families, countries), then the labels on every interface, the site names and URL stubs, the group names, the site header badge. Density and type follow Scott's mockups; replace the vocabulary, keep the layout. Your repo for this build starts as a copy of this one with `.work/` refreshed from your environment after the rename.
+
+**Step 8. Verify as personas** (§7, step 12).
 
 ---
 
@@ -212,7 +232,7 @@ Work through the Kiro method Scott uses: clone the `appian-devmcp-method-kiro` t
 
 Snowflake, either path: two to three days with the scripts as templates, most of it data and scoring.
 
-Appian, Path A: a day to export, import, set credentials and generate the native tables, then a reskin pass of a day or two. Path B: three or four Kiro sessions for the port plus the same reskin.
+Appian, Path A: a day to prepare the environment, import, make the post-import edits and smoke test, then a reskin pass of a day or two. Path B: three or four Kiro sessions for the port plus the same reskin.
 
 Then a day on the packet and verification and a day on the talk track and script. Path A lands in about a week of part-time work; Path B closer to two.
 
@@ -223,5 +243,5 @@ Then a day on the packet and verification and a day on the talk track and script
 - A Snowflake database created as `ACCOUNTADMIN` and granted to `FINSERVADMIN` (§5 step 2).
 - Whether a second Appian environment exists for you (§1). This one question decides a week of work.
 - `run_inference.sql`, `semantic_view.yaml` and `agent_config.sql` from the Snowflake kit (not in this repo).
-- The exported package and import customization file template (Path A), or the Kiro template link and a walkthrough of the session loop (Path B).
+- Path A: the export with precedents added, the import customization file template, and the DDL of the `SO_` tables from NY's Cloud Database console. Path B: the Kiro template link and a walkthrough of the session loop.
 - A read of your vocabulary canon and your three stories before you build; those two documents decide whether the port lands first time.
