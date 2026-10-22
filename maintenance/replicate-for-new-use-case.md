@@ -29,9 +29,9 @@ Both builds share the Snowflake account. Whatever path you take on Appian, these
 
 **Snowflake**
 
-- Build in your own database, not a schema under `FINSERV`. Ask Scott to create it as `ACCOUNTADMIN` and grant ownership to `FINSERVADMIN` (`FINSERVADMIN` cannot create databases). This guide uses `LIFESCI`. A separate database is what makes Path A work with no record type changes, and it is the cleanest isolation either way. Never write to `FINSERV`.
+- Build in your own database, not a schema under `FINSERV`. Daniel Mackenthun administers the partner account: he sets up your user, your role grants, your default warehouse and your database (`FINSERVADMIN` cannot create databases). This guide uses `LIFESCI`. A separate database is what makes Path A work with no record type changes, and it is the cleanest isolation either way. Never write to `FINSERV`.
 - Every procedure, view and agent you create names your database and schema explicitly. Copy Scott's scripts and change the `USE DATABASE` and `USE SCHEMA` lines and every qualified name; a procedure that inherits the session context is one worksheet mistake away from the wrong table.
-- Use your own Snowflake user and your own PAT, restricted to role `FINSERVADMIN`. Set your default warehouse (`ALTER USER <you> SET DEFAULT_WAREHOUSE = COMPUTE_WH;`) or record types fail with "no active warehouse".
+- Use your own Snowflake user and your own PAT, restricted to role `FINSERVADMIN`. Your default warehouse must be `COMPUTE_WH` (`ALTER USER <you> SET DEFAULT_WAREHOUSE = COMPUTE_WH;`, which Daniel can set) or record types fail with "no active warehouse".
 - `COMPUTE_WH` is shared and X-Small. Two demos at the same time will contend. If you present often, ask Scott about a second warehouse.
 - Your demo run ids use a different reserved prefix. Scott's packet rows are `TRD9…`; use `CMP9…` so a stray query can never confuse the two, even though they live in different databases.
 
@@ -110,15 +110,15 @@ Two things in the Boston Scientific document do not become demo beats. Stages 2 
 
 ## 5. Snowflake, step by step (both paths)
 
-**Step 1. Access.** Your own user on the partner account, default warehouse `COMPUTE_WH`, role `FINSERVADMIN`, a PAT restricted to `FINSERVADMIN` with the expiry written down. Never work as `ACCOUNTADMIN`.
+**Step 1. Access.** From Daniel Mackenthun: your own user on the partner account, `FINSERVADMIN` granted, default warehouse `COMPUTE_WH`. You generate your own PAT, restricted to `FINSERVADMIN`, and write the expiry down. Never work as `ACCOUNTADMIN`.
 
-**Step 2. Database.** Scott, as `ACCOUNTADMIN`: `CREATE DATABASE LIFESCI; GRANT OWNERSHIP ON DATABASE LIFESCI TO ROLE FINSERVADMIN;` Then you, as `FINSERVADMIN`: `CREATE SCHEMA LIFESCI.COMPLAINT_QUALITY;` for your tables, and on Path A also `CREATE SCHEMA LIFESCI.TRADE_SETTLEMENT;` for the compatibility views.
+**Step 2. Database.** From Daniel: `CREATE DATABASE LIFESCI; GRANT OWNERSHIP ON DATABASE LIFESCI TO ROLE FINSERVADMIN;` Then you, as `FINSERVADMIN`: `CREATE SCHEMA LIFESCI.COMPLAINT_QUALITY;` for your tables, and on Path A also `CREATE SCHEMA LIFESCI.TRADE_SETTLEMENT;` for the compatibility views.
 
 **Step 3. Structure.** In Snowsight: `SELECT GET_DDL('SCHEMA', 'FINSERV.TRADE_SETTLEMENT');` and keep the output as the column reference: every column the screens read, with its type. It copies no data. Write your own DDL for the five tables in `LIFESCI.COMPLAINT_QUALITY` with your names; §4's mapping table says which of Scott's columns each of yours stands in for, and the types must match his (`FAIL_PROBABILITY` is a float in 0 to 1, `RISK_TIER` text, `SCORED_AT` and `MATCHED_AT` `TIMESTAMP_NTZ`, the ids `VARCHAR(20)`). `TRADES` has three columns Scott added later (`QUANTITY`, `IS_MATCHED`, `MATCHED_AT`); `INSTRUMENTS` has four (`ISIN`, `CSD`, `TICKER_ORIG`, `NAME_ORIG`); `COUNTERPARTIES` two (`OPS_CONTACT_NAME`, `OPS_CONTACT_PHONE`); `SETTLEMENT_HISTORY` one (`COUNTERPARTY_ID`); every one of them is read by a screen, so each needs a stand-in.
 
 Then, on Path A, the five views in `LIFESCI.TRADE_SETTLEMENT`, one per table, named `TRADES`, `TRADE_PREDICTIONS`, `COUNTERPARTIES`, `INSTRUMENTS`, `SETTLEMENT_HISTORY`, each `SELECT <your column> AS <his column>, …` over your table. A view must supply every column its record type mapped, whether or not a screen reads it; the exact list is the record type's data model in Designer after import (the source field column), and before that, every column `GET_DDL` shows. Check each view with `DESC VIEW`: same names, same types; order does not matter.
 
-**Step 4. Data.** Generate it in Snowflake with `GENERATOR` and `UNIFORM`/`RANDSTR`, or in a script and load through a stage with `COPY INTO`. Sizes are yours; Scott's are 50 sites, 200 devices, 50,000 complaints, 50,000 history rows, one prediction per complaint. Shapes the screens depend on:
+**Step 4. Data.** §11 is a complete prompt that produces the generator as one Snowsight script: your five tables, 50,000 complaints with coherent sites, devices, history and predictions, and the five views. Give it to Claude as written. Sizes are yours; Scott's are 50 sites, 200 devices, 50,000 complaints, 50,000 history rows, one prediction per complaint, and 50,000 is what the imported console asserts. Shapes the screens depend on:
 - `FAIL_PROBABILITY` in 0 to 1; `RISK_TIER` exactly your four values; the tier bands documented.
 - `SCORED_AT` written as `SYSDATE()::TIMESTAMP_NTZ`. Appian reads `TIMESTAMP_NTZ` as UTC, and the Snowsight session is Pacific, so `CURRENT_TIMESTAMP()` cast to NTZ is seven hours wrong.
 - `FAIL_REASON` and `DESK` as fixed enums, exactly as the display rules expect.
@@ -264,10 +264,99 @@ Then a day on the packet and verification and a day on the talk track and script
 
 ## 10. Ask Scott for
 
-- A Snowflake user on the partner account for you, with `FINSERVADMIN` granted and `COMPUTE_WH` as its default warehouse, and a Snowflake database created as `ACCOUNTADMIN` and granted to `FINSERVADMIN` (§5 steps 1 and 2). Both need account-level rights you will not have.
+- (From Daniel Mackenthun, not Scott.) A Snowflake user on the partner account, `FINSERVADMIN` granted, `COMPUTE_WH` as its default warehouse, and the `LIFESCI` database created and granted to `FINSERVADMIN` (§5 steps 1 and 2).
 - Whether a second Appian environment exists for you (§1). This one question decides a week of work.
 - `run_inference.sql`, `semantic_view.yaml` and `agent_config.sql` from the Snowflake kit (not in this repo).
 - Path A: the export with precedents added, the import customization file template, and the DDL of the `SO_` tables from NY's Cloud Database console. Path B: the Kiro template link and a walkthrough of the session loop, if you want the sessions to do the port.
 - Read access to the source repository if it has gone private.
 - Before the export, three values moved out of the source build's SAIL and into constants, so the customization file sets them per environment: the console's baseline count, the two persona usernames, the analyst persona's desk. Small session; without it, Path A step 5 edits them by hand.
 - A read of your vocabulary canon and your three stories before you build; those two documents decide whether the port lands first time.
+
+---
+
+## 11. Prompt: generate the baseline data and the views
+
+Give this to Claude as one message. It is complete; nothing from this guide needs to be pasted with it. Run the script it returns in Snowsight as `FINSERVADMIN`.
+
+```
+I am building an Appian + Snowflake demo for medical device post-market surveillance: complaint hazard, harm and severity classification with human review. Write me ONE Snowflake script, runnable top to bottom in a Snowsight worksheet as role FINSERVADMIN, warehouse COMPUTE_WH, that creates my tables, fills them with generated baseline data, and creates five compatibility views. Nothing in this script may reference the database FINSERV; it exists on the same account and belongs to someone else.
+
+CONTEXT YOU NEED
+The demo copies an existing settlements demo whose Appian application reads five Snowflake tables through record types. Those record types will be imported unchanged and will look for views named like the original tables, with the original column names and types, in schema LIFESCI.TRADE_SETTLEMENT. My real tables live in LIFESCI.COMPLAINT_QUALITY under my own names. The views translate. The Appian side never writes to these tables; every write comes through stored procedures I will add later. Keep column names exactly as listed below, because the view definitions and later scripts depend on them.
+
+SCHEMA: LIFESCI.COMPLAINT_QUALITY (create or replace each table)
+
+SITES  (50 rows; stands in for COUNTERPARTIES)
+  SITE_ID VARCHAR(20) primary key, 'SITE' + 3 digits
+  NAME VARCHAR(100), realistic hospital, clinic, distributor and field-service names, no real organizations
+  TYPE VARCHAR(20): hospital, clinic, distributor, field_service
+  REGION VARCHAR(10): NA, EMEA, APAC, LATAM (keep these exact codes; the imported screens map them)
+  RISK_TIER VARCHAR(10): high, medium, low (lowercase; the imported screens map them)
+  HISTORICAL_SERIOUS_RATE FLOAT, 0.02 to 0.25, correlated with RISK_TIER (high 0.15 to 0.25, medium 0.07 to 0.15, low 0.02 to 0.07); the book-wide average lands near 0.09
+  QUALITY_CONTACT_NAME VARCHAR(100), QUALITY_CONTACT_PHONE VARCHAR(30)
+
+DEVICES  (200 rows; stands in for INSTRUMENTS)
+  DEVICE_ID VARCHAR(20) primary key, 'DEV' + 4 digits
+  CATALOG_NUMBER VARCHAR(20), e.g. 'BSC-7714-02'
+  NAME VARCHAR(100), plausible device names (stents, catheters, guidewires, leads, implantable pulse generators, endoscopes), no real product names
+  PRODUCT_FAMILY VARCHAR(20): stent, catheter, guidewire, lead, implantable, endoscope
+  UDI_DI VARCHAR(14), 14-digit numeric device identifier
+  DEVICE_CLASS VARCHAR(5): I, II, III, with III about 30 percent
+  COMPLAINT_RATE_PER_1000 FLOAT, 0.1 to 8.0
+  LABEL_COUNTRY VARCHAR(3): ISO 3166 alpha-3 of the labeling country, mostly USA, DEU, IRL, JPN
+
+COMPLAINTS  (50,000 rows; stands in for TRADES)
+  COMPLAINT_ID VARCHAR(20) primary key, 'CMP' + 6 digits starting at 000001. Never generate an id starting with 'CMP9'; that prefix is reserved for demo packets.
+  RECEIVED_DATE DATE, spread over the 24 months ending 60 days ago, weekdays only
+  REPORTING_DEADLINE DATE: RECEIVED_DATE plus 30 days for COUNTRY 'USA' (FDA MDR), plus 15 days otherwise (EU MDR serious incident timeline); use the same rule for every row so the clock is explainable
+  DEVICE_ID VARCHAR(20) foreign key to DEVICES
+  SITE_ID VARCHAR(20) foreign key to SITES
+  SOURCE VARCHAR(20): PATIENT, HCP, SALES_REP, FIELD, weighted toward HCP
+  UNITS_AFFECTED NUMBER(18,2): units in the affected lot, log-normal-ish between 1 and 50,000, most under 500
+  COUNTRY VARCHAR(3): ISO 3166 alpha-3 of the incident country, about 55 percent USA, the rest spread across DEU, GBR, FRA, JPN, AUS, BRA, CAN
+  DAYS_SINCE_AWARENESS NUMBER(6,2): days between the firm becoming aware and this record, 0.5 to 20, right-skewed, median about 2
+  INVESTIGATOR_ID VARCHAR(20), 'INV' + 3 digits, 30 distinct
+  PRODUCT_LINE VARCHAR(20): CARDIO, ENDO, NEURO, UROLOGY, PERIPHERAL, consistent with the device's PRODUCT_FAMILY (stents and guidewires mostly CARDIO and PERIPHERAL, endoscopes ENDO, leads and implantables NEURO or CARDIO)
+  LOT_SIZE NUMBER(18,0): the full lot, at least UNITS_AFFECTED
+  NARRATIVE_VALIDATED BOOLEAN, true for 97 percent
+  VALIDATED_AT TIMESTAMP_NTZ: RECEIVED_DATE at a business-hours time, in UTC; write all TIMESTAMP_NTZ values as UTC wall clock, never from CURRENT_TIMESTAMP cast to NTZ, because the Appian side reads NTZ as UTC and this session's time zone is not UTC
+  EVENT_NARRATIVE VARCHAR(4000): a two to four sentence templated narrative that fits the hazard assigned in COMPLAINT_HISTORY (see below), varying device, setting, patient age band and outcome; at least 40 distinct templates across the hazard codes
+
+COMPLAINT_HISTORY  (50,000 rows, exactly one per complaint; stands in for SETTLEMENT_HISTORY; this is the closed outcome of each baseline complaint)
+  COMPLAINT_ID VARCHAR(20) foreign key, unique
+  SITE_ID VARCHAR(20), copied from the complaint
+  STATUS VARCHAR(20): CONFIRMED_SERIOUS or CLOSED_NOT_SERIOUS; about 13 percent CONFIRMED_SERIOUS overall, with the probability of serious rising with the site's HISTORICAL_SERIOUS_RATE, DEVICE_CLASS III, and SOURCE = HCP
+  HAZARD_CODE VARCHAR(40): one of exactly four codes, mechanical_fracture, electrical_fault, contamination, labeling_use_error, on every row (the predicted and confirmed hazard; the demo's screens show it through a display rule, so store the code, never a label); mechanical_fracture most common for stents, guidewires and leads, electrical_fault for implantables and leads, contamination for catheters and endoscopes, labeling_use_error spread thin
+  DAYS_PAST_DEADLINE NUMBER(6,0): 0 for most rows; 1 to 25 for about 8 percent, more often when STATUS is CONFIRMED_SERIOUS
+  CLOSED_DATE DATE: REPORTING_DEADLINE plus DAYS_PAST_DEADLINE, minus a few days when DAYS_PAST_DEADLINE is 0, never before RECEIVED_DATE
+
+COMPLAINT_PREDICTIONS  (50,000 rows, one per complaint; stands in for TRADE_PREDICTIONS; a model's view before the outcome was known)
+  COMPLAINT_ID VARCHAR(20) foreign key, unique
+  SERIOUS_PROBABILITY FLOAT in 0 to 1: a heuristic score, computed in SQL, from the site's HISTORICAL_SERIOUS_RATE (strongest), DEVICE_CLASS, DAYS_SINCE_AWARENESS relative to the days available before REPORTING_DEADLINE, UNITS_AFFECTED, and SOURCE, plus noise, so that CONFIRMED_SERIOUS rows score higher on average but not perfectly
+  PREDICTED_SEVERITY VARCHAR(10): Critical, High, Medium, Low, keep these exact stored codes (the imported screens map them to severity labels and open cases for High and Critical); assign by SERIOUS_PROBABILITY bands exactly: Critical 0.7507 to 0.95, High 0.5003 to 0.7495, Medium 0.25 to 0.4999, Low below 0.25; target distribution close to Critical 3.6 percent, High 21 percent, Medium 34 percent, Low 41 percent
+  PREDICTED_HAZARD VARCHAR(40): equals the history row's HAZARD_CODE on 85 percent of rows, another of the four codes otherwise
+  PREDICTED_HARM VARCHAR(40): one of tissue_trauma, arrhythmia, infection, delayed_procedure, no_harm, consistent with the hazard
+  SCORED_AT TIMESTAMP_NTZ: SYSDATE()::TIMESTAMP_NTZ at generation time, the same value on every row
+  TOP_RISK_FACTORS VARIANT: an array of exactly three objects {factor, contribution}, where element 0 is {'factor': 'Site Complaint Rate', 'contribution': 2.5 * the site's HISTORICAL_SERIOUS_RATE} as a FLOAT, and elements 1 and 2 are drawn from these fixed pairs by position: ('Device Class III', 0.05), ('Narrative Ambiguity', 0.05), ('Prior Recall', 0.05), ('Multiple Lots', 0.02), ('Low Base Risk', 0.02), ('Normal Operations', 0.01), ('Implant Duration', 0.03), ('Tight Reporting Window', 0.05); the pairs chosen must not contradict the row (a Low row does not carry Device Class III unless the device is class III)
+
+VIEWS: LIFESCI.TRADE_SETTLEMENT (create or replace; schema LIFESCI.TRADE_SETTLEMENT already exists)
+Each view selects from the table above and renames columns to the original names. Column types must be what the original record types expect: ids VARCHAR(20), dates DATE, timestamps TIMESTAMP_NTZ, probabilities FLOAT, money-like numbers NUMBER(18,2), booleans BOOLEAN. Column order does not matter.
+  TRADES over COMPLAINTS: TRADE_ID = COMPLAINT_ID, TRADE_DATE = RECEIVED_DATE, EXPECTED_SETTLEMENT_DATE = REPORTING_DEADLINE, INSTRUMENT_ID = DEVICE_ID, COUNTERPARTY_ID = SITE_ID, DIRECTION = SOURCE, NOTIONAL = UNITS_AFFECTED, CURRENCY = COUNTRY, BROKER_CONFIRMATION_LAG_HRS = DAYS_SINCE_AWARENESS, TRADER_ID = INVESTIGATOR_ID, DESK = PRODUCT_LINE, QUANTITY = LOT_SIZE, IS_MATCHED = NARRATIVE_VALIDATED, MATCHED_AT = VALIDATED_AT
+  TRADE_PREDICTIONS over COMPLAINT_PREDICTIONS: TRADE_ID = COMPLAINT_ID, FAIL_PROBABILITY = SERIOUS_PROBABILITY, RISK_TIER = PREDICTED_SEVERITY, SCORED_AT = SCORED_AT, TOP_RISK_FACTORS = TOP_RISK_FACTORS
+  COUNTERPARTIES over SITES: COUNTERPARTY_ID = SITE_ID, NAME, TYPE, REGION, RISK_TIER, HISTORICAL_FAIL_RATE = HISTORICAL_SERIOUS_RATE, OPS_CONTACT_NAME = QUALITY_CONTACT_NAME, OPS_CONTACT_PHONE = QUALITY_CONTACT_PHONE
+  INSTRUMENTS over DEVICES: INSTRUMENT_ID = DEVICE_ID, TICKER = CATALOG_NUMBER, NAME, ASSET_CLASS = PRODUCT_FAMILY, CURRENCY = LABEL_COUNTRY, AVG_VOLATILITY = COMPLAINT_RATE_PER_1000, MARKET_CAP_TIER = DEVICE_CLASS, ISIN = UDI_DI, CSD = 'FDA' for LABEL_COUNTRY 'USA' and 'EU-MDR' otherwise, TICKER_ORIG = CATALOG_NUMBER, NAME_ORIG = NAME
+  SETTLEMENT_HISTORY over COMPLAINT_HISTORY: TRADE_ID = COMPLAINT_ID, COUNTERPARTY_ID = SITE_ID, STATUS = 'FAILED' when CONFIRMED_SERIOUS else 'SETTLED', FAIL_REASON = HAZARD_CODE, DAYS_LATE = DAYS_PAST_DEADLINE, ACTUAL_SETTLEMENT_DATE = CLOSED_DATE
+I will check each view against the imported record types' field lists and add any column I have missed; leave a comment block at the top of the views section listing every column each view exposes.
+
+RULES FOR THE SCRIPT
+- Pure SQL, Snowflake dialect, no Python, no stored procedures, no stages or file loads. Use GENERATOR, UNIFORM, RANDOM, NORMAL where they help; seed nothing, but make distributions deterministic enough that rerunning gives the same shape.
+- Idempotent: CREATE OR REPLACE for every table and view, so rerunning the whole script rebuilds the baseline from scratch.
+- Set context at the top: USE ROLE FINSERVADMIN; USE WAREHOUSE COMPUTE_WH; USE DATABASE LIFESCI; USE SCHEMA COMPLAINT_QUALITY; and qualify every object name anyway.
+- Referential integrity by construction: every COMPLAINTS.DEVICE_ID and SITE_ID exists; every history and prediction row has exactly one complaint; no orphans.
+- Dates coherent: VALIDATED_AT on RECEIVED_DATE; CLOSED_DATE on or after RECEIVED_DATE; REPORTING_DEADLINE after RECEIVED_DATE.
+- Narratives must never contain real patient, clinician, hospital or product names.
+- Comment each section in one or two lines: what it builds and the shape it targets.
+- END WITH EXACTLY ONE SELECT that returns a PASS/FAIL grid, one row per check, columns CHECK, EXPECTED, ACTUAL, RESULT, covering at least: row counts for all five tables (50 / 200 / 50,000 / 50,000 / 50,000); zero orphan foreign keys in each direction; SERIOUS_PROBABILITY within 0 and 1; every PREDICTED_SEVERITY in the four codes and each tier's probability range inside its band; tier shares within 3 percentage points of the targets; CONFIRMED_SERIOUS share between 11 and 15 percent; every HAZARD_CODE in the four codes; every REGION, RISK_TIER, SOURCE, PRODUCT_LINE and PRODUCT_FAMILY value in its list; no COMPLAINT_ID starting with CMP9; SCORED_AT within the last ten minutes in UTC; VALIDATED_AT on RECEIVED_DATE for every row; CLOSED_DATE never before RECEIVED_DATE; each of the five views selectable with the same row count as its table; TOP_RISK_FACTORS array length exactly 3 on every row. The last row of the grid is OVERALL with RESULT PASS only if every other row passed.
+
+Return the script only, in one code block, with no prose before or after it.
+```
