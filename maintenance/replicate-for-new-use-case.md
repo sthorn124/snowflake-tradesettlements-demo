@@ -169,9 +169,23 @@ Everything in this section was checked against the deployed objects on 2026-10-2
 
 **Step 6. Smoke test, in this order.** `SO Trade` data from `LIFESCI`. The Demo Admin console as your presenter account: the readiness line is green. Load the demo: the procedure reports 15 trades and 3 cases, and three cases appear within about two minutes. Open the hero: held for review below 0.80. Record Disposition on it. The supervisor page as `sam.supervisor`. Reset: baseline restored, zero open demo cases.
 
-**Step 7. Rename and reskin.** Rename the application and the objects (`SO` to your prefix) in Designer at your own pace; references are by UUID, so renames break nothing. Rewrite the vocabulary canon in the display rules (statuses, severity tiers, hazard codes, actions, dispositions, product families, countries), then the labels on every interface, the site names and URL stubs, the group names, the site header badge. Density and type follow Scott's mockups; replace the vocabulary, keep the layout. Your repo for this build starts as a copy of this one with `.work/` refreshed from your environment after the rename.
+**Step 7. Rename.** Rename the application, every object (`SO` to your prefix), the groups, the sites and their URL stubs, and the record fields (`tradeId` to `complaintId`, `notional` to `unitsAffected`, `desk` to `productLine`, `brokerConfirmationLagHrs` to `daysSinceAwareness`, and so on through §4). References are by UUID, so renames break nothing, and Designer rewrites the names inside expressions for you. A record field's source column mapping stays what it was; that is the view's job.
 
-**Step 8. Verify as personas** (§7, step 12).
+**Step 8. Convert what only means something on a settlements desk.** This is the pass that turns the import into an LS asset. In this order, because each layer reads the one before it:
+1. **Vocabulary canon.** Write it first (§8) and rewrite the display rules to it: `statusDisplay`, `riskTierDisplay` (severity), `failReasonDisplay` (hazard), `assetClassDisplay` (product family), `regionDisplay` (country or region), `quantityDisplay` (units; the shares-or-face branch goes), and `remediationForReason` (investigation action per hazard, with its disposition code and urgency). Also the constant `SO_DISPOSITION_CODES`.
+2. **The clock, hours to days.** The settlements build measures everything in hours to cutoff. Complaints run in days to a reporting deadline. Objects that compute or render the clock: `casePriority` (risk times time remaining; the sort of the queue), `cutoffDisplay`, `priorityBand`, `railCutoffChip`, `railTicker`, the Timing card and banner in `SO_caseDetail`, the cutoff runway chart on `SO_supervisorCommand` (next 12 hours becomes next 30 days, by day), and `intakePlan` if it reads the window. The policy escalation in `SO_triageCase` compares elapsed days against days to deadline instead of lag hours against hours remaining; the escalation event text it composes changes with it.
+3. **Money to units.** `fxToUsd` and the "USD eq." basis go; "Value at risk" on the supervisor page becomes units at risk (or open complaints at risk, if units do not read well for your devices). `penaltyAccrual` (CSDR basis points per day) either becomes a reportability-exposure line (days past deadline) or is removed with its constant. `onwardDeliveries` becomes related complaints on the same lot or device, or is removed; the agent context line that quotes it changes with it.
+4. **The agent.** `caseContext` (the six labeled lines the agent sees) in your terms: complaint, device, site, prediction with hazard and severity, site history, related complaints. Then the Agent Studio instructions: the timing arithmetic in days, the confidence semantics unchanged (only concerning facts lower it, favorable facts never do, a case favorable across the board earns 0.85 or higher). Then the Cortex agent instructions (§5 step 8).
+5. **The console.** `SO_demoAdminConsole` and `SO_adminCheck` labels (trades become complaints), the baseline assertion from step 5.7, the run-of-show copy.
+6. **Screens.** Labels on every interface, the site header badge, the Snowflake mark unchanged. Density and type follow Scott's mockups; replace the vocabulary, keep the layout. The three mockups in `mockups/` are yours to fork when a screen needs more than relabeling.
+
+**Step 9. Packet.** Author the three stories (§8), write them into your `SIMULATE_FEED` (§5 step 6), run the verification grid, then Load and read every story on screen as both personas: the hero holds below 0.80, the escalation fires by policy whatever the agent scored, the straight-through resolves.
+
+**Step 10. Verify as personas** (§7, step 12).
+
+**Step 11. Talk track and script.** From `talk-track-10min-internal.md` and `demo-script-15min-client-awareness.md`, every line rewritten.
+
+**Step 12. Your repo.** Start it as a copy of this one: refresh `.work/` from your environment after the rename, rewrite `.kiro/steering/project.md` (Build parameters, vocabulary canon, data model, business rules) for your build, reset `BUILD_PLAN.md`, `TODO.md`, `BUILD_LOG.md` and `Closeout.md` to your own, and replace the project files (`packet-spec.md`, `hero-trade-spec.md`, the one-pager) with yours. The method files (`.kiro/steering/core-*`, `reference/`, `examples/`, `maintenance/`, `GETTING_STARTED.md`) stay as they are; they belong to the template.
 
 ---
 
@@ -240,9 +254,9 @@ Work through the Kiro method Scott uses: clone the `appian-devmcp-method-kiro` t
 
 Snowflake, either path: two to three days with the scripts as templates, most of it data and scoring.
 
-Appian, Path A: a day to prepare the environment, import, make the post-import edits and smoke test, then a reskin pass of a day or two. Path B: three or four Kiro sessions for the port plus the same reskin.
+Appian, Path A: a day to prepare the environment, import, make the post-import edits and smoke test; a day for the rename; three or four days for the conversion in step 8, most of it the clock and the agent. Path B: three or four Kiro sessions for the port plus the same reskin.
 
-Then a day on the packet and verification and a day on the talk track and script. Path A lands in about a week of part-time work; Path B closer to two.
+Then a day on the packet and verification and a day on the talk track and script. Path A lands in about two weeks of part-time work; Path B closer to three.
 
 ---
 
