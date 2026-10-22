@@ -116,7 +116,7 @@ Two things in the Boston Scientific document do not become demo beats. Stages 2 
 
 **Step 3. Structure.** In Snowsight: `SELECT GET_DDL('SCHEMA', 'FINSERV.TRADE_SETTLEMENT');` and keep the output as the column reference: every column the screens read, with its type. It copies no data. Write your own DDL for the five tables in `LIFESCI.COMPLAINT_QUALITY` with your names; §4's mapping table says which of Scott's columns each of yours stands in for, and the types must match his (`FAIL_PROBABILITY` is a float in 0 to 1, `RISK_TIER` text, `SCORED_AT` and `MATCHED_AT` `TIMESTAMP_NTZ`, the ids `VARCHAR(20)`). `TRADES` has three columns Scott added later (`QUANTITY`, `IS_MATCHED`, `MATCHED_AT`); `INSTRUMENTS` has four (`ISIN`, `CSD`, `TICKER_ORIG`, `NAME_ORIG`); `COUNTERPARTIES` two (`OPS_CONTACT_NAME`, `OPS_CONTACT_PHONE`); `SETTLEMENT_HISTORY` one (`COUNTERPARTY_ID`); every one of them is read by a screen, so each needs a stand-in.
 
-Then, on Path A, the five views in `LIFESCI.TRADE_SETTLEMENT`, one per table, named `TRADES`, `TRADE_PREDICTIONS`, `COUNTERPARTIES`, `INSTRUMENTS`, `SETTLEMENT_HISTORY`, each `SELECT <your column> AS <his column>, …` over your table, every column present. Check each with `DESC VIEW` against the `GET_DDL` output: same names, same types, same order is not required.
+Then, on Path A, the five views in `LIFESCI.TRADE_SETTLEMENT`, one per table, named `TRADES`, `TRADE_PREDICTIONS`, `COUNTERPARTIES`, `INSTRUMENTS`, `SETTLEMENT_HISTORY`, each `SELECT <your column> AS <his column>, …` over your table. A view must supply every column its record type mapped, whether or not a screen reads it; the exact list is the record type's data model in Designer after import (the source field column), and before that, every column `GET_DDL` shows. Check each view with `DESC VIEW`: same names, same types; order does not matter.
 
 **Step 4. Data.** Generate it in Snowflake with `GENERATOR` and `UNIFORM`/`RANDSTR`, or in a script and load through a stage with `COPY INTO`. Sizes are yours; Scott's are 50 sites, 200 devices, 50,000 complaints, 50,000 history rows, one prediction per complaint. Shapes the screens depend on:
 - `FAIL_PROBABILITY` in 0 to 1; `RISK_TIER` exactly your four values; the tier bands documented.
@@ -264,7 +264,7 @@ Then a day on the packet and verification and a day on the talk track and script
 
 ## 10. Ask Scott for
 
-- A Snowflake database created as `ACCOUNTADMIN` and granted to `FINSERVADMIN` (§5 step 2).
+- A Snowflake user on the partner account for you, with `FINSERVADMIN` granted and `COMPUTE_WH` as its default warehouse, and a Snowflake database created as `ACCOUNTADMIN` and granted to `FINSERVADMIN` (§5 steps 1 and 2). Both need account-level rights you will not have.
 - Whether a second Appian environment exists for you (§1). This one question decides a week of work.
 - `run_inference.sql`, `semantic_view.yaml` and `agent_config.sql` from the Snowflake kit (not in this repo).
 - Path A: the export with precedents added, the import customization file template, and the DDL of the `SO_` tables from NY's Cloud Database console. Path B: the Kiro template link and a walkthrough of the session loop, if you want the sessions to do the port.
