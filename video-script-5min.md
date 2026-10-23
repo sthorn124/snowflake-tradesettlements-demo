@@ -1,12 +1,12 @@
 # Pre-Settlement Fail Prevention: 5-Minute Recorded Walkthrough
 
-*Narration and screen cues for a single-take screen recording. Written 2026-10-22 from `demo-script-15min-client-awareness.md`. Target length 5:00 to 5:30; nobody watches a 15-minute recording.*
+*Narration and screen cues for a single-take screen recording. Written 2026-10-22 from `demo-script-15min-client-awareness.md`, revised the same day to give the supervisor and analyst screens their own beats. Target length about 5:45; nobody watches a 15-minute recording.*
 
 ---
 
 ## Before recording (10 minutes)
 
-- Demo Admin site: if the status line says "Loaded before today" or the hero case is already resolved, **Reset the demo**, then **Load the demo**. Wait 2 minutes, confirm 3 cases. Never click Load twice.
+- Demo Admin site, off camera: if the status line says "Loaded before today" or the hero case is already resolved, **Reset the demo**, then **Load the demo**. Wait 2 minutes, confirm 3 cases. Never click Load twice. The Demo Admin site is never shown in the recording.
 - Three browser tabs, in this order: **Supervisor**, **Watchlist**, the hero case (**SAP GY / Diamond Trust**, trade `TRD9DEMO01`, found by name under Needs your action). Close the Demo Admin tab.
 - Browser zoom 110 to 125 percent. Full-screen the browser window. Hide bookmarks bar and other tabs' notifications.
 - Recorder: Loom, Zoom local recording, or macOS screen recording with the microphone on. Record the browser window only, 1080p. A headset mic or the laptop mic in a quiet room; no speaker-echo.
@@ -16,25 +16,41 @@
 
 ## 0:00 to 0:35 · Open
 
-**Screen: Supervisor tab. No clicks.**
+**Screen: Supervisor tab, top of page. No clicks. The Demo Admin site is setup only and never appears on camera; the first frame of the video is this page.**
 
 > "This is a joint Appian and Snowflake demo for settlement operations at a bank. Every trade has to settle, usually the next day, and when it fails it costs real money. Most firms still find out on the day. Here, Snowflake predicts which trades will fail, and Appian turns each prediction into work: a case with an owner, a deadline and an audit trail. An AI agent handles the straightforward ones. People handle the ones that need judgment. And the data never leaves Snowflake."
 
-## 0:35 to 1:20 · The supervisor's view
+## 0:35 to 1:50 · The supervisor's view (what the head of settlements sees)
 
-**Screen: Supervisor tab. Cursor moves to the Snowflake marks, Value at risk, Escalations awaiting action, the Cutoff runway chart.**
+**Screen: Supervisor tab. Cursor moves across the six KPI cards, then scroll to the Cutoff runway chart, then Analyst queues, then Escalations awaiting supervisor.**
 
-> "This is what the head of settlements sees in the morning. Every number with the Snowflake mark is computed in Snowflake and read live. Nothing was copied into Appian. Fifty thousand trades sit where they always sat. Overnight, Snowflake scored every pending trade. Appian took the risky ones and made them cases, each with an owner and a cutoff. A prediction on its own is a row in a table. The moment it becomes a case, somebody is accountable for it."
-
-## 1:20 to 2:05 · The analyst's morning
-
-**Screen: Watchlist tab. Cursor on the Latest scoring batch band, then scroll to Escalated, with supervisor and point at the BATS LN / Horizon Securities row and its red Escalation text.**
-
-> "Fifteen trades came in overnight. Most were cleared by Snowflake's scoring alone, so no case and no human. One was resolved by the AI agent. One escalated automatically. One is waiting for a person. Nobody walked in to fifteen trades. They walked in to one.
+> "This is the head of settlements at nine in the morning, across every desk. Six numbers along the top: predicted fails still open, value at risk in US dollars, how many sit inside the critical window, escalations waiting on a supervisor, what the agent resolved straight through today, and the penalties that avoided. Every number with the Snowflake mark is computed in Snowflake and read live. Nothing was copied into Appian; fifty thousand trades sit where they always sat.
 >
-> This one escalated by policy, not by the AI's opinion. The broker confirmation is 26 hours late and there's less time than that to the cutoff. There's no fix inside the window, so the rules send it straight to a supervisor, every time. The AI advises. The rules decide what it's allowed to do on its own."
+> The runway chart is the next twelve hours, hour by hour: how much value settles in each hour and how much of it is still at risk. Below it, analyst queues: open work by who holds it, which is where a supervisor reassigns. And escalations awaiting supervisor: each one with the reason it escalated written out, and how long it has been waiting against a one-hour SLA."
 
-## 2:05 to 3:35 · The hero case
+**Screen: scroll to Ask across the book. Click "How do fail rates differ by asset class?" Keep recording; trim the wait in post.**
+
+> "The supervisor can also ask the book a question in plain English. That goes to Snowflake Cortex, runs against the full history, and the answer comes back computed in Snowflake. Nobody wrote a report."
+
+**Screen: the answer lands. Read one number from it.**
+
+## 1:50 to 2:50 · The analyst's morning (what one desk sees)
+
+**Screen: Watchlist tab, top of page. Cursor across the four KPI cards, then the Latest scoring batch band.**
+
+> "Same application, the analyst's view. An analyst sees one desk, not the house: her four numbers are her desk's open fails, value at risk, what is inside the critical window, and what cleared straight through. The row-level security that scopes her to her desk is set once on the data, so every screen inherits it.
+>
+> The band is the overnight scoring batch. Fifteen trades came in. Most were cleared by Snowflake's scoring alone, so no case and no human. One was resolved by the AI agent. One escalated automatically. One is waiting for a person. Nobody walked in to fifteen trades. They walked in to one."
+
+**Screen: Needs your action. Cursor down the columns: risk, cutoff countdown, auto-release score.**
+
+> "Needs your action is her queue, sorted by time to cutoff. Each row carries the fail probability from Snowflake, the live countdown to cutoff, and the agent's auto-release score against the 80 it needs to act alone."
+
+**Screen: scroll to Escalated, with supervisor. Point at the BATS LN / Horizon Securities row and its red Escalation text. Then Cleared this batch, collapsed, point at the summary line.**
+
+> "This one escalated by policy, not by the AI's opinion. The broker confirmation is 26 hours late and there's less time than that to the cutoff. There's no fix inside the window, so the rules send it straight to a supervisor, every time. The AI advises. The rules decide what it's allowed to do on its own. And cleared this batch is everything that never needed a person."
+
+## 2:50 to 4:20 · The hero case
 
 **Screen: hero case tab. Scroll slowly: Trade & counterparty, the Counterparty card with Recent settlement fails, Timing, Agent assessment.**
 
@@ -50,13 +66,13 @@
 
 > "Diamond Trust fails [N] percent of the time against [N] for the rest of the book, mostly for this same reason. The flag is credible. The analyst accepts the agent's proposal, a partial release: Diamond Trust delivers the shares it has today, the rest follows, and most of the trade settles on time."
 
-## 3:35 to 4:20 · The decision and the record
+## 4:20 to 5:05 · The decision and the record
 
 **Screen: scroll to the top. Click Record Disposition. Choose Settled - Partial Release. Leave the note empty. Submit. Scroll to Activity and move the cursor down the entries.**
 
 > "Record the disposition. Done. And here's the record: the prediction, what the agent recommended and why it held, and what the analyst decided, each with a time and a name. Nobody assembles this afterwards. That's the audit trail compliance asks for, written as the work happened."
 
-## 4:20 to 5:00 · Close
+## 5:05 to 5:45 · Close
 
 **Screen: Supervisor tab, or stay on the case.**
 
