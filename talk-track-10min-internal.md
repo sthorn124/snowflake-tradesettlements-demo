@@ -1,6 +1,6 @@
 # Pre-Settlement Fail Prevention — 10-Minute Internal Talk Track
 
-*Copied into the repo 2026-10-13 from the live Claude Doc (https://claude.ai/artifact/Lmv1Kskdczm8JQnxVpboXo), the editable original. This is the 10-minute internal version written 2026-09-25 for the AE/SC session; the full one-hour client demo script is still unwritten (see TODO.md, Phase 5 Part C).*
+*Master copy: `talk-track-10min-internal.md` in the build repo, from 2026-11-12. It began as a Claude Doc (https://claude.ai/artifact/Lmv1Kskdczm8JQnxVpboXo), which is no longer kept current. This is the 10-minute internal version written 2026-09-25 for the AE/SC session; the full one-hour client demo script is still unwritten (see TODO.md, Phase 5 Part C).*
 
 Sep 25, 2026 · @Scott
 
@@ -85,7 +85,7 @@ Recording the disposition resolves the hero case. If you rehearse it beforehand,
 >
 > It's a governance story. Every AI decision is gated. That's what model-risk and compliance ask about first, and we answer it on screen.
 >
-> And it's reusable. One button loads it, one button resets it, and it runs the same way every time. If you have a capital-markets account on Snowflake, especially one on T+1 or dealing with CSDR penalties, come find me and we'll run it for them."
+> And it's reusable. One button sets it up, and it runs the same way every time. If you have a capital-markets account on Snowflake, especially one on T+1 or dealing with CSDR penalties, come find me and we'll run it for them."
 
 *Optional closer if there's a minute left:*
 

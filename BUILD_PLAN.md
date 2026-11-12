@@ -211,11 +211,12 @@ The last build session on record is 2026-09-24. NY was changed after that withou
 - ✅ 2026-11-12: Planning chat: correct two build parameters in `.kiro/steering/project.md` (found in the audit). The design account's username on NY is `scott.thorn@appian.com`, and `SO Supervisors` is not a member of `SO Analysts`.
 - [ ] Scott, in Snowsight: run `snowflake/verification-summary.sql` as FINSERVADMIN on COMPUTE_WH and paste the grid.
 - [ ] Scott: paste the regenerated `PROJECT_INSTRUCTIONS.md` block into the claude.ai Project, once the planning chat has regenerated it.
-- [ ] Planning chat: overwrite the Project's demo documents from the repo copies.
+- ✅ 2026-11-12: Planning chat: the Project's three demo scripts (15-minute script, 10-minute talk track, 5-minute video script) overwritten from the repo copies. The one-pager was already the same and was left. Each Project copy was checked against the repo at every line Phase 11 changed, not character by character.
 - [ ] Scott: make the repository private, then confirm a new Project chat can still read `Closeout.md`.
 
 Rulings open
-- [ ] The repo is the master copy of the demo documents. The Project's copies are overwritten from it, and the replication guide is removed from the Project.
+- ✅ Ruled 2026-11-12: the repo is the master copy of the demo documents, and the Project's copies are overwritten from it. The talk track's header now says so; its Claude Doc original is no longer kept current.
+- [ ] Not ruled: whether the replication guide (`demo-docs/replicate-for-new-use-case.md`) is removed from the Project.
 - [ ] This build stays in its own repo for now. Moving it into the SC workspace repo waits.
 
 Staying in sync afterwards: NY changes only through a build session that ends in a pushed close-out. A hand change in Designer gets a TODO line the same day.
@@ -262,10 +263,10 @@ Documents
 
 Proposed by the planning chat, not ruled
 - ✅ Ruled 2026-11-12, now in scope above: Ready also requires each of the three stories to sit in its scripted queue. If one does not, the line names it and says to prepare again.
-- [ ] The Ready line names who loaded the demo, so a second SC can see that someone else's run is live before pressing. Note 2026-11-12: `SO Demo Run` now stores who pressed Prepare (`startedBy`), so this needs only the line.
+- [ ] Ruled 2026-11-12, in `prompts/003-ready-margin-watchlist-totals.md`: the Ready line names who loaded the demo, so a second SC can see that someone else's run is live before pressing. Note 2026-11-12: `SO Demo Run` now stores who pressed Prepare (`startedBy`), so this needs only the line.
 - ✅ Ruled 2026-11-12 ("Yes, add it"), now in scope above: Ready does not look at how old today's load is (found 2026-11-12). A run loaded at 2 AM still reads "Ready to present" at 9 AM with the hero's cutoff past. Built the same day: Ready ends when the hero case's cutoff passes. Measured on the live run: Ready 22 seconds before the cutoff, "Not ready" 38 seconds after it.
 
-- [ ] Ruled 2026-11-12: Ready ends when the hero case has under two hours to its cutoff, in place of ending at the cutoff. The hero stops fitting its window about 1h55m after a load. New line before the cutoff: "Not ready. The hero case has under two hours to cutoff. Prepare the demo again." Prompt `prompts/003-ready-margin-watchlist-totals.md`.
+- [ ] Ruled 2026-11-12: Ready ends when the hero case has under two hours to its cutoff, in place of ending at the cutoff. The hero stops fitting its window about 1h55m after a load. Both wordings of the line are ruled. New line before the cutoff: "Not ready. The hero case has under two hours to cutoff. Prepare the demo again." Prompt `prompts/003-ready-margin-watchlist-totals.md`.
 - [ ] Ruled 2026-11-12: the watchlist's cross-currency totals go through `SO_fxToUsd` before they are added. Found by reading the saved source after the audit reported 698.4M on the supervisor screen against 662.5M on the watchlist. Same prompt.
 
 The status-line copy above is the contract for the build prompt.
