@@ -89,7 +89,7 @@ Scroll to **Escalated, with supervisor**. Point at the row (BATS LN, Horizon Sec
 
 > "This one escalated by policy, not by the AI's opinion. The broker confirmation is 26 hours late and there's less time than that to the cutoff. There's no fix inside the window, so the rules send it straight to a supervisor, every time. The AI advises. The rules decide what it's allowed to do on its own."
 
-Scroll to **Cleared this batch** (collapsed) and point at its summary line. Then Tab C.
+Then Tab C.
 
 ### Beat 4: The hero case (7:00 to 11:00)
 

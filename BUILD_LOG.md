@@ -4555,3 +4555,43 @@ Three found this session, none promoted, three listed.
 **The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-11-12 — Ruling: the "Cleared this batch" card stays hidden and the documents stop pointing at it (same Claude Code session; one Appian read)
+
+**Scope.** Same session and identity as the entry above. One Appian call, a `testRule` read of `SO_demoRunState` as `scott.thorn@appian.com`. Nothing was written to NY.
+
+**Ruling.** The close-out above asked what should happen to the hidden card that two demo documents point at. Scott answered "Edit the documents" (2026-11-12).
+
+### What changed, by file
+
+| File | Line | Change |
+|---|---|---|
+| `demo-script-15min-client-awareness.md` | 92 | "Scroll to **Cleared this batch** (collapsed) and point at its summary line. Then Tab C." is now "Then Tab C." |
+| `video-script-5min.md` | 49 | The screen direction ends at the escalated row. "Then Cleared this batch, collapsed, point at the summary line." is gone |
+| `video-script-5min.md` | 51 | The spoken line ends at "The rules decide what it's allowed to do on its own." The sentence "And cleared this batch is everything that never needed a person." is gone |
+| `talk-track-10min-internal.md` | 102 | The "On screen" cell quoted "Cleared by Snowflake scoring" in the latest batch. It now quotes "12 cleared by Snowflake" in the Latest scoring batch band |
+
+**Not changed:** `SO_analystWatchlist` (version 24). The card is still in its source with `showWhen: "false"`.
+
+### Decisions
+
+- **The spoken sentence went with its screen direction.** Scott ruled on the two lines that send the presenter to the card. The sentence on line 51 was the narration over that shot, and with the shot gone it described nothing on screen. The band's own narration, earlier in the same section, already says most trades were cleared by Snowflake's scoring.
+- **The talk track's quote was changed too.** "Cleared by Snowflake scoring" is text on the hidden card (line 1201 of the watchlist source). The band reads "12 cleared by Snowflake" (line 773), and the count is 12 after every Prepare: 15 trades, 3 stories. The row sits in a table whose first column is "On screen".
+- **Both go beyond the two lines named in the ruling.** They are in the close-out for Scott to reverse if he wants the old wording.
+
+### Verified
+
+- `grep` for "cleared this batch" across the four documents and `GETTING_STARTED.md`: no match.
+- The band's wording was read from the deployed source, not from a new render. The render of 17:28 UTC showed "12 cleared by Snowflake   1 agent-resolved   1 needs review   1 escalated".
+- NY at 18:08 UTC: READY, "Ready to present. Loaded today at 12:25 PM by Scott Thorn."
+
+### Not verified
+
+- The video script's timing with one sentence fewer. Not read aloud.
+- The Project's copies of the documents. They are now four lines behind the repo (`TODO.md`).
+
+### Promotion candidates (staging)
+
+None found this round. The three staged in the entry above are unchanged.
+
+**Promotion checkpoint: current through this entry.**

@@ -248,7 +248,7 @@ Follow-up: the Ready line and the watchlist's totals (ruled 2026-11-12; build pr
 - ✅ 2026-11-12: The Ready line names who loaded the run, by first and last name, read from the run's `SO Demo Run` row. Rendered on the console: "Ready to present. Loaded today at 12:25 PM by Scott Thorn."
 - ✅ 2026-11-12: The watchlist's two money totals convert each row through `SO_fxToUsd` before adding (`SO_analystWatchlist` version 24). Before: 662.5M and 354.6M on the watchlist against 698.4M and 393.7M on the supervisor screen, in the same second, over the same 16 open items. After: 698.4M and 393.7M on both. Both tiles carry the conversion basis in their tooltip. `SO_supervisorCommand` was not edited.
 - ✅ 2026-11-12: The saved copy of `SO_analystWatchlist` is the deployed source again (it was three versions behind).
-- [ ] Scott rules: the "Cleared this batch" card is not on the watchlist. It was hidden by hand on 2026-10-23 (`showWhen: "false"`, version 23), and `demo-script-15min-client-awareness.md` and `video-script-5min.md` each tell the presenter to scroll to it. Restore the card, or change the two documents. Found 2026-11-12.
+- ✅ 2026-11-12: The "Cleared this batch" card is not on the watchlist: hidden by hand on 2026-10-23 (`showWhen: "false"`, version 23). Found 2026-11-12 and ruled the same day: "Edit the documents". The card stays hidden. The demo script and the video script no longer send the presenter to it, and the talk track quotes the band instead of the card. Four lines across the three files.
 - [ ] Scott: `nick.bethune` holds `SO Demo Admins` only and `nick.bethune@appian.com` holds `SO Supervisors` only. They are two accounts, and a presenter needs both groups on one. Found 2026-11-12 in the group readback.
 
 Standing cases

@@ -46,9 +46,9 @@
 
 > "Needs your action is her queue, sorted by time to cutoff. Each row carries the fail probability from Snowflake, the live countdown to cutoff, and the agent's auto-release score against the 80 it needs to act alone."
 
-**Screen: scroll to Escalated, with supervisor. Point at the BATS LN / Horizon Securities row and its red Escalation text. Then Cleared this batch, collapsed, point at the summary line.**
+**Screen: scroll to Escalated, with supervisor. Point at the BATS LN / Horizon Securities row and its red Escalation text.**
 
-> "This one escalated by policy, not by the AI's opinion. The broker confirmation is 26 hours late and there's less time than that to the cutoff. There's no fix inside the window, so the rules send it straight to a supervisor, every time. The AI advises. The rules decide what it's allowed to do on its own. And cleared this batch is everything that never needed a person."
+> "This one escalated by policy, not by the AI's opinion. The broker confirmation is 26 hours late and there's less time than that to the cutoff. There's no fix inside the window, so the rules send it straight to a supervisor, every time. The AI advises. The rules decide what it's allowed to do on its own."
 
 ## 2:50 to 4:20 · The hero case
 
