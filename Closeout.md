@@ -1,6 +1,6 @@
 # Closeout — 2026-11-12 — Ready ends two hours before the hero's cutoff and names who loaded the run; the watchlist's totals convert before adding; the documents no longer point at the hidden "Cleared this batch" card
 
-**Session.** Ran in **Claude Code**, not Kiro, from `prompts/003-ready-margin-watchlist-totals.md`. The credits step of core §10 is skipped: `CREDITS.md` is built from Kiro's own records. Two rounds: the prompt's two parts, then one ruling on the documents.
+**Session.** Ran in **Claude Code**, not Kiro, from `prompts/003-ready-margin-watchlist-totals.md`. The credits step of core §10 is skipped: `CREDITS.md` is built from Kiro's own records. Three rounds: the prompt's two parts, then two rulings (the hidden card, the two `nick.bethune` accounts).
 
 **Scope and identity.** Every Appian call went through the Dev MCP (server `appian`) as `scott.thorn@appian.com`. The account was confirmed by assertion: `loggedInUser()` equal to that name validated clean, and the same check with another name failed. It is a direct member of `SO Supervisors`, `SO Demo Admins` and `SO Users`, so every read below is full-scope. No sail, by the prompt. The runtime server's tools were present in the session and were never loaded or called. Three helper agents made read-only `testInterface` calls under the same account and reported what they read.
 
@@ -21,13 +21,18 @@
 | `SO_demoRunState` | 3 → 4 | Ready ends when the hero has under two hours to its cutoff. The two hours is `local!readyMarginHours`. The state that follows keeps its name, HERO_PAST_CUTOFF, and its line has two wordings. The Ready line ends "by <first and last name>". New outputs `heroPast` and `loadedBy` |
 | `SO_analystWatchlist` | 23 → 24 | Each row carries `usd`, from `SO_fxToUsd`. Both money totals add `usd`. Both tiles that show a "USD eq." amount carry the conversion basis in their tooltip |
 
-**Not changed on NY:** `SO_demoAdminConsole` (version 14), `SO_supervisorCommand` (version 11), `SO_prepareRun`, `SO_prepareRunSteps`, `SO_kpiCard`, `SO_fxToUsd`, every record type, every group.
+**Not changed on NY:** `SO_demoAdminConsole` (version 14), `SO_supervisorCommand` (version 11), `SO_prepareRun`, `SO_prepareRunSteps`, `SO_kpiCard`, `SO_fxToUsd`, every record type, every group and every group membership.
 
 **Data written:** one Prepare (run record 5). It cleared the 14:28 run, re-dated the standing cases and loaded a fresh packet. Demo cases are now 153, 154 and 155.
 
+## Rulings made this session (Scott, 2026-11-12)
+
+1. **The hidden "Cleared this batch" card: "Edit the documents."** The card stays hidden. The documents were edited (next section).
+2. **The two `nick.bethune` accounts: "don't worry about nick bethune users".** `nick.bethune` is in `SO Demo Admins` only and `nick.bethune@appian.com` in `SO Supervisors` and `SO Users` only. No membership was changed. `project.md` now says a group readback finds these two and leaves them alone.
+
 ## What changed in the documents
 
-Round two, after Scott ruled "Edit the documents" on the hidden card (below, Part 2).
+After the first ruling.
 
 | File | Line | Change |
 |---|---|---|
@@ -56,7 +61,7 @@ No document mentions the card now (`grep` across the four documents and `GETTING
 | The console renders the Ready line and the new line with no error, the new line in amber with the button enabled | New line, 17:24:54 UTC: error null, colour `#96590A`, button `disabled` false, no "Ready to present" on the page. Ready line, 17:28:22 UTC: error null, "Ready to present. Loaded today at 12:25 PM by Scott Thorn.", colour `#17715B`, button `disabled` false |
 | A Prepare started from the new state ends in Ready | Started at 17:25:25 UTC with the state reading HERO_PAST_CUTOFF, 8 minutes 35 seconds before the cutoff. Answered in 4.72 seconds. Running at 29 and 73 seconds after the load. Run record 5 closed as LOADED 33.6 seconds after the press. Ready at 107 seconds |
 
-**Also measured.** On the run now loaded, `asOf` 18:31:00 UTC (2 h 0.17 s before the cutoff) is Ready and 18:31:01 is the new line. A run name with no run record returns an empty `loadedBy` and no error.
+**Also measured.** On the run now loaded, `asOf` 18:31:00 UTC (2 h 0.17 s before the cutoff) is Ready and 18:31:01 is the new line. On the real clock the same run read Ready at 18:08 UTC and the new line at 18:47 UTC. A run name with no run record returns an empty `loadedBy` and no error.
 
 **The three demo documents and the status line.** Read. Each quotes only "Ready to present" from it: `demo-script-15min-client-awareness.md` lines 30, 31 and 168; `talk-track-10min-internal.md` line 11; `video-script-5min.md` line 9. Part 1 changed none of them.
 
@@ -68,7 +73,7 @@ No document mentions the card now (`grep` across the four documents and `GETTING
 - **Version 23** (2026-10-23 12:32 UTC, same account): parameters reordered throughout, as a Designer save does, and the "Cleared this batch" card's `showWhen` changed from `local!hasBatch` to the text `"false"`.
 - **No save:** `a!cardGroupLayout` now reads back as `a!cardGroupLayout_26r6` on every stored version.
 
-**The "Cleared this batch" card is not on the page.** The source hides it and the render does not contain its header. Two documents told the presenter to scroll to it. **Ruled by Scott, 2026-11-12: "Edit the documents."** The card stays hidden; the edits are in the table above. The watchlist was not changed for this.
+**The "Cleared this batch" card is not on the page.** The source hides it and the render does not contain its header. Two documents told the presenter to scroll to it; by the first ruling above they no longer do. The watchlist was not changed for this.
 
 **Reproduced first.** Both screens rendered in one message; both stamped 12:28:24 Eastern.
 
@@ -105,8 +110,8 @@ No document mentions the card now (`grep` across the four documents and `GETTING
 - **The name comes from the row that matches the load,** not from the newest row. A later Prepare that failed, or a run loaded without Prepare, would otherwise put the wrong name on the line.
 - **The name is read with a query on the User record type, not `user()`.** A username the directory does not hold then gives no name. With `user()` it would fail the rule, and the console and Prepare with it.
 - **Both watchlist tiles carry the conversion basis.** The prompt names one. The project rule covers every converted figure.
-- **One Prepare only.** A second presenter uses NY, so the session started the one Prepare the pass condition needs and no other.
-- **The documents were edited to the page as it is,** including one spoken sentence and one quoted label that the ruling did not name (table above).
+- **One Prepare only.** A second presenter uses NY, so the session started the one Prepare the pass condition needs and no other, including after Ready ended.
+- **The documents were edited to the page as it is,** including one spoken sentence and one quoted label that the ruling did not name.
 
 ## Not verified
 
@@ -122,18 +127,21 @@ No document mentions the card now (`grep` across the four documents and `GETTING
 1. The console after a Prepare: the Ready line ends with your name.
 2. Your own account, Supervisor tab then Watchlist tab: the two Value at risk numbers match.
 3. As `alex.analyst`, the watchlist: the Value at risk tile reads "USD eq.", its tooltip gives the conversion note, and the row of tiles is still even.
-4. The console, about 65 minutes after a Prepare: the line reads "Not ready. The hero case has under two hours to cutoff. Prepare the demo again." in amber.
+4. The console, about 65 minutes after a Prepare: the line reads "Not ready. The hero case has under two hours to cutoff. Prepare the demo again." in amber. NY is in this state now, until 3:31 PM Eastern.
 
 ## Rulings needed
 
-1. **`nick.bethune`.** `nick.bethune` is in `SO Demo Admins` only. `nick.bethune@appian.com` is in `SO Supervisors` and `SO Users` only. They are two accounts. The first gets the console's instruction card; the second cannot see the admin site. Say which account presents, and add the missing group to it.
-2. **The supervisor screen's tooltip** still says "the book runs EUR, GBP, JPY and CHF", and its critical-window tile has no conversion note. Rule whether to bring it level with the watchlist.
+1. **The supervisor screen's tooltip** still says "the book runs EUR, GBP, JPY and CHF", and its critical-window tile has no conversion note. Rule whether to bring it level with the watchlist.
 
 ## State of NY
 
-Ready, from the Prepare of 17:25 UTC (12:25 PM Eastern), run record 5, started by `scott.thorn@appian.com`. Read at 18:08 UTC: "Ready to present. Loaded today at 12:25 PM by Scott Thorn." The hero case is 153; its cutoff is 20:31:00 UTC (3:31 PM Eastern).
+Loaded by the Prepare of 17:25 UTC (12:25 PM Eastern), run record 5, started by `scott.thorn@appian.com`. The hero case is 153; its cutoff is 20:31:00 UTC (3:31 PM Eastern).
 
-**Ready ends at 18:31 UTC, 1:31 PM Eastern.** From then the line reads "Not ready. The hero case has under two hours to cutoff. Prepare the demo again." From 3:31 PM Eastern it reads "Not ready. The hero case passed its cutoff at 3:31 PM. Prepare the demo again."
+- **At the first close-out, 17:37 UTC:** Ready, "Ready to present. Loaded today at 12:25 PM by Scott Thorn." The close-out said Ready would end at 18:31 UTC, 1:31 PM Eastern.
+- **Now, read at 18:47 UTC:** "Not ready. The hero case has under two hours to cutoff. Prepare the demo again." Ready ended when it was said to.
+- **From 3:31 PM Eastern:** "Not ready. The hero case passed its cutoff at 3:31 PM. Prepare the demo again."
+
+No Prepare was started after Ready ended. The next presenter presses Prepare, as the line says.
 
 ## Promotion candidates
 
@@ -147,7 +155,7 @@ Promotion checkpoint: current through this session's last entry. The header chec
 
 ## BUILD_PLAN.md changes
 
-Phase 11: the Ready line's copy updated, the second hero wording added, and a follow-up block for `prompts/003` with five items done (the margin, the name, the totals, the saved copy, the hidden-card ruling) and one open (the `nick.bethune` accounts).
+Phase 11: the Ready line's copy updated, the second hero wording added, and a follow-up block for `prompts/003` with six items, all closed: the margin, the name, the totals, the saved copy, the hidden-card ruling, the `nick.bethune` ruling.
 
 ## Files
 
@@ -155,7 +163,7 @@ Phase 11: the Ready line's copy updated, the second hero wording added, and a fo
 - `.work/SO_analystWatchlist.sail`: version 24, the file the save wrote back.
 - `.work/gen/render_leafdiff.py`: new. Compares two saved `testInterface` renders leaf by leaf.
 - `demo-script-15min-client-awareness.md`, `video-script-5min.md`, `talk-track-10min-internal.md`: four lines, for the hidden card.
-- `.kiro/steering/project.md`: the status-line paragraph, the cross-currency rule, the `.work/gen` line.
-- `BUILD_PLAN.md`, `BUILD_LOG.md` (two entries), `TODO.md`, this file.
+- `.kiro/steering/project.md`: the status-line paragraph, the cross-currency rule, the `.work/gen` line, and the standing decision on the two `nick.bethune` accounts.
+- `BUILD_PLAN.md`, `BUILD_LOG.md` (three entries), `TODO.md`, this file.
 
-**TODO changes:** closed three: "Value at risk differs between the two screens", "Ready holds until the hero's cutoff itself, with no margin", and the hidden "Cleared this batch" card (found and ruled this session). Updated four: the `SO Demo Run` pruning item, the console-comment item, the story-out-of-place item, and the Phase 11 browser checks. Added eight that are open: the two `nick.bethune` accounts; the supervisor screen's tooltip; the watchlist's Value sort across currencies; the state name HERO_PAST_CUTOFF; the three unexercised no-name paths; the browser checks owed for `prompts/003`; the watchlist still describing three queues; the Project's copies of the documents being behind the repo.
+**TODO changes:** closed three: "Value at risk differs between the two screens", "Ready holds until the hero's cutoff itself, with no margin", and the hidden "Cleared this batch" card (found and ruled this session). Struck one with its ruling: the two `nick.bethune` accounts (found and ruled this session). Updated four: the `SO Demo Run` pruning item, the console-comment item, the story-out-of-place item, and the Phase 11 browser checks. Added seven that are open: the supervisor screen's tooltip; the watchlist's Value sort across currencies; the state name HERO_PAST_CUTOFF; the three unexercised no-name paths; the browser checks owed for `prompts/003`; the watchlist still describing three queues; the Project's copies of the documents being behind the repo.

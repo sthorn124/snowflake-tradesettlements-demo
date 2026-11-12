@@ -4595,3 +4595,19 @@ Three found this session, none promoted, three listed.
 None found this round. The three staged in the entry above are unchanged.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-11-12 — Ruling: the two `nick.bethune` accounts are left as they are (same Claude Code session; one Appian read)
+
+**Scope.** Same session and identity as the two entries above. One Appian call, a `testRule` read of `SO_demoRunState` as `scott.thorn@appian.com`. Nothing was written to NY.
+
+**Ruling.** The close-out asked which of the two accounts presents, so that the missing group could be added. Scott answered "don't worry about nick bethune users" (2026-11-12).
+
+**What changed.** Records only. `TODO.md`: the item is struck through with the ruling. `BUILD_PLAN.md`: its line is closed. `.kiro/steering/project.md`: the Demo Admin site section says a group readback finds these two accounts and leaves them alone. No group membership was changed, in this round or any other.
+
+**Observed.** At 18:47 UTC, with no `asOf`, the rule returned HERO_PAST_CUTOFF, "Not ready. The hero case has under two hours to cutoff. Prepare the demo again.", WARN. At 18:08 UTC it had returned READY. The margin on the run now loaded fell at 18:31:00 UTC. This is the first read of that line on the real clock from a run that was Ready, as opposed to a run already inside its margin when version 4 was saved. No Prepare was started.
+
+### Promotion candidates (staging)
+
+None found this round. The three staged two entries above are unchanged.
+
+**Promotion checkpoint: current through this entry.**
