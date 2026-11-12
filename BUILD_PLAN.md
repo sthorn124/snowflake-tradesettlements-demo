@@ -1,5 +1,6 @@
 # Settlement Operations Demo — Build Plan
 *Build-focused. Status as of Aug 27. ✅ = done and verified.*
+*Re-planned 2026-11-11: the order from here is set in "Plan from 2026-11-11" below.*
 
 ## Demo Narrative
 
@@ -14,6 +15,30 @@ The claude.ai Project reads this section when it authors the verification sectio
 ## Data Model (entity level)
 
 Snowflake, direct access, never synced: TRADES, TRADE_PREDICTIONS (1:1), COUNTERPARTIES (N:1), plus INSTRUMENTS and SETTLEMENT_HISTORY. Appian-native: SO Settlement Case (N:1 Trade, session-tagged), SO Case Comment, and record events. Field-level detail: `CLAUDE.md` project sections (Snowflake environment; Appian application).
+
+## Plan from 2026-11-11
+
+Ruled by Scott in the planning chat on 2026-11-11. This section sets the order. The phase blocks under Build Phases hold the detail.
+
+**Order**
+1. Phase 10, sync. No build.
+2. Phase 11, demo setup experience.
+3. The next phase is chosen after Phase 11.
+
+**On hold:** Phase 7 (governance layer), Phase 8 (make the AI real), Phase 9 (late-trade live beat).
+
+**Dropped:** the life sciences replication and the generic template. `maintenance/replicate-for-new-use-case.md` stays in the repo as a record and is not maintained.
+
+**Parked**
+- Generating the standing cases from Load. Proposed in chat on 2026-10-23 as "Phase 10, retire the fixture book" and never committed. Phase 11 re-dates the standing cases instead.
+- Moving the three hard-coded values to constants (TODO, Replication section).
+- Two SCs presenting at the same time.
+
+**Candidates after Phase 11, order not ruled**
+- The Phase 6.5 build. Its prompt was drafted 2026-10-09 and needs reissuing for Kiro.
+- The hero story fix in the Snowflake packet (Phase 6.5, Hero story).
+- Documents brought in line with the build (Phase 6.5, Documents). With Phase 7 on hold, the one-pager's Act 3 lines on the evaluation suite, AI guardrails, AI cost by desk and Process HQ describe work that is not built.
+- Databricks (Phase 12).
 
 ## Build Phases
 
@@ -153,26 +178,105 @@ Documents
 - [ ] One-pager Act 1 says the demo shows "a feed arrival scores new trades in real time"; the demo now opens on the finished batch (ruled 2026-09-23), with the live moment moved to Phase 9. The architecture section says the agent's tools come from Snowflake's MCP server; the Ask panels run through Snowflake's SQL API. Bring both lines in line with the build, or rule them as intended roadmap.
 - [ ] TODO sweep: close items resolved weeks ago that still read as open (Part A grid run, check-12 ruling, the check-12 pair count, the deleted SO_zz_probeQuery, the ZZ-CLICK question, the superseded Borrow Executed decision).
 
-### Phase 7 — Governance layer (1 day)
+### Phase 7 — Governance layer (1 day; ON HOLD from 2026-11-11)
 - [ ] Evaluate tab: full test suite (Phases 3+6), bulk run, accuracy metrics
 - [ ] AI Guardrails configured in Admin Console
 - [ ] Usage groups per desk; AI Actions consumption attribution
 - [ ] Process HQ on SO Create Fail Case: automation-type view + resolution-time KPI
 - [ ] Single architecture slide: the loop, two governance boundaries, zero data movement
 
-### Phase 8 — Make the AI real (1–1.5 days)  ← the "genuinely model-driven" work
+### Phase 8 — Make the AI real (1–1.5 days; ON HOLD from 2026-11-11)  ← the "genuinely model-driven" work
 - [ ] Run 02_ml training in a Snowflake notebook → TRADE_FAIL_CLASSIFIER registered in Model Registry
 - [ ] Rewrite run_inference.sql: TRADE_FAIL_CLASSIFIER!PREDICT_PROBA replaces the SQL heuristic; heuristic kept commented as documented fallback; re-verify tier distribution, adjust thresholds if the model's spread differs. **Write `SCORED_AT` explicitly as `SYSDATE()`** — the column defaults to `CURRENT_TIMESTAMP()`, the Pacific session clock, which Appian reads as UTC (measured 2026-09-10)
 - [ ] On-demand single-trade scoring exposed as a custom MCP tool; wired into SO Triage Agent + feed simulation (live scoring on arrival)
 - [ ] Stretch (cut first): Kafka event intake — trades.pending consumer trigger + Publish Event resolution loop-back to Snowflake
 
-### Phase 9 — Late-trade live beat (later, ruled 2026-09-25; committed to the plan 2026-10-13 from the drafting chat)
+### Phase 9 — Late-trade live beat (later, ruled 2026-09-25; committed to the plan 2026-10-13 from the drafting chat; ON HOLD from 2026-11-11)
 - [ ] One late trade booked mid-demo with ~40 minutes to cutoff: scored, case opened, agent decision made, and landing at the top of Needs Your Action within about a minute. The drama is the cutoff clock, not rows appearing.
 - [ ] A second one-trade packet in Snowflake whose cutoff is set relative to the moment of the press, plus one "Book a late trade" button on the Demo Admin console.
 - [ ] Slots mid-Act 1, after the hero. Optional beat; the aftermath opening stands without it.
+
+### Phase 10 — Sync (no build; planned 2026-11-11)
+
+The last build session on record is 2026-09-24. NY was changed after that without a close-out. On 2026-10-22 and 2026-10-23: a watchlist sort fix, a hand re-date of the standing cases, the "Cleared this batch" card hidden in Designer, and blank cases left by a Reset that ran during triage. No Kiro session has run on this repo.
+
+- [ ] Planning chat: bring the repo's records up to date. The 2026-11-11 plan commit is the first part. Still to do: sweep `TODO.md` (about 80 open boxes, many already done); close the stale Snowflake network-policy blocker lines here and in `deploy-notes.md`; tick the boxes in Phases 3 to 6 that are built but unticked; update `PROJECT_INSTRUCTIONS.md` for the Databricks context.
+- [ ] Scott, in Kiro: the first Kiro session, read-only on NY. It records the objects changed since 2026-09-24 and saves their current source to `.work/`, the blank cases, whether a demo is loaded, whether the "Cleared this batch" card is still hidden, and the first-session checks in `maintenance/kiro-port.md`. It ends with a close-out, a BUILD_LOG entry and a push. The prompt comes from the planning chat.
+- [ ] Scott, in Snowsight: run `snowflake/verification-summary.sql` as FINSERVADMIN on COMPUTE_WH and paste the grid.
+- [ ] Scott: paste the `PROJECT_INSTRUCTIONS.md` block into the claude.ai Project and correct the Project description. Both still say the build runs in Claude Code.
+- [ ] Planning chat: overwrite the Project's demo documents from the repo copies.
+- [ ] Scott: make the repository private, then confirm a new Project chat can still read `Closeout.md`.
+
+Rulings open
+- [ ] The repo is the master copy of the demo documents. The Project's copies are overwritten from it, and the replication guide is removed from the Project.
+- [ ] This build stays in its own repo for now. Moving it into the SC workspace repo waits.
+
+Staying in sync afterwards: NY changes only through a Kiro session that ends in a pushed close-out. A hand change in Designer gets a TODO line the same day.
+
+### Phase 11 — Demo setup experience (ruled 2026-11-11)
+
+Goal: one presenter action sets the demo up, and the console cannot be driven into a bad state. The scope comes from failures observed around the 2026-10-23 client demo. It is not a console redesign.
+
+Console (`SO_demoAdminConsole`)
+- [ ] One button, **Prepare the demo**. It clears the last run, re-dates the standing cases, loads a fresh run and starts intake. The separate Load and Reset buttons leave the page.
+- [ ] One status line with four states and this copy:
+  - Nothing loaded: "No demo loaded." Button enabled.
+  - Running: "Preparing the demo. About two minutes. Refresh this page to check." Button disabled.
+  - Ready: "Ready to present. Loaded today at <time>." Button enabled.
+  - Loaded before today: "Loaded before today. Prepare the demo again for fresh dates." Button enabled.
+- [ ] The button is disabled for the whole run, from the press until all three stories have an agent decision.
+- [ ] A run that dies partway unlocks itself. After a set number of minutes with no finish, the console treats the run as over and enables the button. The number is set in the build prompt.
+- [ ] The status line counts real demo cases only. On 2026-10-23 it read "Demo loaded" with 0 trades and 5 cases, because cases with no trade behind them were counted.
+- [ ] No progress bar and no self-refreshing page (ruled 2026-11-11). The presenter refreshes the page to see Ready, and the Running copy says so.
+
+Standing cases
+- [ ] Prepare re-dates the 17 standing cases (the hand-authored P4-VERIFY cases, reported as ids 36 to 52) relative to now: the cutoff, the created and updated times, the resolved time on the resolved cases, and the times on their comments and events, so each case history still reads in order. The cases are re-dated. They are not generated and not deleted.
+- [ ] The one deliberate past-cutoff case stays past cutoff.
+
+Agent write-back and cleanup
+- [ ] `SO_triageCase` writes the agent's result only if its case still exists. Cause of the 2026-10-22 blank cases: Reset ran while triage was still running, and the late write created a case with no trade, desk or cutoff. This replaces the earlier idea of cancelling in-flight triage processes.
+- [ ] Delete the blank cases left from 2026-10-22 (reported as SO-106 to SO-110; confirm the ids in the Phase 10 audit).
+
+Investigate before fixing
+- [ ] The hero case landed in Escalated instead of Needs your action on one Load on 2026-10-22. The cause is unknown. Observe and report before any change.
+
+Documents
+- [ ] `demo-script-15min-client-awareness.md`, `talk-track-10min-internal.md`, `video-script-5min.md` and the presenter note in `GETTING_STARTED.md` describe Load and Reset as two buttons. Update them to the one-button flow in the same phase.
+
+Proposed by the planning chat, not ruled
+- [ ] Ready also requires each of the three stories to sit in its scripted queue. If one does not, the line names it and says to prepare again.
+- [ ] The Ready line names who loaded the demo, so a second SC can see that someone else's run is live before pressing.
+
+The status-line copy above is the contract for the build prompt.
+
+### Phase 12 — Databricks (scoped 2026-11-11; approach proposed, not ruled)
+
+Environment, as reported by Scott on 2026-11-11 and not yet verified from NY
+- A Databricks workspace on AWS. Catalog `capital_markets`, schema `trade_settlement`. Scott owns the schema. The workspace admin owns the catalog.
+- Personal access tokens are disabled in the workspace, so Appian connects as a service principal with an OAuth secret. Scott granted it USE SCHEMA and SELECT on the schema. USE CATALOG is the catalog owner's grant.
+
+Approach proposed by the planning chat
+- Duplicate record types in NY: five Databricks-backed record types beside the five Snowflake-backed ones. Nothing existing changes.
+- The platform is chosen on the Demo Admin console before a run: Snowflake, both, or Databricks. "Both" reads predictions from Databricks and everything else from Snowflake.
+- Reads that reach trade data through the case become platform-aware. Counted in `.work/` on 2026-11-11: 144 field references from SO Settlement Case through its `trade` relationship, in `SO_caseDetail`, `SO_analystWatchlist`, `SO_supervisorCommand` and `SO_caseContext`.
+
+Gates, all open
+- [ ] NY offers the Databricks connected system. Appian documents it from release 26.10.
+- [ ] The service principal connects from NY and a record type reads one table.
+- [ ] An expression accepts a record field reference returned by a rule. This decides whether the four objects change once or need a deeper rewrite.
+- [ ] One timed read across Snowflake and Databricks at 50,000 rows.
+
+Steps, not started
+- [ ] Copy the five tables into `capital_markets.trade_settlement`, verified by one PASS/FAIL grid.
+- [ ] Five Databricks record types with their relationships and desk security.
+- [ ] The platform setting, platform-aware reads, and the provenance mark and header badge by platform.
+- [ ] "Both" mode.
+- [ ] Databricks-only mode: Load and Reset procedures, and the Ask panel on Genie.
 
 ## Open dependencies
 - Daniel: permanent network policy (only hard blocker)
 - Daniel: FWA package export (optional accelerant for Phases 3–4 patterns)
 
 **Critical path: 1 → 2 → 3 → 4 → 5. ~6 build days core; +1.5 for Phase 8. Phases 6–7 slot anywhere after 3.**
+
+*From 2026-11-11 the order is set by "Plan from 2026-11-11" above.*
