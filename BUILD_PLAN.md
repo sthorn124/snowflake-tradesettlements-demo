@@ -206,9 +206,9 @@ The last build session on record is 2026-09-24. NY was changed after that withou
 
 - [ ] Planning chat: bring the repo's records up to date. The 2026-11-11 plan commit is the first part. Still to do: sweep `TODO.md` (about 80 open boxes, many already done); close the stale Snowflake network-policy blocker lines here and in `deploy-notes.md`; tick the boxes in Phases 3 to 6 that are built but unticked; regenerate `PROJECT_INSTRUCTIONS.md` for Claude Code and the Databricks context.
 - ✅ 2026-11-11: Scott, in Claude Code: a short read-only session on NY. It confirms the rules loaded through `CLAUDE.md`, reads the Demo Admin console and the four process models Phase 11 changes, and lists the blank cases. It ends with a close-out and a push. The prompt is `prompts/001-phase10-read-only-audit.md`. Result: the rules loaded; the console and the four models are unchanged since 2026-09-24; no case without a trade exists on NY (17 cases, ids 36 to 52). The answers are in `Closeout.md` under "Inputs for Phase 11".
-- [ ] Scott: bring the Dev MCP setup level before the Phase 11 build session (found in the audit). NY's plugin and the local server are 26.9.5, the pins in `reference/toolchain.md` describe 26.6.105, and the App Market has 26.9.15. Say "run the update procedure".
-- [ ] Scott: rule which copy of `appian-supplemental` is the master (found in the audit). `~/.kiro/skills/` holds Version 2026-11-10.4, `~/.claude/skills/` holds 2026-10-28 and is the one Claude Code loads, and the repo holds 2026-10-05.2. `~/.claude/skills/appian` is also one bundle behind the server.
-- [ ] Planning chat: correct two build parameters in `.kiro/steering/project.md` (found in the audit). The design account's username on NY is `scott.thorn@appian.com`, and `SO Supervisors` is not a member of `SO Analysts`.
+- [ ] Scott: bring the Dev MCP setup level (found in the audit). Ruled 2026-11-12: not before Phase 11, because the local server and NY's plugin already match and only the repo's reference notes are behind. NY's plugin and the local server are 26.9.5, the pins in `reference/toolchain.md` describe 26.6.105, and the App Market has 26.9.15. Say "run the update procedure".
+- [ ] Install the master copy of the skills for Claude Code (found in the audit). Ruled 2026-11-12: the copies under `~/.kiro/skills/` are the master; the Phase 11 session copies them over `~/.claude/skills/` and into the repo. `~/.kiro/skills/` holds Version 2026-11-10.4, `~/.claude/skills/` holds 2026-10-28 and is the one Claude Code loads, and the repo holds 2026-10-05.2. `~/.claude/skills/appian` is also one bundle behind the server.
+- ✅ 2026-11-12: Planning chat: correct two build parameters in `.kiro/steering/project.md` (found in the audit). The design account's username on NY is `scott.thorn@appian.com`, and `SO Supervisors` is not a member of `SO Analysts`.
 - [ ] Scott, in Snowsight: run `snowflake/verification-summary.sql` as FINSERVADMIN on COMPUTE_WH and paste the grid.
 - [ ] Scott: paste the regenerated `PROJECT_INSTRUCTIONS.md` block into the claude.ai Project, once the planning chat has regenerated it.
 - [ ] Planning chat: overwrite the Project's demo documents from the repo copies.
@@ -220,40 +220,45 @@ Rulings open
 
 Staying in sync afterwards: NY changes only through a build session that ends in a pushed close-out. A hand change in Designer gets a TODO line the same day.
 
-### Phase 11 — Demo setup experience (ruled 2026-11-11)
+### Phase 11 — Demo setup experience (ruled 2026-11-11; build prompt `prompts/002-phase11-one-button-setup.md`, 2026-11-12)
 
 Goal: one presenter action sets the demo up, and the console cannot be driven into a bad state. The scope comes from failures observed around the 2026-10-23 client demo. It is not a console redesign.
 
 Console (`SO_demoAdminConsole`)
 - [ ] One button, **Prepare the demo**. It clears the last run, re-dates the standing cases, loads a fresh run and starts intake. The separate Load and Reset buttons leave the page.
-- [ ] One status line with four states and this copy:
+- [ ] One status line with six states and this copy (four ruled 2026-11-11; the last two added with the 2026-11-12 rulings):
   - Nothing loaded: "No demo loaded." Button enabled.
   - Running: "Preparing the demo. About two minutes. Refresh this page to check." Button disabled.
   - Ready: "Ready to present. Loaded today at <time>." Button enabled.
   - Loaded before today: "Loaded before today. Prepare the demo again for fresh dates." Button enabled.
+  - Did not finish: "The last run did not finish. Prepare the demo again." Button enabled.
+  - Story out of place: "Not ready. The <hero | escalation | straight-through> case is <its status>, not <its scripted status>. Prepare the demo again." Button enabled.
 - [ ] The button is disabled for the whole run, from the press until all three stories have an agent decision.
-- [ ] A run that dies partway unlocks itself. After a set number of minutes with no finish, the console treats the run as over and enables the button. The number is set in the build prompt.
+- [ ] A run that dies partway unlocks itself. After 5 minutes with no finish, the console treats the run as over and enables the button (press to Ready measured at 73 and 78 seconds in the audit).
 - [ ] The status line counts real demo cases only. On 2026-10-23 it read "Demo loaded" with 0 trades and 5 cases, because cases with no trade behind them were counted.
+- [ ] The console drops its "agent OK" check (ruled 2026-11-12). The standing cases satisfy it, so it cannot fail. The top line's verdict word becomes "Environment OK" / "Environment problem", so the page has one "Ready".
+- [ ] One rule, `SO_demoRunState`, gives the run's state to the console and to Prepare. Prepare refuses to start while a run is in progress.
 - [ ] No progress bar and no self-refreshing page (ruled 2026-11-11). The presenter refreshes the page to see Ready, and the Running copy says so.
 
 Standing cases
 - [ ] Prepare re-dates the 17 standing cases (the hand-authored P4-VERIFY cases, reported as ids 36 to 52) relative to now: the cutoff, the created and updated times, the resolved time on the resolved cases, and the times on their comments and events, so each case history still reads in order. The cases are re-dated. They are not generated and not deleted.
 - [ ] The one deliberate past-cutoff case stays past cutoff.
+- [ ] The re-date is its own process model, `SO_redateStandingCases`, called by Prepare. `fixtures/p4-verify-redate.py` and its CSVs are superseded by it, and the per-session ritual becomes "run `SO_redateStandingCases`".
 
 Agent write-back and cleanup
 - [ ] `SO_triageCase` writes the agent's result only if its case still exists. Cause of the 2026-10-22 blank cases: Reset ran while triage was still running, and the late write created a case with no trade, desk or cutoff. This replaces the earlier idea of cancelling in-flight triage processes.
 - ✅ 2026-11-12: Delete the blank cases left from 2026-10-22 (reported as SO-106 to SO-110). Closed by Scott's ruling with nothing to delete. The Phase 10 audit (2026-11-11) found none on NY: the case table held 17 rows, ids 36 to 52, each with a trade. No session deleted them on record; who removed the five is an open `TODO.md` item.
-- [ ] Cancel the two `SO_triageCase` instances that are stuck ACTIVE (found in the audit): process `536912644` from 2026-10-22, case 105, agent run failed; and process `536908653` from 2026-08-28, case 5. Neither case exists any more. Scott's word first.
-- [ ] Decide what a failed agent run leaves behind (found in the audit). The agent node has no error path, so a failed run stops triage there and the case stays "New". This is the "run that dies partway" the console has to unlock from.
+- [ ] Cancel the two `SO_triageCase` instances that are stuck ACTIVE (found in the audit): process `536912644` from 2026-10-22, case 105, agent run failed; and process `536908653` from 2026-08-28, case 5. Neither case exists any more. Ruled 2026-11-12: cancel both. The Dev MCP cannot cancel an instance, so Scott does it by hand in Process Monitoring. Not urgent once the triage guard is in.
+- [ ] Decide what a failed agent run leaves behind (found in the audit). The agent node has no error path, so a failed run stops triage there and the case stays "New". This is the "run that dies partway" the console has to unlock from. Ruled 2026-11-12: no error path in this phase. The 5-minute unlock covers it, and the next Prepare clears the case.
 
 Investigate before fixing
-- [ ] The hero case landed in Escalated instead of Needs your action on one Load on 2026-10-22. The cause is unknown. Observe and report before any change. Audit, 2026-11-11: by the Route node's conditions, on a normal run the hero reaches Escalated only through the agent's own `escalate` flag. When it recurs, read the case's Escalated event and the triage instance's `agentOutputs` within seven days, before the instance is archived.
+- [ ] The hero case landed in Escalated instead of Needs your action on one Load on 2026-10-22. The cause is unknown. Observe and report before any change. Audit, 2026-11-11: by the Route node's conditions, on a normal run the hero reaches Escalated only through the agent's own `escalate` flag. When it recurs, read the case's Escalated event and the triage instance's `agentOutputs` within seven days, before the instance is archived. Ruled 2026-11-12: the routing is left alone. Ready shows only when each story is in its scripted queue, so a miss is seen before presenting.
 
 Documents
-- [ ] `demo-script-15min-client-awareness.md`, `talk-track-10min-internal.md`, `video-script-5min.md` and the presenter note in `GETTING_STARTED.md` describe Load and Reset as two buttons. Update them to the one-button flow in the same phase.
+- [ ] `demo-script-15min-client-awareness.md`, `talk-track-10min-internal.md` and `video-script-5min.md` describe Load and Reset as two buttons. Update them to the one-button flow in the same phase. (`GETTING_STARTED.md` does not name the buttons; checked 2026-11-12.)
 
 Proposed by the planning chat, not ruled
-- [ ] Ready also requires each of the three stories to sit in its scripted queue. If one does not, the line names it and says to prepare again.
+- ✅ Ruled 2026-11-12, now in scope above: Ready also requires each of the three stories to sit in its scripted queue. If one does not, the line names it and says to prepare again.
 - [ ] The Ready line names who loaded the demo, so a second SC can see that someone else's run is live before pressing.
 
 The status-line copy above is the contract for the build prompt.
