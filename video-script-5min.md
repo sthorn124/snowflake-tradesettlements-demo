@@ -6,7 +6,7 @@
 
 ## Before recording (10 minutes)
 
-- Demo Admin site, off camera: if the status line says "Loaded before today" or the hero case is already resolved, **Reset the demo**, then **Load the demo**. Wait 2 minutes, confirm 3 cases. Never click Load twice. The Demo Admin site is never shown in the recording.
+- Demo Admin site, off camera: unless the status line says "Ready to present", press **Prepare the demo**, wait about two minutes, refresh, and confirm "Ready to present". The Demo Admin site is never shown in the recording.
 - Three browser tabs, in this order: **Supervisor**, **Watchlist**, the hero case (**SAP GY / Diamond Trust**, trade `TRD9DEMO01`, found by name under Needs your action). Close the Demo Admin tab.
 - Browser zoom 110 to 125 percent. Full-screen the browser window. Hide bookmarks bar and other tabs' notifications.
 - Recorder: Loom, Zoom local recording, or macOS screen recording with the microphone on. Record the browser window only, 1080p. A headset mic or the laptop mic in a quiet room; no speaker-echo.
@@ -83,5 +83,5 @@
 ## After recording
 
 - Trim the two Ask waits to about three seconds each. Leave everything else.
-- Demo Admin: **Reset the demo**, so the hero is back in Awaiting review for the next presenter.
+- Demo Admin: press **Prepare the demo** again, so the hero is back in Awaiting review for the next presenter.
 - If the agent's score read something other than "around 60," say what was on screen; it varies between 60 and 66 and is always below 80.

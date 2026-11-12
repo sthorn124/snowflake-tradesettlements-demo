@@ -4239,3 +4239,92 @@ Eight found this session, none promoted, eight listed. Rulings on the four stage
 **The header checkpoint line at the top of this file is still stale** (it reads "current through 2026-09-01"). The Blocking item in `TODO.md` stays open; this session did not reconcile it.
 
 **Promotion checkpoint: current through this entry.**
+
+---
+
+## 2026-11-12 — Phase 11, second round: "Start without waiting" ruled and built; run record, one-button console, documents (same Claude Code session)
+
+**Scope.** Same session and identity as the entry above: the Dev MCP as `scott.thorn@appian.com`, direct member of `SO Supervisors` (full scope) and `SO Demo Admins`. No sail. The runtime server was never called. One helper agent made read-only `testInterface` calls on the console under the same account and reported what it read.
+
+**Ruling.** Asked how the page should start Prepare, Scott answered "Start without waiting" (2026-11-12). The option as put to him: the button returns in a few seconds, Prepare writes a small run record when it starts and when a step fails, and the state rule reads it.
+
+### What changed, by object
+
+| Object | UUID | Change |
+|---|---|---|
+| `SO Demo Run` | `c48c9eb9-96e3-4642-b9c5-63c67b6e023a` | New record type on `jdbc/Appian`, table `SO_DEMO_RUN`. Fields `id` (key), `runName`, `status`, `message` (the create response reports VARCHAR(4000)), `startedBy`, `startedOn`, `updatedOn`. No record-level rule; the application's default object security |
+| `SO_prepareRun` | `0000f0b2-3422-8000-2c92-7f0000014e7a` | 2.0 → 4.0. Now only the part the page waits for: read the state, refuse if Running, write the run record (PREPARING), start `SO_prepareRunSteps` asynchronously, answer. Outline rewritten |
+| `SO_prepareRunSteps` | `0000f0b2-3930-8000-2c97-7f0000014e7a` | New process model, 2.0. The reset, re-date and load steps as before, then closes the run record: LOADED, or FAILED with the failed step's message. Same security as `SO_simulateRun`. Outline `.work/pm_SO_prepareRunSteps.md` |
+| `SO_PM_PREPARE_RUN_STEPS` | `_a-0000f0af-7210-8000-9c5d-011c48011c48_613628` | New PROCESS_MODEL constant |
+| `SO_demoRunState` | `…613582` | 1 → 2. Reads the newest `SO Demo Run` row for the run name. Running is tested first: a PREPARING row under 5 minutes old whose packet has not landed. A PREPARING row past 5 minutes is Did not finish. New outputs `lastFailed`, `lastMessage`, `lastAt`, `runRecordId`, `runStatus` |
+| `SO_demoAdminConsole` | `_a-0000f057-1da8-8000-9c4b-011c48011c48_564828` | 12 → 14. One button, one status line, "Environment OK" / "Environment problem", no agent check, demo cases by run name, the failure block. Version 13 said what the button does twice (subtitle and caption); 14 shortens the subtitle to "One demo at a time." |
+| `SO_standingCaseOffsets` | `…613545` | 3 → 5. Version 4 was the deliberate break for the forced-failure run; 5 is byte-identical to the source file |
+
+Created and deleted in this round: rules `zz_SO_peek` and `zz_SO_redateCheck` (see Verified).
+
+### Verified (as `scott.thorn@appian.com`, full scope)
+
+**Prepare, three runs through `testProcessModel`.**
+
+| | Run A | Run B (forced failure) | Run C |
+|---|---|---|---|
+| State at start | Ready | Ready | Nothing loaded |
+| **The part the page waits for** | **4.95 s** | **5.55 s** | **5.20 s** |
+| Run record | id 1: PREPARING, then LOADED with the load's answer | id 2: PREPARING, then FAILED | id 3: PREPARING, then LOADED |
+| Background half | 31.7 s | 17.6 s, stopped at the re-date | 29.9 s |
+| Ready | by 114 s after the start | not reached, by design | by 105 s after the start |
+| Demo cases after | 144, 145, 146 | none | 147, 148, 149 |
+
+- **Running from the press.** 13 seconds into run A, with no packet, no case and no load stamp on the site, the rule returned Running. A second start at that moment completed in 2.2 seconds with "REFUSED: a demo run is being prepared now. …" and wrote no record.
+- **Forced failure (run B).** `SO_standingCaseOffsets` was given a wrong parent (comment 41 on case 37). The reset ran, the re-date stopped, the load did not run. The record closed as FAILED with the re-date's own sentence, word for word: "STOPPED: nothing was re-dated. These standing rows are listed in SO_standingCaseOffsets but this account cannot read them on the site: comment 41 on case 37. Either they were deleted, or this account is not in SO Supervisors." The rule returned "No demo loaded." with `lastFailed` true. The rule was restored and read back byte-identical.
+- **After runs A and C:** each story in its scripted status; three demo cases each time.
+- **The re-date on a second clock.** Runs A and C re-dated on the 07:00 UTC clock. The stored rows equal the old script's output for hour 07, by the same exact comparison as before (2,720 characters, control failing). Case 39 is the only standing case past cutoff.
+
+**The console, rendered through `testInterface` by the helper agent, `diagnostics.error: null` every time.**
+
+| State | Reached how | Status line as rendered | Colour | Button `disabled` |
+|---|---|---|---|---|
+| Ready | real (after run A) | "Ready to present. Loaded today at 2:04 AM." | `#17715B` | false |
+| Nothing loaded, after a failed Prepare | real (run B) | "No demo loaded." with a block under the button: "Not prepared" in red, the time, and the STOPPED sentence in full | `#454F5C` | false |
+| Running | real (9 s into run C) | "Preparing the demo. About two minutes. Refresh this page to check." The "Not prepared" block is gone | `#454F5C` | **true** |
+| Story out of place | real, by setting the hero case to Escalated | "Not ready. The hero case is Escalated, not Awaiting review. Prepare the demo again." | `#96590A` | false |
+| Did not finish | real, by setting one case back to New and letting the load stamp pass 5 minutes | "The last run did not finish. Prepare the demo again." | `#96590A` | false |
+| Loaded before today | from the rule only, clock set a day ahead (first round) | "Loaded before today. Prepare the demo again for fresh dates." | amber by the rule's tone; not rendered | not rendered |
+
+- **The two persona screens after run C**, rendered once each: `SO_analystWatchlist` and `SO_supervisorCommand` both `diagnostics.error: null`, not truncated. Watchlist: `TRD9DEMO01` under Needs your action, "2h 58m" to cutoff, "Awaiting review"; `TRD9DEMO02` under Escalated; of the ten rows in the tree (six of twelve action rows are rendered), only case 39's mentions "past cutoff". Supervisor: escalations SO-39, SO-43, SO-40, SO-148. The diagnostics line and three strings were re-read directly from the saved results.
+- In every render: one button, "Prepare the demo"; the verdict "Environment OK" with "data 50,000/50,000 · 9/9 connections"; none of "Load the demo", "Reset the demo", "agent", "Not ready" on the verdict line. Details has eight rows and no agent row. "Demo cases" read 3 with a run loaded and 0 without.
+- The Ready render was taken on version 13; 14 changed only the subtitle, and the four later renders are of 14.
+
+### Decisions
+
+- **The page still starts Prepare synchronously, and Prepare itself hands off.** A plain asynchronous start from the button would return nothing: no refusal, no confirmation. Keeping the start synchronous and making the model short gives the page Prepare's own answer in 5 seconds, which also meets the prompt's original limit of 20.
+- **One row per press, never updated by a later press.** The state rule reads the newest row. A refused start writes nothing, so it cannot hide the row of the run in progress.
+- **A failed Prepare gets no state of its own.** The six states are the contract. The state stays what the data says, and the failure shows under the button until the next press.
+- **`startedBy` is stored and not shown.** The "who loaded it" line is proposed, not ruled.
+- **The docs gate for the console edit.** Docs-search (Start Process Smart Service, 26.6) states: with `isSynchronous: true`, `onSuccess` waits for the process to complete, `onIncomplete` fires at 30 seconds or when the initiator cannot view the process, and process variables come back only to a viewer of the model. The console's components and parameters are ones already on the page in version 12; no width or layout parameter was added.
+
+### Not verified
+
+- **The button press, and the page as a person sees it.** `testInterface` cannot press. The start was driven through `testProcessModel` with the same parameter the button passes. Colour, wrapping and the feel of the wait are browser checks; the checklist is in `TODO.md`.
+- **A Prepare started by another account**, and what a presenter without viewer on `SO_prepareRun` gets back (by the docs, an empty answer).
+- **A background half that dies before loading** (the stale-PREPARING unlock). Built; not forced.
+- **"Loaded before today" on the page.** Read from the rule only.
+- **What each persona sees.** By ruling. No persona screen or security rule changed.
+- **Whether `message` really holds 4,000 characters.** The create response says VARCHAR(4000); the longest message written was 236.
+
+### Findings
+
+- For about a second during a load, the packet's trades were readable and its predictions' stamp was not (15 trades, no stamp, record still PREPARING). The state stayed Running because of the record.
+- With a run loaded the console's Details read "Case comments 15, Audit rows 23"; after the reset in run B, 12 and 14. Those are counts of what can be read; by the first round's finding the three deleted cases' comments are still in the table.
+
+### Promotion candidates (staging)
+
+Two found this round, none promoted, two listed.
+
+- **NEW, STAGED (gate 1, one model): a page that must start a long process gets a fast, truthful answer from a short synchronous model that records the start and hands the work to an asynchronous one.** Trap: a synchronous start of the whole chain passes the 30-second limit and reports "no answer" while the work carries on; an asynchronous start returns nothing to show. *Trigger: the next button on any build that starts more than about 20 seconds of work.*
+- **NEW, STAGED (gate 1, one rule): state derived from data alone has a blind window whenever the first step of a run removes the data.** Working form: write a marker before the first destructive step and let the state rule test it first, with its own timeout. Fails the noun test as written only by its example; the rule itself is general. *Trigger: the next derived-state rule over a process that deletes before it writes.*
+- The candidates staged in the entry above are unchanged.
+
+**The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
+
+**Promotion checkpoint: current through this entry.**

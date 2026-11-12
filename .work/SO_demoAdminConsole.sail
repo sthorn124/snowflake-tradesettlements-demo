@@ -1,5 +1,5 @@
 /*
- * SO_demoAdminConsole — the demo operator's console. Three actions and a
+ * SO_demoAdminConsole — the demo operator's console. One action and a
  * readiness checklist. PLAIN SAIL, legible, no design polish beyond that: this
  * screen is never on stage.
  *
@@ -96,8 +96,14 @@
  * data of the same type (Boolean, eede988b-…)` — because SO Demo Admins holds no
  * viewer right on ANY of the nine record types this console queries, and one of
  * the twenty results was consumed without a guard. The preflight stops the
- * screen before any of that; the guard on local!agentLast below closes the
- * naked consumer anyway, because defence in depth costs one if().
+ * screen before any of that. (The agent check that held the unguarded
+ * consumer left the page on 2026-11-12.)
+ *
+ * ================= PHASE 11, 2026-11-12 =================
+ * One button, "Prepare the demo" (SO_prepareRun), and one status line read from
+ * SO_demoRunState. The Load and Reset buttons, their captions and their result
+ * lines left the page. The verdict word is "Environment OK" / "Environment
+ * problem", so the page has one "Ready": the status line's.
  */
 a!localVariables(
   /* THE PREFLIGHT. One membership test, evaluated before anything else.
@@ -210,9 +216,8 @@ a!localVariables(
     ),
 
     /* ================= SESSION-TAGGED APPIAN ROWS =================
-       THE FIXTURE SESSION IS REPORTED, NOT FAILED. P4-VERIFY rows are supposed to
-       be there; a readiness screen that flags them red teaches the operator to
-       ignore red. Non-fixture sessions are the ones that must be zero. */
+       THE STANDING CASES ARE REPORTED, NOT FAILED. P4-VERIFY rows are supposed to
+       be there. Demo cases are counted by SO_demoRunState, by run name. */
     local!fixtureSession: "P4-VERIFY",
     local!allCases: a!refreshVariable(
       value: a!queryRecordType(
@@ -225,7 +230,6 @@ a!localVariables(
     local!fixtureCases: if(a!isNullOrEmpty(local!allCases), 0, sum(a!forEach(
       items: local!allCases,
       expression: if(a!defaultValue(index(fv!item, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{1f2150e5-7908-447c-a9a7-0483983c6693}sessionID', ""), "") = local!fixtureSession, 1, 0)))),
-    local!otherCases: if(a!isNullOrEmpty(local!allCases), 0, count(local!allCases) - local!fixtureCases),
     local!commentCount: a!refreshVariable(
       value: a!localVariables(
       local!agg: a!queryRecordType(
@@ -308,160 +312,47 @@ a!localVariables(
       expression: if(index(fv!item, "ok", false), {}, index(fv!item, "label", ""))
     )),
 
-    /* ================= AGENT: VERIFIED AT LAST RUN, NEVER INVOKED =================
-       The most recent event with NO USER and a machine-decision type is the
-       agent's own last write. Its timestamp is the evidence. */
-    local!agentEvents: a!queryRecordType(
-      recordType: 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History',
-      fields: { 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{2997cf09-138c-489d-a6ff-221de2e77243}timestamp', 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{c4acbfe1-23ab-4f68-9874-464b794d360b}user', 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.relationships.{b87d38c6-5839-454c-aafa-32fb0b88c887}eventType.fields.{fd5aa5de-b897-46db-97ba-1cb2e37370a3}eventName' },
-      pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 50, sort: a!sortInfo(field: 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{2997cf09-138c-489d-a6ff-221de2e77243}timestamp', ascending: false))
-    ).data,
-    /* THE ONE NAKED CONSUMER OF TWENTY, NOW GUARDED (2026-09-24). Nineteen of
-       the console's query results are either aggregated-and-defaulted or opened
-       with an explicit a!isNullOrEmpty; this one was fed straight into a!forEach
-       and then into wherecontains, which is type-sensitive. When the query came
-       back as anything other than a list of rows, the forEach yielded
-       record-typed values and wherecontains compared Boolean against
-       eede988b-… — taking the whole page down. The preflight above now stops a
-       viewer who cannot read this record type from ever reaching here, so this
-       guard is redundant by design; it stays because the cost is one if() and
-       the failure mode was a whole-page crash on the operator's only screen. */
-    local!agentLast: if(
-      a!isNullOrEmpty(local!agentEvents),
-      null,
-      a!localVariables(
-        local!idx: wherecontains(true, a!forEach(
-          items: local!agentEvents,
-          expression: and(
-            a!isNullOrEmpty(index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{c4acbfe1-23ab-4f68-9874-464b794d360b}user', null)),
-            contains({ "Agent Triage Complete", "Straight-Through Resolution", "Escalated" },
-              a!defaultValue(index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.relationships.{b87d38c6-5839-454c-aafa-32fb0b88c887}eventType.fields.{fd5aa5de-b897-46db-97ba-1cb2e37370a3}eventName', ""), ""))
-          ))),
-        if(a!isNullOrEmpty(local!idx), null, index(local!agentEvents, index(local!idx, 1, 1), null))
-      )
-    ),
+    /* ================= PREPARE'S ANSWER TO THIS PRESS =================
+       Holds what SO_prepareRun returned to this page: ok, the message verbatim,
+       and when. A page refresh loses it, which is fine: the status line and a
+       failed step are read from data (SO_demoRunState), not from this. */
+    local!prepResult: null,
 
-    /* ================= LOAD THE DEMO (panel 2) =================
-       simResult holds the LAST answer only: the procedure message verbatim, and when.
-       There is no run-name local any more — the name is cons!SO_DEMO_RUN_NAME. */
-    local!simResult: null,
-
-    /* ================= THE STATUS LINE =================
-       DERIVED, NOT TRACKED. Every figure is already read for panel 1, so this is a
-       reading of existing queries rather than new state: reserved TRD9* trades say
-       whether Snowflake holds a demo, non-fixture cases say whether Appian does. */
-    local!statusLoaded: or(local!tradeReserved > 0, local!otherCases > 0),
-
-    /* WHEN THE DEMO WAS LOADED, READ FROM THE SCORING STAMP. There is no
-       load-time field to read: SO Settlement Case.createdOn comes back NULL on
-       process-written rows (MEASURED this session), so the case cannot date its
-       own run. The packet's predictions can — SIMULATE_FEED writes SCORED_AT
-       explicitly at call time, in UTC — and every row of a run carries the same
-       stamp, so the newest one IS the load time. */
-    local!loadStamp: a!refreshVariable(
-      value: index(
-        index(
-          a!queryRecordType(
-            recordType: 'recordType!{b1967741-7f64-4259-a3af-ef2c6ea2e3bf}SO Trade Predictions',
-            fields: { 'recordType!{b1967741-7f64-4259-a3af-ef2c6ea2e3bf}SO Trade Predictions.fields.{1ae3b327-c800-4114-bcf0-4c45fca5dc1e}scoredAt' },
-            filters: a!queryFilter(field: 'recordType!{b1967741-7f64-4259-a3af-ef2c6ea2e3bf}SO Trade Predictions.fields.{ba723c14-124b-48ff-ab51-02bf948242f8}tradeId', operator: "starts with", value: "TRD9"),
-            pagingInfo: a!pagingInfo(
-              startIndex: 1, batchSize: 1,
-              sort: a!sortInfo(field: 'recordType!{b1967741-7f64-4259-a3af-ef2c6ea2e3bf}SO Trade Predictions.fields.{1ae3b327-c800-4114-bcf0-4c45fca5dc1e}scoredAt', ascending: false)
-            )
-          ).data,
-          1, null
-        ),
-        'recordType!{b1967741-7f64-4259-a3af-ef2c6ea2e3bf}SO Trade Predictions.fields.{1ae3b327-c800-4114-bcf0-4c45fca5dc1e}scoredAt',
-        null
-      ),
+    /* ================= THE RUN'S STATE =================
+       ONE RULE, SO_demoRunState, READ HERE AND BY SO_prepareRun. It derives the
+       state from data the processes already write (the TRD9 packet, its load
+       stamp, the cases tagged with the run name, the story table) and returns
+       the status line and its tone with it. A demo case is a case whose session
+       id is the run name: on 2026-10-23 this page read "Demo loaded" with 0
+       trades and 5 cases because it counted every case that was not a built-in
+       test case, including five with no session id at all. */
+    local!runState: a!refreshVariable(
+      value: rule!SO_demoRunState(runName: cons!SO_DEMO_RUN_NAME, asOf: null),
       refreshAlways: true
     ),
-
-    /* THE STALE-DATE GUARD. A packet loaded yesterday still renders: its trades
-       exist, its cases exist, and every screen looks alive — but its cutoffs and
-       settlement dates were computed against yesterday's clock, so the watchlist
-       shows a book already past cutoff. That reads as a broken demo rather than
-       an old one, which is exactly the failure the fixture re-date ritual exists
-       to prevent, and the console is where it can be caught before anyone
-       presents. BOTH SIDES COMPARE THROUGH text(): the stamp is stored UTC while
-       today() is the local date, and comparing them raw would flip the verdict
-       for the several hours a day when the two calendars disagree. */
-    local!loadStale: and(
-      not(a!isNullOrEmpty(local!loadStamp)),
-      text(local!loadStamp, "yyyy-mm-dd") <> text(today(), "yyyy-mm-dd")
+    local!demoCases: tointeger(a!defaultValue(index(local!runState, "demoCases", 0), 0)),
+    /* what to show when Prepare did not go through: this press's refusal first,
+       otherwise the failed step recorded by the background half */
+    local!pressRefused: and(
+      not(a!isNullOrEmpty(local!prepResult)),
+      not(a!defaultValue(index(local!prepResult, "ok", false), false))
     ),
-
-    local!statusLine: if(
-      local!statusLoaded,
-      "Demo loaded"
-        & if(a!isNullOrEmpty(local!loadStamp), "", " " & text(local!loadStamp, "d mmm hh:mm"))
-        & "  ·  " & local!tradeReserved & if(local!tradeReserved = 1, " trade", " trades")
-        & "  ·  " & local!otherCases & if(local!otherCases = 1, " case", " cases"),
-      "No demo data loaded."
+    local!prepFailed: or(local!pressRefused, a!defaultValue(index(local!runState, "lastFailed", false), false)),
+    local!prepFailedMessage: if(
+      local!pressRefused,
+      tostring(index(local!prepResult, "message", "")),
+      tostring(index(local!runState, "lastMessage", ""))
     ),
+    local!prepFailedAt: if(local!pressRefused, index(local!prepResult, "at", null), index(local!runState, "lastAt", null)),
 
     /* ================= THE VERDICT =================
-       One line answers "can I walk into the room". Data, connections and agent only —
-       demo rows are STATE, not a fault, and must not turn the verdict red while a demo
-       is deliberately loaded (v8 did exactly that). */
+       One line answers "is the environment working". Data and connections only.
+       Whether the DEMO is ready is the status line's job (SO_demoRunState), so the
+       page has one "Ready". The agent check left on 2026-11-12: it read the newest
+       machine-written event, the standing cases always supply one, and a check
+       that cannot fail is not a check. */
     local!dataOk: and(local!tradeBaseline = 50000, local!predBaseline = 50000),
-    local!agentOk: not(a!isNullOrEmpty(local!agentLast)),
-    local!ready: and(local!dataOk, local!probesOk = count(local!probes), local!agentOk),
-
-    /* ================= RESET SESSION =================
-       Cases are queried as RECORD ROWS so each carries its primary key, which is
-       what a delete needs (SO_resetRun runs the same query server-side and
-       deletes with the Delete Records node). Comments and event rows are NOT queried for
-       deletion: SO Settlement Case relates to both with CASCADING update
-       behaviour, so deleting the case removes them. That is asserted here and
-       PROVEN by the before/after counts, not assumed. */
-    /* THE NAME IS THE CONSTANT, not an input and not a typed field (2026-09-22).
-       ri!sessionPrefill is now unused; it is left declared so the site page's
-       configuration does not have to change, and so this screen still renders
-       under testInterface, where a!startProcess cannot be invoked — everything up
-       to the click (query, counts, status line) stays checkable that way. */
-    local!resetSession: cons!SO_DEMO_RUN_NAME,
-    local!lastReset: null,
-    local!resetError: null,
-    local!resetBefore: null,
-    local!resetRows: a!refreshVariable(
-      value: a!queryRecordType(
-          recordType: 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case',
-          fields: { 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{4712df58-1d47-4398-b6f8-16d0f00531b3}caseID', 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{1f2150e5-7908-447c-a9a7-0483983c6693}sessionID' },
-          filters: a!queryFilter(field: 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{1f2150e5-7908-447c-a9a7-0483983c6693}sessionID', operator: "=", value: local!resetSession),
-          pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 500)
-        ).data,
-      refreshAlways: true
-    ),
-    local!resetCaseIds: if(a!isNullOrEmpty(local!resetRows), {},
-      a!forEach(items: local!resetRows, expression: index(fv!item, 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.fields.{4712df58-1d47-4398-b6f8-16d0f00531b3}caseID', null))),
-    local!resetCommentCount: a!refreshVariable(
-      value: if(a!isNullOrEmpty(local!resetCaseIds), 0,
-        a!localVariables(
-      local!agg: a!queryRecordType(
-        recordType: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment',
-        fields: a!aggregationFields(measures: a!measure(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{387260a3-561d-4cd3-9df7-d65a5cc775b6}caseId', function: "COUNT", alias: "n")),
-      filters: a!queryFilter(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{387260a3-561d-4cd3-9df7-d65a5cc775b6}caseId', operator: "in", value: local!resetCaseIds),
-        pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 1)
-      ).data,
-      tointeger(a!defaultValue(index(index(local!agg, 1, null), "n", 0), 0))
-    )),
-      refreshAlways: true
-    ),
-    local!resetEventCount: a!refreshVariable(
-      value: if(a!isNullOrEmpty(local!resetCaseIds), 0,
-        a!localVariables(
-      local!agg: a!queryRecordType(
-        recordType: 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History',
-        fields: a!aggregationFields(measures: a!measure(field: 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{6c3a39d8-6dc6-425d-ab58-1d72fb487426}recordId', function: "COUNT", alias: "n")),
-      filters: a!queryFilter(field: 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{6c3a39d8-6dc6-425d-ab58-1d72fb487426}recordId', operator: "in", value: local!resetCaseIds),
-        pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 1)
-      ).data,
-      tointeger(a!defaultValue(index(index(local!agg, 1, null), "n", 0), 0))
-    )),
-      refreshAlways: true
-    ),
+    local!ready: and(local!dataOk, local!probesOk = count(local!probes)),
 
     a!formLayout(
       backgroundColor: "#F3F5F8",
@@ -478,7 +369,7 @@ a!localVariables(
         a!richTextDisplayField(
           labelPosition: "COLLAPSED",
           value: a!richTextItem(
-            text: "One demo at a time. Load starts it, Reset removes it.",
+            text: "One demo at a time.",
             color: "#454F5C", size: "SMALL"
           )
         ),
@@ -498,13 +389,12 @@ a!localVariables(
               labelPosition: "COLLAPSED",
               value: {
                 a!richTextItem(
-                  text: if(local!ready, "Ready", "Not ready"),
+                  text: if(local!ready, "Environment OK", "Environment problem"),
                   color: if(local!ready, "#17715B", "#B3261E"), size: "STANDARD", style: "STRONG"
                 ),
                 a!richTextItem(
                   text: "   ·  data " & text(local!tradeBaseline, "#,##0") & "/" & text(local!predBaseline, "#,##0")
-                    & "  ·  " & local!probesOk & "/" & count(local!probes) & " connections"
-                    & "  ·  agent " & if(local!agentOk, "OK", "no record"),
+                    & "  ·  " & local!probesOk & "/" & count(local!probes) & " connections",
                   color: "#6E7885", size: "SMALL"
                 )
               }
@@ -527,24 +417,16 @@ a!localVariables(
                 color: "#B3261E", size: "SMALL", style: "STRONG"
               )
             ),
-            a!richTextDisplayField(
-              showWhen: not(local!agentOk),
-              labelPosition: "COLLAPSED", marginBelow: "NONE",
-              value: a!richTextItem(
-                text: "✕  No record of the AI agent running",
-                color: "#B3261E", size: "SMALL", style: "STRONG"
-              )
-            ),
 
             /* LIVE DEMO STATE — shown only when there is something loaded. Neutral, not red. */
             a!richTextDisplayField(
-              showWhen: or(local!tradeReserved > 0, local!otherCases > 0),
+              showWhen: or(local!tradeReserved > 0, local!demoCases > 0),
               labelPosition: "COLLAPSED", marginBelow: "NONE",
               value: {
                 a!richTextItem(text: "Loaded now:  ", color: "#6E7885", size: "SMALL"),
                 a!richTextItem(
                   text: local!tradeReserved & if(local!tradeReserved = 1, " demo trade", " demo trades")
-                    & "  ·  " & local!otherCases & if(local!otherCases = 1, " case", " cases"),
+                    & "  ·  " & local!demoCases & if(local!demoCases = 1, " case", " cases"),
                   color: "#454F5C", size: "SMALL", style: "STRONG"
                 )
               }
@@ -561,7 +443,7 @@ a!localVariables(
                 rule!SO_adminCheck(label: "Baseline trades", actual: text(local!tradeBaseline, "#,##0"), expected: "50,000", ok: local!tradeBaseline = 50000),
                 rule!SO_adminCheck(label: "Baseline predictions", actual: text(local!predBaseline, "#,##0"), expected: "50,000", ok: local!predBaseline = 50000),
                 rule!SO_adminCheck(label: "Demo trades", actual: local!tradeReserved & "", expected: "informational", ok: true),
-                rule!SO_adminCheck(label: "Demo cases", actual: local!otherCases & "", expected: "informational", ok: true),
+                rule!SO_adminCheck(label: "Demo cases", actual: local!demoCases & "", expected: "informational", ok: true),
                 rule!SO_adminCheck(label: "Built-in test cases", actual: local!fixtureCases & "", expected: "informational", ok: true),
                 rule!SO_adminCheck(label: "Case comments", actual: local!commentCount & "", expected: "informational", ok: true),
                 rule!SO_adminCheck(label: "Audit rows", actual: local!eventCount & "", expected: "informational", ok: true),
@@ -578,210 +460,85 @@ a!localVariables(
                     labelPosition: "COLLAPSED", marginBelow: "NONE",
                     value: a!richTextItem(text: "        ✕  " & fv!item, color: "#B3261E", size: "SMALL")
                   )
-                ),
-                rule!SO_adminCheck(
-                  label: "AI agent",
-                  actual: if(
-                    local!agentOk,
-                    "last run " & text(index(local!agentLast, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{2997cf09-138c-489d-a6ff-221de2e77243}timestamp', null), "d mmm hh:mm"),
-                    "no record"
-                  ),
-                  expected: "a record of the agent running",
-                  ok: local!agentOk
                 )
               }
             )
           }
         ),
 
-        /* ================= RUN THE DEMO — PANELS 2 AND 3, MERGED ================= */
+        /* ================= PREPARE THE DEMO (Phase 11, 2026-11-12) =================
+           ONE BUTTON AND ONE STATUS LINE. The button starts SO_prepareRun, which
+           answers in about 5 seconds: it refuses if a run is in progress, otherwise
+           it records the start (SO Demo Run) and hands the work to SO_prepareRunSteps
+           in the background: clear the last run, re-date the standing cases, load a
+           fresh packet, start intake. The line and its colour come from
+           SO_demoRunState, which the process reads too, so the page and the process
+           cannot disagree about a run in progress, and the line reads Running from
+           the press. No progress bar and no self-refresh, by ruling: the presenter
+           refreshes. */
         a!cardLayout(
           padding: "LESS", shape: "SEMI_ROUNDED", showBorder: true,
           contents: {
-            /* ONE EXPLAINER, ABOVE BOTH BUTTONS, REPLACING BOTH CAPTIONS. Two
-               captions under two buttons said the same kind of thing twice in two
-               registers and neither had room to say what Reset actually spares —
-               the 50,000-row baseline. Said once, before the buttons, it is read
-               before either is pressed rather than after one is chosen. */
-            a!cardLayout(
-              padding: "LESS", style: "#F5F7F9", showBorder: false,
-              shape: "SEMI_ROUNDED", marginBelow: "STANDARD",
-              contents: a!richTextDisplayField(
-                labelPosition: "COLLAPSED",
-                value: {
-                  a!richTextItem(text: "Load", style: "STRONG", color: "#1B2330", size: "SMALL"),
-                  a!richTextItem(text: " — Adds 15 trades to Snowflake. The 3 high-risk ones open cases on the analyst watchlist. About 2 minutes.", color: "#454F5C", size: "SMALL"),
-                  char(10),
-                  a!richTextItem(text: "Reset", style: "STRONG", color: "#1B2330", size: "SMALL"),
-                  a!richTextItem(text: " — Deletes those 15 trades and their cases from Snowflake and Appian. The permanent 50,000-trade history is untouched.", color: "#454F5C", size: "SMALL")
-                }
+            a!richTextDisplayField(
+              labelPosition: "COLLAPSED", marginBelow: "STANDARD",
+              value: a!richTextItem(
+                text: "Clears the last run, re-dates the standing cases and loads 15 fresh trades. The 50,000-trade history is untouched.",
+                color: "#454F5C", size: "SMALL"
               )
             ),
-
             a!richTextDisplayField(
-              labelPosition: "COLLAPSED",
-              marginBelow: if(local!loadStale, "NONE", "STANDARD"),
+              labelPosition: "COLLAPSED", marginBelow: "STANDARD",
               value: {
                 a!richTextItem(text: "Status:  ", color: "#6E7885", size: "SMALL"),
                 a!richTextItem(
-                  text: local!statusLine,
-                  color: if(local!statusLoaded, "#17715B", "#454F5C"),
+                  text: tostring(index(local!runState, "line", "")),
+                  /* READY green; nothing loaded and running neutral; the other three amber */
+                  color: a!match(
+                    value: tostring(index(local!runState, "tone", "NEUTRAL")),
+                    equals: "POSITIVE", then: "#17715B",
+                    equals: "WARN", then: "#96590A",
+                    default: "#454F5C"
+                  ),
                   size: "STANDARD", style: "STRONG"
                 )
               }
             ),
-            /* AMBER, NOT RED, AND ONE LINE. Stale demo data is not a fault in the
-               environment — everything is working — so it does not belong in the
-               red vocabulary the readiness verdict owns. It is a state with one
-               fix, and the line is the fix. */
-            a!richTextDisplayField(
-              showWhen: local!loadStale,
-              labelPosition: "COLLAPSED", marginBelow: "STANDARD",
-              value: a!richTextItem(
-                text: "Loaded before today. Reset, then Load for fresh dates.",
-                color: "#96590A", size: "SMALL", style: "STRONG"
+            a!buttonArrayLayout(
+              align: "START", marginBelow: "LESS",
+              buttons: a!buttonWidget(
+                label: "Prepare the demo",
+                style: "SOLID",
+                /* DISABLED ONLY WHILE A RUN IS IN PROGRESS, from the press until every
+                   story has its decision. A run that died unlocks itself: after 5
+                   minutes SO_demoRunState stops calling it running. */
+                disabled: a!defaultValue(index(local!runState, "isRunning", false), false),
+                saveInto: {
+                  a!save(local!prepResult, null),
+                  a!startProcess(
+                    processModel: cons!SO_PM_PREPARE_RUN,
+                    processParameters: a!map(runName: cons!SO_DEMO_RUN_NAME),
+                    isSynchronous: true,
+                    onSuccess: a!save(local!prepResult, a!map(ok: fv!processInfo.pv.ok, message: fv!processInfo.pv.message, at: now())),
+                    onError: a!save(local!prepResult, a!map(ok: false, message: "Prepare could not start, so nothing was changed. Your account may not be allowed to start it; ask the demo owner.", at: now())),
+                    onIncomplete: a!save(local!prepResult, a!map(ok: false, message: "No answer within 30 seconds, or your account cannot read the result. Prepare may still finish: refresh this page and read the status line before pressing again.", at: now()))
+                  )
+                }
               )
             ),
-
-            a!columnsLayout(
-              marginBelow: "STANDARD",
-              columns: {
-                a!columnLayout(contents: {
-                  a!buttonArrayLayout(
-                    align: "START", marginBelow: "LESS",
-                    buttons: a!buttonWidget(
-                      label: "Load the demo",
-                      style: "SOLID",
-                      saveInto: {
-                        a!save(local!simResult, null),
-                        a!startProcess(
-                          processModel: cons!SO_PM_SIMULATE_RUN,
-                          processParameters: a!map(runName: cons!SO_DEMO_RUN_NAME),
-                          isSynchronous: true,
-                          onSuccess: a!save(local!simResult, a!map(message: fv!processInfo.pv.message, at: now())),
-                          onError: a!save(local!simResult, a!map(message: "The load could not start, so nothing was sent to Snowflake. Your account may not be allowed to start it; ask the demo owner.", at: now())),
-                          onIncomplete: a!save(local!simResult, a!map(message: "No answer within 30 seconds, or your account cannot read the result. The load may still finish: check the status line above before pressing again.", at: now()))
-                        )
-                      }
-                    )
-                  )
-                }),
-                a!columnLayout(contents: {
-                  a!buttonArrayLayout(
-                    align: "START", marginBelow: "LESS",
-                    buttons: a!buttonWidget(
-                      label: "Reset the demo",
-                      style: "SOLID",
-                      color: "NEGATIVE",
-                      /* ENABLED WHEN EITHER SIDE HOLDS DEMO ROWS. B2's Appian-first reset can
-                         legitimately leave Snowflake rows with zero Appian cases, and pressing
-                         Reset again is the recovery — keying this on cases alone would strand
-                         that state. Verified 2026-09-22; statusLoaded already reads both. */
-                      disabled: not(local!statusLoaded),
-                      saveInto: {
-                        a!save(local!resetError, null),
-                        a!save(local!lastReset, null),
-                        a!save(
-                          local!resetBefore,
-                          a!map(
-                            cases: count(local!resetRows),
-                            comments: local!resetCommentCount,
-                            events: local!resetEventCount
-                          )
-                        ),
-                        a!startProcess(
-                          processModel: cons!SO_PM_RESET_RUN,
-                          processParameters: a!map(runName: cons!SO_DEMO_RUN_NAME),
-                          isSynchronous: true,
-                          onSuccess: a!save(
-                            local!lastReset,
-                            a!map(
-                              cases: index(local!resetBefore, "cases", 0),
-                              comments: index(local!resetBefore, "comments", 0),
-                              events: index(local!resetBefore, "events", 0),
-                              message: fv!processInfo.pv.message,
-                              at: now()
-                            )
-                          ),
-                          onError: a!save(local!resetError, "The clean-up could not start. Nothing was deleted in Appian or in Snowflake."),
-                          onIncomplete: a!save(local!resetError, "No answer within 30 seconds, or your account cannot read the result. The clean-up may still finish: the status line above shows what remains; press again once it stops changing.")
-                        )
-                      }
-                    )
-                  )
-                })
+            /* A FAILURE OR REFUSAL SHOWS IN FULL, WORD FOR WORD. Two sources, one
+               line: a refusal comes back from this press (prepResult); a step that
+               failed in the background is on the run record, so it is still here
+               after a page refresh and until the next press. A start that went
+               through shows nothing: the status line says the rest. */
+            a!richTextDisplayField(
+              showWhen: local!prepFailed,
+              labelPosition: "COLLAPSED",
+              value: {
+                a!richTextItem(text: "Not prepared", color: "#B3261E", size: "STANDARD", style: "STRONG"),
+                a!richTextItem(text: "   " & text(a!defaultValue(local!prepFailedAt, now()), "d mmm hh:mm"), color: "#6E7885", size: "SMALL"),
+                char(10),
+                a!richTextItem(text: local!prepFailedMessage, color: "#1B2330", size: "STANDARD", style: "STRONG")
               }
-            ),
-
-            /* ================= RESULTS =================
-               Success is one green line plus the small grey verbatim response. Refusals and
-               failures keep full prominence: those are the states worth reading. */
-            a!richTextDisplayField(
-              showWhen: not(a!isNullOrEmpty(local!simResult)),
-              labelPosition: "COLLAPSED",
-              value: a!localVariables(
-                local!m: tostring(index(local!simResult, "message", "")),
-                local!isOk: left(local!m, 7) = "OK run=",
-                local!isRefused: left(local!m, 8) = "REFUSED:",
-                {
-                  a!richTextItem(
-                    text: if(local!isOk, "Feed loaded", if(local!isRefused, "Not loaded — refused", "Not loaded")),
-                    color: if(local!isOk, "#17715B", "#B3261E"), size: "STANDARD", style: "STRONG"
-                  ),
-                  a!richTextItem(text: "   " & text(a!defaultValue(index(local!simResult, "at", null), now()), "d mmm hh:mm"), color: "#6E7885", size: "SMALL"),
-                  char(10),
-                  a!richTextItem(
-                    text: "Snowflake's response: ",
-                    color: "#6E7885", size: "SMALL"
-                  ),
-                  a!richTextItem(
-                    text: local!m,
-                    color: if(local!isOk, "#6E7885", "#1B2330"),
-                    size: if(local!isOk, "SMALL", "STANDARD"),
-                    style: if(local!isOk, {}, "STRONG")
-                  )
-                }
-              )
-            ),
-            a!richTextDisplayField(
-              showWhen: not(a!isNullOrEmpty(local!resetError)),
-              labelPosition: "COLLAPSED",
-              value: a!richTextItem(text: local!resetError, color: "#B3261E", size: "STANDARD", style: "STRONG")
-            ),
-            a!richTextDisplayField(
-              showWhen: not(a!isNullOrEmpty(local!lastReset)),
-              labelPosition: "COLLAPSED",
-              value: a!localVariables(
-                local!m: tostring(index(local!lastReset, "message", "")),
-                local!isOk: left(local!m, 7) = "OK run=",
-                {
-                  a!richTextItem(
-                    text: if(local!isOk, "Cleaned up", "Not fully cleaned up"),
-                    color: if(local!isOk, "#17715B", "#B3261E"), size: "STANDARD", style: "STRONG"
-                  ),
-                  a!richTextItem(text: "   " & text(a!defaultValue(index(local!lastReset, "at", null), now()), "d mmm hh:mm"), color: "#6E7885", size: "SMALL"),
-                  char(10),
-                  /* THE EVIDENCE LINE — before and after, kept deliberately. */
-                  a!richTextItem(text: "was ", color: "#6E7885", size: "SMALL"),
-                  a!richTextItem(
-                    text: index(local!lastReset, "cases", 0) & " cases · "
-                      & index(local!lastReset, "comments", 0) & " comments · "
-                      & index(local!lastReset, "events", 0) & " audit rows",
-                    color: "#454F5C", size: "SMALL"),
-                  a!richTextItem(text: "   now ", color: "#6E7885", size: "SMALL"),
-                  a!richTextItem(
-                    text: count(local!resetRows) & " cases · " & local!resetCommentCount & " comments · " & local!resetEventCount & " audit rows",
-                    color: if(count(local!resetRows) = 0, "#17715B", "#B3261E"), size: "SMALL", style: "STRONG"),
-                  char(10),
-                  a!richTextItem(text: "Snowflake's response: ", color: "#6E7885", size: "SMALL"),
-                  a!richTextItem(
-                    text: local!m,
-                    color: if(local!isOk, "#6E7885", "#1B2330"),
-                    size: if(local!isOk, "SMALL", "STANDARD"),
-                    style: if(local!isOk, {}, "STRONG")
-                  )
-                }
-              )
             )
           }
         )

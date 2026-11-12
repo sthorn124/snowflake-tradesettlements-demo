@@ -3,7 +3,13 @@
  * for SO_prepareRun. ONE RULE, so the page and the process cannot disagree
  * about whether a run is in progress.
  *
- * DERIVED FROM DATA THE PROCESSES ALREADY WRITE. Nothing records run state:
+ * DERIVED FROM DATA THE PROCESSES WRITE:
+ *   - the run record: SO Demo Run, one row per press of Prepare the demo.
+ *     SO_prepareRun writes it (PREPARING) before it returns to the page, and
+ *     SO_prepareRunSteps closes it (LOADED, or FAILED with the failed step's
+ *     message). Added 2026-11-12: for the first half minute of a Prepare the
+ *     last run is being cleared and no packet exists, so data alone read
+ *     "Nothing loaded" and a second press was not refused;
  *   - the packet in Snowflake: SO Trade rows whose id starts with TRD9;
  *   - when it was loaded: the newest SCORED_AT among TRD9 predictions, which
  *     SIMULATE_FEED writes at call time in UTC;
@@ -18,18 +24,25 @@
  *                        its scripted status
  *   STORY_OUT_OF_PLACE   loaded today; every story has its decision and at
  *                        least one is not in its scripted status
- *   RUNNING              loaded today; a story has no decision yet and the
- *                        stamp is under 5 minutes old
+ *   RUNNING              a Prepare recorded as PREPARING whose packet has not
+ *                        landed, under 5 minutes old (tested FIRST); or loaded
+ *                        today, a story has no decision yet and the stamp is
+ *                        under 5 minutes old
  *   DID_NOT_FINISH       loaded today; a story has no decision and the stamp
- *                        is 5 minutes old or more. Also any partly loaded
- *                        state that fits no row above
+ *                        is 5 minutes old or more; or a PREPARING record
+ *                        5 minutes old or more whose packet never landed.
+ *                        Also any partly loaded state that fits no row above
  *
  * A STORY HAS ITS DECISION when its case's status is neither "New" nor
  * "Agent Triage". "Agent Triage" is not progress: triage writes it after the
  * agent has returned, so for the whole agent call the case still reads "New".
  *
  * THE 5 MINUTES IS WHAT UNLOCKS A RUN THAT DIED. A failed agent run leaves its
- * case "New" for good; press to Ready measures 70 to 80 seconds.
+ * case "New" for good; press to Ready measures about 100 seconds.
+ *
+ * A FAILED PREPARE DOES NOT GET A STATE OF ITS OWN. The state stays what the
+ * data says (often "No demo loaded."); lastFailed and lastMessage carry the
+ * failed step's message, word for word, until the next press.
  *
  * TODAY IS THE VIEWER'S DAY: both sides go through text(), which renders in
  * the viewer's time zone, so the stored UTC stamp and "now" are compared on
@@ -97,15 +110,37 @@ a!localVariables(
   local!firstOut: if(a!isNullOrEmpty(local!outOfPlace), null, index(local!outOfPlace, 1, null)),
 
   local!hasStamp: not(a!isNullOrEmpty(local!loadStamp)),
+
+  /* the newest press of Prepare for this run name */
+  local!run: index(a!queryRecordType(
+    recordType: @{R},
+    fields: { @{R.id}, @{R.status}, @{R.message}, @{R.startedBy}, @{R.startedOn}, @{R.updatedOn} },
+    filters: a!queryFilter(field: @{R.runName}, operator: "=", value: local!name),
+    pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 1, sort: a!sortInfo(field: @{R.id}, ascending: false))
+  ).data, 1, null),
+  local!hasRun: not(a!isNullOrEmpty(local!run)),
+  local!runStatus: if(local!hasRun, tostring(a!defaultValue(local!run[@{R.status}], "")), ""),
+  local!runStartedOn: if(local!hasRun, local!run[@{R.startedOn}], null),
+  local!runAgeSeconds: if(a!isNullOrEmpty(local!runStartedOn), null,
+    tointeger(round(86400 * (todecimal(local!now) - todecimal(local!runStartedOn)), 0))),
+  /* pressed, and the packet that press will load has not landed yet */
+  local!preparing: and(
+    local!runStatus = "PREPARING",
+    not(a!isNullOrEmpty(local!runStartedOn)),
+    if(local!hasStamp, todecimal(local!loadStamp) < todecimal(a!defaultValue(local!runStartedOn, local!now)), true)
+  ),
+  local!preparingFresh: and(local!preparing, a!defaultValue(local!runAgeSeconds, local!runningLimitSeconds) < local!runningLimitSeconds),
   local!loadedToday: if(local!hasStamp, text(local!loadStamp, "yyyy-mm-dd") = text(local!now, "yyyy-mm-dd"), false),
   local!ageSeconds: if(local!hasStamp, tointeger(round(86400 * (todecimal(local!now) - todecimal(local!loadStamp)), 0)), null),
 
   local!state: if(
-    and(local!packetTrades = 0, local!demoCases = 0), "NOTHING_LOADED",
+    local!preparingFresh, "RUNNING",
+    if(local!preparing, "DID_NOT_FINISH",
+    if(and(local!packetTrades = 0, local!demoCases = 0), "NOTHING_LOADED",
     if(and(local!hasStamp, not(local!loadedToday)), "LOADED_BEFORE_TODAY",
     if(not(local!loadedToday), "DID_NOT_FINISH",
     if(local!undecided = 0, if(a!isNullOrEmpty(local!firstOut), "READY", "STORY_OUT_OF_PLACE"),
-    if(a!defaultValue(local!ageSeconds, local!runningLimitSeconds) < local!runningLimitSeconds, "RUNNING", "DID_NOT_FINISH"))))
+    if(a!defaultValue(local!ageSeconds, local!runningLimitSeconds) < local!runningLimitSeconds, "RUNNING", "DID_NOT_FINISH"))))))
   ),
   /* the pieces of the status line, each safe to build in any state */
   local!loadedAt: if(local!hasStamp, text(local!loadStamp, "h:mm a"), ""),
@@ -134,6 +169,12 @@ a!localVariables(
       default: "WARN"
     ),
     isRunning: local!state = "RUNNING",
+    /* the newest press of Prepare: a failure stays here, word for word, until the next press */
+    lastFailed: local!runStatus = "FAILED",
+    lastMessage: if(local!hasRun, tostring(a!defaultValue(local!run[@{R.message}], "")), ""),
+    lastAt: if(local!hasRun, local!run[@{R.updatedOn}], null),
+    runRecordId: if(local!hasRun, local!run[@{R.id}], null),
+    runStatus: local!runStatus,
     runName: local!name,
     packetTrades: local!packetTrades,
     demoCases: local!demoCases,

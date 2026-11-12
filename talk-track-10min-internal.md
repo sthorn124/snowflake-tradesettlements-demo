@@ -8,10 +8,10 @@ Sep 25, 2026 · @Scott
 
 Log in with your own account, not sam.supervisor. You're in both groups, so you see all three tabs and the admin site with no switching; sam can't open the admin site.
 
-- Admin site: if the console shows the amber "Loaded before today" line, press Reset, then Load. If it says "No demo data loaded," press Load. Wait about 2 minutes, confirm 3 cases. Never press Load twice.
+- Admin site: unless the status line says "Ready to present", press Prepare the demo. Wait about two minutes, refresh, and confirm "Ready to present".
 - Open three tabs: Supervisor, Watchlist, and the hero case (TRD9DEMO01, SAP GY).
 
-Recording the disposition resolves the hero case. If you rehearse it beforehand, press Reset then Load afterwards so the hero is back in Awaiting review. Do the same after the session, so the next presenter starts clean.
+Recording the disposition resolves the hero case. If you rehearse it beforehand, press Prepare the demo again afterwards so the hero is back in Awaiting review. Do the same after the session, so the next presenter starts clean.
 
 ## 0:00–1:30 · Why this exists
 
@@ -102,7 +102,7 @@ Snowflake is doing real work on every screen, and the Snowflake mark shows the a
 | "Cleared by Snowflake scoring" in the latest batch | Low-risk trades are cleared by the score alone, so they never become cases. | Most volume never reaches a human. People only work what needs judgment. |
 | Both Ask panels | The question goes to Snowflake Cortex: an AI agent working over a semantic model of the settlement data. Cortex writes and runs the query in Snowflake across all 50,000 trades. | Plain-English analytics inside the workflow. No report request, no SQL, no extract. |
 | Ask answers after the demo is loaded | Cortex's counts include the three demo trades the moment they load (one more High, two more Critical than the baseline). | Proof the answer is live against the book as it is right now, not a cached report. |
-| Load and Reset on the admin console | Appian calls Snowflake stored procedures that insert or remove the 15 demo trades. | Appian orchestrates Snowflake, not just reads it. The same pattern drives any Snowflake process from a workflow step. |
+| Prepare the demo on the admin console | Appian calls Snowflake stored procedures that remove and insert the 15 demo trades. | Appian orchestrates Snowflake, not just reads it. The same pattern drives any Snowflake process from a workflow step. |
 
 The one-sentence version for the room: Snowflake predicts and answers, Appian acts and governs, and the data never leaves Snowflake.
 

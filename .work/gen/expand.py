@@ -18,6 +18,7 @@ RT = {
  "E": ("eede988b-5576-4daa-a49c-fa962d90b16b", "SO Settlement Case Event History"),
  "P": ("b1967741-7f64-4259-a3af-ef2c6ea2e3bf", "SO Trade Predictions"),
  "T": ("8539c3b7-b402-4ba9-b5a0-e8c09a4980bd", "SO Trade"),
+ "R": ("c48c9eb9-96e3-4642-b9c5-63c67b6e023a", "SO Demo Run"),
 }
 F = {
  "C": {"caseID":"4712df58-1d47-4398-b6f8-16d0f00531b3","tradeID":"e030ef7d-9626-47f2-90ca-fe586a435e6f",
@@ -37,6 +38,10 @@ F = {
  "P": {"scoredAt":"1ae3b327-c800-4114-bcf0-4c45fca5dc1e","riskTier":"62c6c878-1193-4cdc-848a-b073854bb077",
        "failProbability":"ae03e55e-3c7b-4d4c-9000-5ec053f552a6","tradeId":"ba723c14-124b-48ff-ab51-02bf948242f8"},
  "T": {"tradeId":"df193874-a122-4695-9c9f-a321512a1f6d"},
+ "R": {"id":"477c5b8e-0603-48fc-831f-7a72c52081da","runName":"93a0e45e-b7c3-43f6-b3cf-edc94de95457",
+       "status":"0e278cda-bebd-4ec9-b9b8-22eccb81982f","message":"94f30f83-8a8e-4f51-bb08-d0b8a231865e",
+       "startedBy":"05f990f3-3a40-48e6-a066-f57cc1182b18","startedOn":"d316b688-1b59-4b94-b1ca-bc8e117575c4",
+       "updatedOn":"5a053825-881f-4692-ab15-ca58351007de"},
 }
 REL = {  # (source type, relationship name) -> (relationship uuid, target type)
  ("C","trade"): ("1507a3f2-0feb-4df3-80f8-7b1a28e192c7","T"),

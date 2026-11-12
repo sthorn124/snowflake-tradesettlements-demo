@@ -18,20 +18,17 @@ Joint Appian and Snowflake demo. The example is a settlements desk at a bank: Sn
 2. **The two sites.**
    - Settlement Operations (the demo): https://ny.appiancloud.com/suite/sites/settlement-ops. Three pages: Watchlist, Cases, Supervisor.
    - Demo Admin (setup only, never shown to the client): https://ny.appiancloud.com/suite/sites/settlement-ops-admin.
-3. **Dry run** the full sequence, setup through Reset. Recording the disposition in Beat 4 resolves the hero case, so after any rehearsal, Reset and Load again before presenting.
+3. **Dry run** the full sequence, from setup to the end. Recording the disposition in Beat 4 resolves the hero case, so after any rehearsal, press Prepare the demo again before presenting.
 
 ---
 
 ## 30 minutes before: setup
 
-**Step 1. Load the demo data.**
+**Step 1. Prepare the demo.**
 
-- Open the Demo Admin site. Read the status line at the top.
-- If it says **"No demo data loaded."** click **Load the demo**.
-- If it says **"Loaded before today. Reset, then Load for fresh dates."** click **Reset the demo**, wait until the status line changes, then click **Load the demo**.
-- If it says **"Demo loaded"** with today's date and the hero case is still open, nothing to do. If the hero was resolved in a rehearsal today, Reset then Load.
-- Wait about 2 minutes. The console should report 15 demo trades and 3 cases loaded now.
-- **Never click Load twice.** A second click re-stamps the scoring time and the screens stop matching the story.
+- Open the Demo Admin site. Read the status line.
+- If it says **"Ready to present"**, nothing to do.
+- If it says anything else, press **Prepare the demo**. Wait about two minutes, refresh the page, and confirm the line says **"Ready to present"**.
 
 **Step 2. Open three browser tabs on the Settlement Operations site.**
 
@@ -168,7 +165,7 @@ Point at the sequence of entries rather than reading them out; some carry intern
 - **An Ask shows an amber error.** Click the question once more. If it fails twice, move on; nothing later depends on it.
 - **An Ask takes longer than 30 seconds.** Longest observed is about 36 seconds.
 - **The agent's score on the hero differs from the rehearsal.** Live agent; it lands in the sixties and stays below 80.
-- **The hero case isn't in Needs your action.** It was resolved, probably in a rehearsal. Demo Admin: Reset the demo, Load the demo, wait 2 minutes, re-open the three tabs. About 4 minutes end to end.
+- **The hero case isn't in Needs your action.** It was resolved, probably in a rehearsal. Demo Admin: press Prepare the demo, wait about two minutes, refresh, confirm "Ready to present", re-open the three tabs. About 3 minutes end to end.
 - **Record Disposition isn't in the case header.** The case is already resolved. Same fix as above, or skip the click and go to the Activity panel.
 - **A screen is empty or shows zeros.** Reload once. If it stays empty, move to the next beat.
 
@@ -176,4 +173,4 @@ Point at the sequence of entries rather than reading them out; some carry intern
 
 ## After the demo
 
-Demo Admin site, **Reset the demo**, wait for the status line to confirm.
+Demo Admin site, press **Prepare the demo** again.
