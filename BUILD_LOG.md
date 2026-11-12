@@ -3966,3 +3966,43 @@ The brief asked whether any **composed** label exceeded "the length that fit unt
 - **None from this entry.** The presenter-account note was promoted into the template as part of the migration.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-11-11 — Plan from 2026-11-11; `CLAUDE.md` restored as a loader; build returns to Claude Code (maintenance, no build work)
+
+**Scope.** Not a build session, and no Dev MCP call. Run from the claude.ai Project with push access to this repo. No Appian object and no Snowflake object was read or changed. Starting point: HEAD `d27ffaf`, equal to `origin/main`.
+
+### What changed, by file
+
+- **`BUILD_PLAN.md`** (commit `fbfb450`, then this entry's commit): a "Plan from 2026-11-11" section setting the order (Phase 10 sync, Phase 11 demo setup experience, the next phase chosen after that) and the build tool; Phases 7, 8 and 9 marked on hold; the life sciences replication and the generic template dropped; new blocks for Phase 10, Phase 11 and Phase 12 (Databricks, approach proposed and not ruled).
+- **`CLAUDE.md`** added. It holds no rule text. It imports the eight always-loaded steering files (`core-00` to `core-06` and `project.md`) and lists what Kiro enforces that Claude Code does not: the session preflight, the plan gate, the runtime-server ban, the delete denial, the close-out check and the credits step.
+- **`TODO.md`**: the two Kiro-era Before demo items closed as superseded; one item added (confirm `CLAUDE.md` loads the rules).
+- **`Closeout.md`** rewritten for this entry.
+- **Scott's local commit `1e21f5f`** (fixtures re-dated 2026-10-23) was rebased and pushed by Scott on 2026-11-11. It was made by a Claude Code session on 2026-10-23, while the repo had no `CLAUDE.md`, so that session ran without the rules. His uncommitted local edit to `BUILD_PLAN.md` (the Phase 6.5 and Phase 9 text) was discarded first: it matched what commit `ad995d6` had already put on `origin/main`, apart from three heading notes.
+
+### Decisions (Scott, in the planning chat, 2026-11-11)
+
+- **Build sessions run in Claude Code.** The Kiro files stay in place and remain the one copy of the rules; `CLAUDE.md` loads them.
+- **Order:** sync first, then the demo setup experience, then the next phase is chosen.
+- **Phase 11 console design:** one Prepare button; one status line with four states; the button disabled for the whole run; a stuck run unlocks itself; no progress bar; no self-refreshing page. Prepare re-dates the standing cases and does not generate them.
+- **On hold:** Phases 7, 8 and 9. **Dropped:** the life sciences replication and the generic template.
+
+### Verified (by readback, in the clone that made the change)
+
+- Every `@` import in `CLAUDE.md` and every file it names exists in the repo.
+- `plan_status()` in `.kiro/scripts/method_lib.py` returns populated after the plan edits.
+- Scott's local folder and `origin/main` were level at `1e21f5f` before this commit, read on his machine (`git status` clean, no rebase leftovers, no lock files).
+- Push verified by `HEAD` equal to `origin/main`.
+
+### Not verified
+
+- **`CLAUDE.md` has not been loaded by a Claude Code session.** That the imports resolve and the rules reach the session is the first check of the next session.
+- **NY has not been read by a recorded session since 2026-09-24.** The 2026-10-22 and 2026-10-23 changes (a watchlist sort fix, the hand re-date, the "Cleared this batch" card hidden in Designer, the blank cases) are known from the planning chats only. The Phase 10 audit session records them.
+- **The Databricks facts in Phase 12** are as Scott reported them. No session has read NY or Databricks for them.
+- **Skills under Claude Code.** Whether `appian-supplemental` and Appian's `appian` skill are installed under `~/.claude/skills/` on Scott's machine was not checked.
+- **`PROJECT_INSTRUCTIONS.md` still says Kiro.** The claude.ai Project's own instructions say Claude Code. Phase 10 regenerates the file.
+
+### Promotion candidates (staging)
+
+- **None from this entry.**
+
+**Promotion checkpoint: current through this entry.**

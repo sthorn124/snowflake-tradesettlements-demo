@@ -206,9 +206,10 @@ Open items by class. Sessions add discovered items unprompted; any response that
 
 ## Before demo
 
-- [ ] **First Kiro session on this build** — *Scott; trigger: the next build session.* Pull `main` (the 2026-10-07 migration), open the folder in Kiro, trust the workspace, say "run the preflight". Record the B-checks in `maintenance/kiro-port.md` as each is reached (skill load, auto steering, plan gate allowing a write, Stop-hook reset, credits rebuilt from Kiro's store, close-out commit prompt, which delete deny rule matches).
-- [ ] **Paste the regenerated `PROJECT_INSTRUCTIONS.md` block into the claude.ai Project** — *Scott; trigger: before the next Project conversation.* The current Project instructions say the build runs in Claude Code.
+- ✅ 2026-11-11 — ~~**First Kiro session on this build**~~ Superseded: build sessions run in Claude Code again (ruled 2026-11-11; `BUILD_PLAN.md`, Plan from 2026-11-11). The next session is the Phase 10 audit. The Kiro first-session checks in `maintenance/kiro-port.md` stay open and apply only if a Kiro session is ever run here.
+- ✅ 2026-11-11 — ~~**Paste the regenerated `PROJECT_INSTRUCTIONS.md` block into the claude.ai Project**~~ Superseded: that block says Kiro, and the build runs in Claude Code again. `BUILD_PLAN.md` Phase 10 regenerates the block first; Scott pastes it then.
 - [ ] **Make this repository private** — *Scott; trigger: now.* It is public and carries the partner Snowflake account URLs, the `FINSERVADMIN` role and the open network policy in `BUILD_LOG.md`, `deploy-notes.md` and the project sections.
+- [ ] **Confirm `CLAUDE.md` loads the rules in Claude Code** — *Scott; trigger: the next build session.* Pull `main`, open the folder in Claude Code, and run `/memory`. It should list `CLAUDE.md` and the eight files it imports from `.kiro/steering/` (`core-00` to `core-06` and `project.md`). If any is missing, stop and report before any Dev MCP call: the session would be running without the rules, as the 2026-10-23 session did.
 
 - [ ] **Persona sail sessions** — *Scott.* The retrofit's core (§4, §6) moves persona content/state/behaviour checks to sail, which needs `alex.analyst` and `sam.supervisor` to be local-password accounts, each logged in once into `~/.sail-alex.analyst` / `~/.sail-sam.supervisor` (`GETTING_STARTED.md` §1, "once per persona"). Not yet recorded whether either is local-password. Trigger: the first build prompt that ends with persona-scoped sail steps; until then those checks stay on the browser list.
 

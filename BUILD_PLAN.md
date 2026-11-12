@@ -20,6 +20,8 @@ Snowflake, direct access, never synced: TRADES, TRADE_PREDICTIONS (1:1), COUNTER
 
 Ruled by Scott in the planning chat on 2026-11-11. This section sets the order. The phase blocks under Build Phases hold the detail.
 
+**Build tool:** Claude Code (ruled 2026-11-11). `CLAUDE.md` loads the rule files in `.kiro/steering/`, which stay the one copy of the rules. Kiro's hooks and permission file do not run under Claude Code, and `CLAUDE.md` lists the rules a session has to hold itself.
+
 **Order**
 1. Phase 10, sync. No build.
 2. Phase 11, demo setup experience.
@@ -35,7 +37,7 @@ Ruled by Scott in the planning chat on 2026-11-11. This section sets the order. 
 - Two SCs presenting at the same time.
 
 **Candidates after Phase 11, order not ruled**
-- The Phase 6.5 build. Its prompt was drafted 2026-10-09 and needs reissuing for Kiro.
+- The Phase 6.5 build. Its prompt was drafted 2026-10-09 and needs reissuing against the current repo.
 - The hero story fix in the Snowflake packet (Phase 6.5, Hero story).
 - Documents brought in line with the build (Phase 6.5, Documents). With Phase 7 on hold, the one-pager's Act 3 lines on the evaluation suite, AI guardrails, AI cost by desk and Process HQ describe work that is not built.
 - Databricks (Phase 12).
@@ -198,12 +200,14 @@ Documents
 
 ### Phase 10 — Sync (no build; planned 2026-11-11)
 
-The last build session on record is 2026-09-24. NY was changed after that without a close-out. On 2026-10-22 and 2026-10-23: a watchlist sort fix, a hand re-date of the standing cases, the "Cleared this batch" card hidden in Designer, and blank cases left by a Reset that ran during triage. No Kiro session has run on this repo.
+The last build session on record is 2026-09-24. NY was changed after that without a close-out. On 2026-10-22 and 2026-10-23: a watchlist sort fix, a hand re-date of the standing cases, the "Cleared this batch" card hidden in Designer, and blank cases left by a Reset that ran during triage. No Kiro session has run on this repo. A Claude Code session on 2026-10-23 made the fixture re-date commit (`1e21f5f`, pushed 2026-11-11) while the repo had no `CLAUDE.md`.
 
-- [ ] Planning chat: bring the repo's records up to date. The 2026-11-11 plan commit is the first part. Still to do: sweep `TODO.md` (about 80 open boxes, many already done); close the stale Snowflake network-policy blocker lines here and in `deploy-notes.md`; tick the boxes in Phases 3 to 6 that are built but unticked; update `PROJECT_INSTRUCTIONS.md` for the Databricks context.
-- [ ] Scott, in Kiro: the first Kiro session, read-only on NY. It records the objects changed since 2026-09-24 and saves their current source to `.work/`, the blank cases, whether a demo is loaded, whether the "Cleared this batch" card is still hidden, and the first-session checks in `maintenance/kiro-port.md`. It ends with a close-out, a BUILD_LOG entry and a push. The prompt comes from the planning chat.
+- ✅ 2026-11-11: `CLAUDE.md` added as a loader for the rule files in `.kiro/steering/`, so Claude Code sessions start with the rules. Scott's local folder and GitHub brought level (the local plan edit discarded as already on GitHub, the re-date commit pushed).
+
+- [ ] Planning chat: bring the repo's records up to date. The 2026-11-11 plan commit is the first part. Still to do: sweep `TODO.md` (about 80 open boxes, many already done); close the stale Snowflake network-policy blocker lines here and in `deploy-notes.md`; tick the boxes in Phases 3 to 6 that are built but unticked; regenerate `PROJECT_INSTRUCTIONS.md` for Claude Code and the Databricks context.
+- [ ] Scott, in Claude Code: a read-only audit session on NY. It confirms the rules loaded through `CLAUDE.md`, then records the objects changed since 2026-09-24 and saves their current source to `.work/`, the blank cases, whether a demo is loaded, and whether the "Cleared this batch" card is still hidden. It ends with a close-out, a BUILD_LOG entry and a push. The prompt comes from the planning chat.
 - [ ] Scott, in Snowsight: run `snowflake/verification-summary.sql` as FINSERVADMIN on COMPUTE_WH and paste the grid.
-- [ ] Scott: paste the `PROJECT_INSTRUCTIONS.md` block into the claude.ai Project and correct the Project description. Both still say the build runs in Claude Code.
+- [ ] Scott: paste the regenerated `PROJECT_INSTRUCTIONS.md` block into the claude.ai Project, once the planning chat has regenerated it.
 - [ ] Planning chat: overwrite the Project's demo documents from the repo copies.
 - [ ] Scott: make the repository private, then confirm a new Project chat can still read `Closeout.md`.
 
@@ -211,7 +215,7 @@ Rulings open
 - [ ] The repo is the master copy of the demo documents. The Project's copies are overwritten from it, and the replication guide is removed from the Project.
 - [ ] This build stays in its own repo for now. Moving it into the SC workspace repo waits.
 
-Staying in sync afterwards: NY changes only through a Kiro session that ends in a pushed close-out. A hand change in Designer gets a TODO line the same day.
+Staying in sync afterwards: NY changes only through a build session that ends in a pushed close-out. A hand change in Designer gets a TODO line the same day.
 
 ### Phase 11 — Demo setup experience (ruled 2026-11-11)
 
