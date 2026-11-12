@@ -75,30 +75,29 @@ After the build is verified, change only the lines that name the two buttons in 
 
 ## Verification
 
-Drive the real button: through sail as `test.presenter`, if that session is live and the account is in both `SO Demo Admins` and `SO Supervisors`. If not, stop when the build is ready and ask Scott to press it.
+No sail this session (Scott, 2026-11-12). Every check runs through the Dev MCP as the design account, and says so.
 
-As the presenter:
-- One press, from whatever state NY is in, leads to "Ready to present. Loaded today at <time>" after a refresh, with no other action. Record the seconds from press to Ready.
-- Straight after the press, the page shows the Running copy and the button is disabled.
-- A second Prepare from Ready ends at Ready again, with three demo cases and not six.
-- Each of the other four states shows its copy. Reach them through real states where that is cheap. Say which were reached and which were only read from the rule.
-- Prepare refuses to start while a run is in progress.
+Prepare, run through `testProcessModel`:
+- One run, from whatever state NY is in, ends with `SO_demoRunState` returning Ready, with no other action. Record the seconds from start to Ready.
+- Straight after the start, the state is Running.
+- A second run from Ready ends at Ready again, with three demo cases and not six.
+- A start while a run is in progress is refused.
+- After a run: the hero case is "Pending Analyst" with about three hours to cutoff, story 02 is "Escalated", and story 03 is "Resolved - Straight Through".
+- After a run: the standing cases carry today's dates, and only case 39 is past cutoff.
 
-As `alex.analyst`, after a Prepare:
-- the hero case is in Needs your action, with about three hours to cutoff;
-- the standing cases on his desk carry today's dates, and none is past cutoff unless it is the deliberate one, case 39;
-- the Demo Admin site does not resolve.
+The console, rendered through `testInterface`:
+- It shows the copy for the state NY is in, and the button is disabled only when that state is Running.
+- Each of the six states shows its copy. Reach them through real states where that is cheap. Say which were reached and which were only read from the rule.
 
-As `sam.supervisor`, after a Prepare:
-- the supervisor screen renders without an error;
-- each of the three stories sits in its scripted queue;
-- the standing book carries today's dates, with only case 39 past cutoff;
-- the Demo Admin site does not resolve.
+The watchlist and the supervisor screen render without an error after a Prepare.
+
+Not verified, by ruling: what each persona sees, and the button press itself. Phase 11 changes no persona screen and no security. The press is Scott's, below.
 
 Operator's browser checklist (Scott):
-1. The console's default view: one button and one status line, nothing wrapped or cramped.
-2. The status line's colours: green for Ready, amber for the three "prepare again" lines.
-3. The watchlist and the supervisor screen after a Prepare look as they did before this phase.
+1. On the Demo Admin site, press Prepare the demo. The page shows the Running line and the button is disabled.
+2. Refresh after two minutes. The line reads "Ready to present. Loaded today at <time>", in green, with the local time.
+3. The page has one button and one status line, with nothing wrapped or cramped.
+4. The watchlist and the supervisor screen look as they did before this phase.
 
 ## Close-out
 
