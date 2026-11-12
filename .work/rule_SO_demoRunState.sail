@@ -23,12 +23,16 @@
  *   STORY_OUT_OF_PLACE   loaded today; every story has its decision and at
  *                        least one is not in its scripted status
  *   HERO_PAST_CUTOFF     loaded today; every story has its decision and is in
- *                        its scripted status; the hero case's cutoff has
- *                        passed. Added 2026-11-12 on Scott's yes: a load at
- *                        2 AM still read "Ready to present" at 9 AM, four
- *                        hours after the hero's cutoff
+ *                        its scripted status; the hero case has under two
+ *                        hours to its cutoff, or is past it. Added 2026-11-12
+ *                        on Scott's yes: a load at 2 AM still read "Ready to
+ *                        present" at 9 AM, four hours after the hero's cutoff.
+ *                        Widened the same day (ruled): the state starts two
+ *                        hours BEFORE the cutoff and keeps its name. Its line
+ *                        has two wordings, before the cutoff and after it
  *   READY                loaded today; every story has its decision and is in
- *                        its scripted status; the hero's cutoff is still ahead
+ *                        its scripted status; the hero has two hours or more
+ *                        to its cutoff
  *   RUNNING              a Prepare recorded as PREPARING whose packet has not
  *                        landed, under 5 minutes old (tested FIRST); or loaded
  *                        today, a story has no decision yet and the stamp is
@@ -48,6 +52,21 @@
  * first, because that line names the status. A hero with no cutoff stored
  * never leaves Ready on this test.
  *
+ * READY ENDS TWO HOURS BEFORE THE HERO'S CUTOFF (ruled 2026-11-12). The hero
+ * needs its broker confirmation lag, 1.15 hours, to fit the window. Inside the
+ * last two hours its screen stops agreeing with its own assessment, so the run
+ * is no longer one to present from. local!readyMarginHours is the one place
+ * the two hours is set. The line's words "under two hours" are ruled text:
+ * a new margin needs a new line, and both change together.
+ *
+ * WHO LOADED IT (ruled 2026-11-12, a second presenter uses the site). The
+ * Ready line ends "by <first name> <last name>": the account that pressed
+ * Prepare for the run now loaded. That press is the newest LOADED run record
+ * for the run name whose press-to-close window holds the load stamp. A run
+ * loaded any other way has no such record, and a later press that failed is
+ * not the one that loaded it; in both cases, and when the record names nobody
+ * or the account is not in the user directory, the line ends at the time.
+ *
  * THE 5 MINUTES IS WHAT UNLOCKS A RUN THAT DIED. A failed agent run leaves its
  * case "New" for good; press to Ready measures about 100 seconds.
  *
@@ -66,6 +85,8 @@ a!localVariables(
   local!name: a!defaultValue(ri!runName, cons!SO_DEMO_RUN_NAME),
   local!now: a!defaultValue(ri!asOf, now()),
   local!runningLimitSeconds: 300,
+  /* Ready ends this many hours before the hero's cutoff. The one place it is set */
+  local!readyMarginHours: 2,
   local!stories: rule!SO_intakePlan(runName: local!name).stories,
 
   local!packetTrades: tointeger(a!defaultValue(index(index(
@@ -126,6 +147,10 @@ a!localVariables(
   local!heroStories: a!flatten(a!forEach(items: local!storyStates, expression: if(tostring(fv!item.label) = local!heroLabel, fv!item, {}))),
   local!heroCutoff: if(a!isNullOrEmpty(local!heroStories), null, index(index(local!heroStories, 1, null), "cutoff", null)),
   local!heroPast: if(a!isNullOrEmpty(local!heroCutoff), false, todecimal(local!heroCutoff) <= todecimal(local!now)),
+  /* todecimal() of a date and time is a day number, so the margin is hours / 24.
+     Under the margin is not ready; exactly the margin is still ready. Past the cutoff is inside it too */
+  local!heroInsideMargin: if(a!isNullOrEmpty(local!heroCutoff), false,
+    todecimal(local!heroCutoff) - todecimal(local!now) < local!readyMarginHours / 24),
 
   local!hasStamp: not(a!isNullOrEmpty(local!loadStamp)),
 
@@ -151,6 +176,47 @@ a!localVariables(
   local!loadedToday: if(local!hasStamp, text(local!loadStamp, "yyyy-mm-dd") = text(local!now, "yyyy-mm-dd"), false),
   local!ageSeconds: if(local!hasStamp, tointeger(round(86400 * (todecimal(local!now) - todecimal(local!loadStamp)), 0)), null),
 
+  /* the press that loaded the run now in place: the newest LOADED record for
+     this run name, and only if the load stamp falls between its press and its close */
+  local!loadedRun: index(a!queryRecordType(
+    recordType: 'recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run',
+    fields: { 'recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{477c5b8e-0603-48fc-831f-7a72c52081da}id', 'recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{05f990f3-3a40-48e6-a066-f57cc1182b18}startedBy', 'recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{d316b688-1b59-4b94-b1ca-bc8e117575c4}startedOn', 'recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{5a053825-881f-4692-ab15-ca58351007de}updatedOn' },
+    filters: {
+      a!queryFilter(field: 'recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{93a0e45e-b7c3-43f6-b3cf-edc94de95457}runName', operator: "=", value: local!name),
+      a!queryFilter(field: 'recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{0e278cda-bebd-4ec9-b9b8-22eccb81982f}status', operator: "=", value: "LOADED")
+    },
+    pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 1, sort: a!sortInfo(field: 'recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{477c5b8e-0603-48fc-831f-7a72c52081da}id', ascending: false))
+  ).data, 1, null),
+  local!hasLoadedRun: not(a!isNullOrEmpty(local!loadedRun)),
+  local!loadedPressedOn: if(local!hasLoadedRun, local!loadedRun['recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{d316b688-1b59-4b94-b1ca-bc8e117575c4}startedOn'], null),
+  local!loadedClosedOn: if(local!hasLoadedRun, local!loadedRun['recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{5a053825-881f-4692-ab15-ca58351007de}updatedOn'], null),
+  local!loadedUsername: if(local!hasLoadedRun, tostring(a!defaultValue(local!loadedRun['recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{05f990f3-3a40-48e6-a066-f57cc1182b18}startedBy'], "")), ""),
+  local!loadedRunIsThisLoad: if(
+    or(not(local!hasStamp), a!isNullOrEmpty(local!loadedPressedOn), a!isNullOrEmpty(local!loadedClosedOn)),
+    false,
+    and(
+      todecimal(local!loadedPressedOn) <= todecimal(local!loadStamp),
+      todecimal(local!loadStamp) <= todecimal(local!loadedClosedOn)
+    )
+  ),
+  /* first and last name from the user directory. A query, not user(): an
+     account that no longer exists returns no row here, where user() would
+     take the whole rule down, and the console and Prepare with it */
+  local!loadedUser: if(
+    or(not(local!loadedRunIsThisLoad), a!isNullOrEmpty(local!loadedUsername)),
+    null,
+    index(a!queryRecordType(
+      recordType: 'recordType!{SYSTEM_RECORD_TYPE_USER}User',
+      fields: { 'recordType!{SYSTEM_RECORD_TYPE_USER}User.fields.{SYSTEM_RECORD_TYPE_USER_FIELD_firstName}firstName', 'recordType!{SYSTEM_RECORD_TYPE_USER}User.fields.{SYSTEM_RECORD_TYPE_USER_FIELD_lastName}lastName' },
+      filters: a!queryFilter(field: 'recordType!{SYSTEM_RECORD_TYPE_USER}User.fields.{SYSTEM_RECORD_TYPE_USER_FIELD_username}username', operator: "=", value: touser(local!loadedUsername)),
+      pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 1)
+    ).data, 1, null)
+  ),
+  local!loadedBy: if(a!isNullOrEmpty(local!loadedUser), "", trim(
+    tostring(a!defaultValue(local!loadedUser['recordType!{SYSTEM_RECORD_TYPE_USER}User.fields.{SYSTEM_RECORD_TYPE_USER_FIELD_firstName}firstName'], "")) & " "
+    & tostring(a!defaultValue(local!loadedUser['recordType!{SYSTEM_RECORD_TYPE_USER}User.fields.{SYSTEM_RECORD_TYPE_USER_FIELD_lastName}lastName'], ""))
+  )),
+
   local!state: if(
     local!preparingFresh, "RUNNING",
     if(local!preparing, "DID_NOT_FINISH",
@@ -158,7 +224,7 @@ a!localVariables(
     if(and(local!hasStamp, not(local!loadedToday)), "LOADED_BEFORE_TODAY",
     if(not(local!loadedToday), "DID_NOT_FINISH",
     if(local!undecided = 0,
-      if(not(a!isNullOrEmpty(local!firstOut)), "STORY_OUT_OF_PLACE", if(local!heroPast, "HERO_PAST_CUTOFF", "READY")),
+      if(not(a!isNullOrEmpty(local!firstOut)), "STORY_OUT_OF_PLACE", if(local!heroInsideMargin, "HERO_PAST_CUTOFF", "READY")),
     if(a!defaultValue(local!ageSeconds, local!runningLimitSeconds) < local!runningLimitSeconds, "RUNNING", "DID_NOT_FINISH"))))))
   ),
   /* the pieces of the status line, each safe to build in any state */
@@ -171,15 +237,20 @@ a!localVariables(
   a!map(
     state: local!state,
     /* the status line, word for word as ruled 2026-11-11 and 2026-11-12. The
-       HERO_PAST_CUTOFF line is the exception: Scott ruled the state, and the
-       session wrote its words on the pattern of the story line below */
+       "passed its cutoff" line is the exception: Scott ruled the state, and a
+       session wrote its words on the pattern of the story line below. He has
+       since ruled both hero wordings as they stand here */
     line: a!match(
       value: local!state,
       equals: "NOTHING_LOADED", then: "No demo loaded.",
       equals: "RUNNING", then: "Preparing the demo. About two minutes. Refresh this page to check.",
-      equals: "READY", then: "Ready to present. Loaded today at " & local!loadedAt & ".",
-      equals: "HERO_PAST_CUTOFF", then: "Not ready. The " & local!heroLabel & " case passed its cutoff at "
-        & local!heroCutoffAt & ". Prepare the demo again.",
+      equals: "READY", then: "Ready to present. Loaded today at " & local!loadedAt
+        & if(a!isNullOrEmpty(local!loadedBy), "", " by " & local!loadedBy) & ".",
+      equals: "HERO_PAST_CUTOFF", then: if(local!heroPast,
+        "Not ready. The " & local!heroLabel & " case passed its cutoff at "
+          & local!heroCutoffAt & ". Prepare the demo again.",
+        "Not ready. The " & local!heroLabel & " case has under two hours to cutoff. Prepare the demo again."
+      ),
       equals: "LOADED_BEFORE_TODAY", then: "Loaded before today. Prepare the demo again for fresh dates.",
       equals: "STORY_OUT_OF_PLACE", then: "Not ready. The " & local!outLabel & " case is "
         & local!outStatus & ", not " & local!outScripted & ". Prepare the demo again.",
@@ -205,6 +276,10 @@ a!localVariables(
     loadStamp: local!loadStamp,
     ageSeconds: local!ageSeconds,
     heroCutoff: local!heroCutoff,
+    /* true once the cutoff itself has passed: tells the two HERO_PAST_CUTOFF wordings apart */
+    heroPast: local!heroPast,
+    /* who pressed Prepare for the run now loaded, first and last name; empty when nobody is named */
+    loadedBy: local!loadedBy,
     stories: local!storyStates
   )
 )

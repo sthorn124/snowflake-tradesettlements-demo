@@ -19,6 +19,7 @@ RT = {
  "P": ("b1967741-7f64-4259-a3af-ef2c6ea2e3bf", "SO Trade Predictions"),
  "T": ("8539c3b7-b402-4ba9-b5a0-e8c09a4980bd", "SO Trade"),
  "R": ("c48c9eb9-96e3-4642-b9c5-63c67b6e023a", "SO Demo Run"),
+ "U": ("SYSTEM_RECORD_TYPE_USER", "User"),  # the platform's user directory; its field ids are names, not UUIDs
 }
 F = {
  "C": {"caseID":"4712df58-1d47-4398-b6f8-16d0f00531b3","tradeID":"e030ef7d-9626-47f2-90ca-fe586a435e6f",
@@ -42,6 +43,8 @@ F = {
        "status":"0e278cda-bebd-4ec9-b9b8-22eccb81982f","message":"94f30f83-8a8e-4f51-bb08-d0b8a231865e",
        "startedBy":"05f990f3-3a40-48e6-a066-f57cc1182b18","startedOn":"d316b688-1b59-4b94-b1ca-bc8e117575c4",
        "updatedOn":"5a053825-881f-4692-ab15-ca58351007de"},
+ "U": {"username":"SYSTEM_RECORD_TYPE_USER_FIELD_username","firstName":"SYSTEM_RECORD_TYPE_USER_FIELD_firstName",
+       "lastName":"SYSTEM_RECORD_TYPE_USER_FIELD_lastName"},
 }
 REL = {  # (source type, relationship name) -> (relationship uuid, target type)
  ("C","trade"): ("1507a3f2-0feb-4df3-80f8-7b1a28e192c7","T"),
