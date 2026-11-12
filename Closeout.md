@@ -1,6 +1,6 @@
-# Closeout — 2026-11-11 — Phase 10 read-only audit of NY: rules loaded, console and four process models read, no trade-less case found
+# Closeout — 2026-11-12 — Phase 10 read-only audit of NY (read 2026-11-11): no trade-less case found; Phase 11 blank-cases line closed by ruling
 
-**Session.** Ran in **Claude Code**, not Kiro, from `prompts/001-phase10-read-only-audit.md`. The credits step of core §10 is skipped: `CREDITS.md` is built from Kiro's own records.
+**Session.** Ran in **Claude Code**, not Kiro, from `prompts/001-phase10-read-only-audit.md`. The credits step of core §10 is skipped: `CREDITS.md` is built from Kiro's own records. Every read was made on 2026-11-11, and the session was first closed out that day (commit `b2fee15`). On 2026-11-12, in the same session, Scott ruled on one open question (see "Rulings given"), and this file was rewritten whole to carry it. No Appian call was made on 2026-11-12.
 
 **Scope and identity.** Read-only. Nothing was created, updated or deleted in Appian. No `testProcessModel`, no record write. Snowflake was not read. Every read went through the Dev MCP (server `appian`) as `scott.thorn@appian.com`, a direct member of `SO Supervisors`, `SO Demo Admins` and `SO Users`. The `SO Settlement Case` security rule for `SO Supervisors` has no condition, so the case reads below are full-scope. No sail session was used. The runtime server's ten tools were present in the session and were never loaded or called.
 
@@ -109,9 +109,9 @@ Timings from the process history, two runs (2026-11-05 and 2026-11-09):
 
 ### 4. Cases that have no trade
 
-**None.** There is no row to list.
+**None.** There is no row to list. On 2026-11-12 Scott closed the Phase 11 line that would have deleted them (see "Rulings given").
 
-- Read as `scott.thorn@appian.com`, member of `SO Supervisors`, whose record security rule has no condition.
+- Read on 2026-11-11 as `scott.thorn@appian.com`, member of `SO Supervisors`, whose record security rule has no condition.
 - `SO Settlement Case` holds 17 rows: ids 36 to 52, all session `P4-VERIFY`, every one with a trade id.
 - Confirmed a second way, by query: "no case with an id above 52" held, the control "no case with an id above 51" failed as it should, and "no case with an empty trade id" held.
 - Comments (12 rows) and audit events (14 rows) all belong to cases 36 to 50. No orphans.
@@ -141,6 +141,7 @@ Timings from the process history, two runs (2026-11-05 and 2026-11-09):
 ## Not verified
 
 - **What a late triage write does to a deleted case.** Reported, and consistent with the ids, but not measured.
+- **The case table on 2026-11-12.** It was not re-read before the ruling was recorded. The ruling rests on the 2026-11-11 reads.
 - **Snowflake.** Whether packet trades are present was not read.
 - **The `SO_SETTLEMENT` table itself.** The record layer was read; no Dev MCP tool reads table rows.
 - **The hand changes of 2026-10-22 and 2026-10-23** to the watchlist and supervisor screens. The prompt was cut to the console and the four models, and those five are unchanged.
@@ -148,9 +149,12 @@ Timings from the process history, two runs (2026-11-05 and 2026-11-09):
 
 **Browser checklist.** None owed. Nothing was rendered or changed.
 
+## Rulings given
+
+- **The "Delete the blank cases" line in Phase 11 is closed** (Scott, 2026-11-12). Nothing was left to delete, and this session deleted nothing. The line is ticked in `BUILD_PLAN.md`. Who removed the five cases stays an open `TODO.md` item.
+
 ## Rulings needed
 
-- **Close the "Delete the blank cases" line in Phase 11?** Nothing is left to delete.
 - **Cancel the two stuck `SO_triageCase` instances?** It is a change to NY, so it waits for Scott's word.
 - **Which copy of `appian-supplemental` is the master**, and whether the two skills under `~/.claude/skills/` are brought up to it.
 - **Run the Dev MCP update procedure before Phase 11?** The pins describe 26.6.105; the server is 26.9.5.
@@ -159,8 +163,8 @@ Timings from the process history, two runs (2026-11-05 and 2026-11-09):
 
 **Promotion candidates:** 4 found; 0 promoted; 4 listed in `BUILD_LOG.md` with triggers. They are: the `validateExpression` assertion as a read-only identity check; a group named by text evaluating false inside that assertion; a failed Execute AI Agent run stopping the process with no fail-forward; Write Records creating a row for a key that no longer exists.
 
-**TODO changes:** added a "Phase 10 audit, found 2026-11-11" section with eight items (stuck triage instances; Dev MCP version drift; three skill copies; two build parameters; a presenter under two usernames; the stale `SO_triageCase` description; the "agent OK" check; the unrecorded removal of the blank cases). Closed: confirm `CLAUDE.md` loads the rules. Annotated: persona sail sessions, all expired. Unchanged and still open: the stale `BUILD_LOG.md` header checkpoint, under Blocking.
+**TODO changes:** added a "Phase 10 audit, found 2026-11-11" section with eight items (stuck triage instances; Dev MCP version drift; three skill copies; two build parameters; a presenter under two usernames; the stale `SO_triageCase` description; the "agent OK" check; the unrecorded removal of the blank cases). Closed: confirm `CLAUDE.md` loads the rules. Annotated: persona sail sessions, all expired. Unchanged and still open: the stale `BUILD_LOG.md` header checkpoint, under Blocking. `TODO.md` was not touched on 2026-11-12.
 
-**BUILD_PLAN.md changes:** the Phase 10 audit item ticked. Three Phase 10 items added (Dev MCP update, skill master copy, two build parameters). In Phase 11: the blank-cases line and the hero-in-Escalated line annotated with the audit's findings, and two items added (cancel the stuck instances; decide what a failed agent run leaves behind).
+**BUILD_PLAN.md changes:** the Phase 10 audit item ticked. Three Phase 10 items added (Dev MCP update, skill master copy, two build parameters). In Phase 11: the blank-cases line ticked on 2026-11-12 by Scott's ruling, with nothing to delete; the hero-in-Escalated line annotated with the audit's findings; and two items added (cancel the stuck instances; decide what a failed agent run leaves behind).
 
 **Credits.** Not recorded. This session ran in Claude Code.

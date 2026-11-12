@@ -4090,3 +4090,30 @@ Four found, none promoted, four listed.
 **The header checkpoint line at the top of this file is still stale** (it reads "current through 2026-09-01"). The Blocking item in `TODO.md` stays open; this session did not reconcile the header against the staging section.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-11-12 — Ruling: the Phase 11 "Delete the blank cases" line is closed with nothing to delete (same Claude Code session; no Appian call)
+
+**Scope.** No Appian call was made in this round. The ruling rests on the reads of the entry above, made on 2026-11-11 through the Dev MCP as `scott.thorn@appian.com`, a member of `SO Supervisors`, whose case security rule has no condition. No sail session.
+
+### What changed
+
+- `BUILD_PLAN.md`: the Phase 11 line "Delete the blank cases left from 2026-10-22" is marked done, 2026-11-12, as nothing to delete.
+- `Closeout.md`: rewritten whole, with the ruling moved from "Rulings needed" to "Rulings given".
+- Nothing in Appian. This session deleted no case.
+
+### Decisions
+
+- **Scott ruled the line closed** (2026-11-12, in answer to the close-out's question: "Yes, close it"). Reason: the audit found no case without a trade on NY (17 cases, ids 36 to 52, each with a trade), so the line has nothing to act on.
+
+### Verified
+
+- Nothing new. The evidence is the entry above: two read paths as a full-scope account, with a control.
+
+### Not verified
+
+- **The case table was not re-read on 2026-11-12.** The ruling rests on the 2026-11-11 reads.
+- **Who removed SO-106 to SO-110, and when,** is still not recorded. That `TODO.md` item stays open.
+
+**Promotion candidates:** none found in this round. The four staged in the entry above are unchanged.
+
+**Promotion checkpoint: current through this entry.**

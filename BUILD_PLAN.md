@@ -242,7 +242,7 @@ Standing cases
 
 Agent write-back and cleanup
 - [ ] `SO_triageCase` writes the agent's result only if its case still exists. Cause of the 2026-10-22 blank cases: Reset ran while triage was still running, and the late write created a case with no trade, desk or cutoff. This replaces the earlier idea of cancelling in-flight triage processes.
-- [ ] Delete the blank cases left from 2026-10-22 (reported as SO-106 to SO-110; confirm the ids in the Phase 10 audit). Audit, 2026-11-11: none exists on NY now. The case table holds 17 rows, ids 36 to 52, each with a trade. Nothing is left to delete; Scott to close this line.
+- ✅ 2026-11-12: Delete the blank cases left from 2026-10-22 (reported as SO-106 to SO-110). Closed by Scott's ruling with nothing to delete. The Phase 10 audit (2026-11-11) found none on NY: the case table held 17 rows, ids 36 to 52, each with a trade. No session deleted them on record; who removed the five is an open `TODO.md` item.
 - [ ] Cancel the two `SO_triageCase` instances that are stuck ACTIVE (found in the audit): process `536912644` from 2026-10-22, case 105, agent run failed; and process `536908653` from 2026-08-28, case 5. Neither case exists any more. Scott's word first.
 - [ ] Decide what a failed agent run leaves behind (found in the audit). The agent node has no error path, so a failed run stops triage there and the case stays "New". This is the "run that dies partway" the console has to unlock from.
 
