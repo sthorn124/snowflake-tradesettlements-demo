@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 """
+SUPERSEDED 2026-11-12 by the process model SO_redateStandingCases (Phase 11).
+The offsets below now live in the expression rule SO_standingCaseOffsets, and
+Prepare the demo runs the re-date itself. This script and its three CSVs are
+kept as the record of what the process model was verified against: on
+2026-11-12 its stamps equalled this script's for the same UTC hour, row for
+row. Do not run it and do not apply the CSVs; a change to the standing cases is
+a change to SO_standingCaseOffsets.
+
+--- the script as it stood ---
+
 P4-VERIFY fixture re-date — RUN AT THE START OF EVERY SESSION THAT RENDERS A
 PHASE 4 SCREEN. Fixture cutoffs are absolute timestamps and decay daily; a
 session that renders without re-dating shows a book that is entirely past

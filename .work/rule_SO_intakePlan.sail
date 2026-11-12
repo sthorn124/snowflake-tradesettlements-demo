@@ -14,6 +14,13 @@
  * their ONE home. A High/Critical trade with no story row gets NO case and is
  * reported under noStory — a fail reason is never invented.
  *
+ * THE SAME TABLE SAYS WHERE EACH STORY SHOULD END UP (added 2026-11-12):
+ * `label` is what the Demo Admin console calls the story, and `scriptedStatus`
+ * is the stored status its case holds when the demo is ready to present.
+ * SO_demoRunState reads both through the `stories` output below, which also
+ * carries each story's trade id for this run. The story list is written here
+ * and nowhere else. Intake does not read either new key.
+ *
  * IDEMPOTENCY: a trade that already has a case in this run, in ANY status, is
  * reported under alreadyCased and left out of toCreate. (The create path's own
  * guard only sees OPEN cases, so a straight-through case resolved minutes ago
@@ -36,9 +43,9 @@ a!localVariables(
   ),
 
   local!stories: {
-    a!map(seq: "01", failReason: "insufficient_securities", cutoffMinutes: 185),
-    a!map(seq: "02", failReason: "funding_gap", cutoffMinutes: 150),
-    a!map(seq: "03", failReason: "operational_error", cutoffMinutes: 540)
+    a!map(seq: "01", label: "hero", failReason: "insufficient_securities", cutoffMinutes: 185, scriptedStatus: "Pending Analyst"),
+    a!map(seq: "02", label: "escalation", failReason: "funding_gap", cutoffMinutes: 150, scriptedStatus: "Escalated"),
+    a!map(seq: "03", label: "straight-through", failReason: "operational_error", cutoffMinutes: 540, scriptedStatus: "Resolved - Straight Through")
   },
   local!storySeqs: a!forEach(items: local!stories, expression: fv!item.seq),
 
@@ -94,6 +101,12 @@ a!localVariables(
 
   a!map(
     runName: local!name,
+    stories: a!forEach(items: local!stories, expression: a!map(
+      seq: fv!item.seq,
+      label: fv!item.label,
+      scriptedStatus: fv!item.scriptedStatus,
+      tradeId: if(a!isNullOrEmpty(local!code), null, "TRD9" & local!code & fv!item.seq)
+    )),
     atRiskTradeIds: a!forEach(items: local!rows, expression: fv!item.tradeId),
     alreadyCased: a!flatten(a!forEach(items: local!rows, expression: if(fv!item.alreadyCased, fv!item.tradeId, {}))),
     noStory: a!flatten(a!forEach(items: local!rows, expression: if(a!isNullOrEmpty(fv!item.failReason), fv!item.tradeId, {}))),

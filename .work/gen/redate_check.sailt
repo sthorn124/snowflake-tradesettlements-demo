@@ -1,0 +1,46 @@
+/* A CHECK, NOT A DEPLOYED OBJECT. Compares (a) SO_standingCaseRedate for a fixed clock and
+   (b) the rows stored on the site with (c) the string fixtures/p4-verify-redate.py produces
+   for the same UTC hour (redate_expected.py fills __PY__; __CLOCK__ is a datetime() literal).
+   To use it: fill the two tokens, run expand.py, save the result as a throwaway zz rule,
+   testRule it, and delete the rule in the same session. Used 2026-11-12 (Phase 11). */
+a!localVariables(
+  local!py: "__PY__",
+  local!t: rule!SO_standingCaseOffsets(),
+  local!ids: a!forEach(items: local!t.cases, expression: fv!item.caseId),
+  local!cids: a!forEach(items: local!t.comments, expression: fv!item.id),
+  local!eids: a!forEach(items: local!t.events, expression: fv!item.id),
+  local!fmt: "yyyy-mm-dd hh:mm:ss",
+  local!cases: a!queryRecordType(recordType: @{C}, fields: { @{C.caseID}, @{C.cutoffTs}, @{C.createdOn}, @{C.modifiedOn}, @{C.resolvedOn}, @{C.status}, @{C.sessionID}, @{C.tradeID} },
+    filters: a!queryFilter(field: @{C.caseID}, operator: "in", value: local!ids),
+    pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 100, sort: a!sortInfo(field: @{C.caseID}, ascending: true))).data,
+  local!comments: a!queryRecordType(recordType: @{M}, fields: { @{M.id}, @{M.createdOn} },
+    filters: a!queryFilter(field: @{M.id}, operator: "in", value: local!cids),
+    pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 100, sort: a!sortInfo(field: @{M.id}, ascending: true))).data,
+  local!events: a!queryRecordType(recordType: @{E}, fields: { @{E.id}, @{E.timestamp} },
+    filters: a!queryFilter(field: @{E.id}, operator: "in", value: local!eids),
+    pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 100, sort: a!sortInfo(field: @{E.id}, ascending: true))).data,
+  local!stored: joinarray(a!flatten({
+    a!forEach(items: local!cases, expression: "case " & fv!item[@{C.caseID}]
+      & " cutoff=" & text(gmt(fv!item[@{C.cutoffTs}]), local!fmt)
+      & " created=" & text(gmt(fv!item[@{C.createdOn}]), local!fmt)
+      & " modified=" & text(gmt(fv!item[@{C.modifiedOn}]), local!fmt)
+      & " resolved=" & if(a!isNullOrEmpty(fv!item[@{C.resolvedOn}]), "", text(gmt(fv!item[@{C.resolvedOn}]), local!fmt))),
+    a!forEach(items: local!comments, expression: "comment " & fv!item[@{M.id}] & " created=" & text(gmt(fv!item[@{M.createdOn}]), local!fmt)),
+    a!forEach(items: local!events, expression: "event " & fv!item[@{E.id}] & " at=" & text(gmt(fv!item[@{E.timestamp}]), local!fmt))
+  }), "~"),
+  local!rule: joinarray(rule!SO_standingCaseRedate(clock: __CLOCK__).expected, "~"),
+  a!map(
+    asUser: tostring(loggedInUser()),
+    pyChars: len(local!py),
+    ruleEqualsScript: local!rule = local!py,
+    controlMustBeFalse: local!rule = substitute(local!py, "case 39 cutoff=", "case 39 cutoff=X"),
+    storedEqualsScript: local!stored = local!py,
+    storedChars: len(local!stored),
+    storedRows: count(local!cases) & "/" & count(local!comments) & "/" & count(local!events),
+    pastCutoff: joinarray(a!flatten(a!forEach(items: local!cases, expression: if(fv!item[@{C.cutoffTs}] < now(), "case " & fv!item[@{C.caseID}], {}))), ", "),
+    firstDiff: if(local!stored = local!py, "", a!localVariables(
+      local!a: split(local!stored, "~"), local!b: split(local!py, "~"),
+      a!localVariables(local!d: a!flatten(a!forEach(items: local!b, expression: if(index(local!a, fv!index, "") = fv!item, {}, "want [" & fv!item & "] have [" & index(local!a, fv!index, "") & "]"))),
+        count(local!d) & " lines differ; first: " & index(local!d, 1, ""))))
+  )
+)

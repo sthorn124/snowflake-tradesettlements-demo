@@ -4117,3 +4117,125 @@ Four found, none promoted, four listed.
 **Promotion candidates:** none found in this round. The four staged in the entry above are unchanged.
 
 **Promotion checkpoint: current through this entry.**
+
+---
+
+## 2026-11-12 — Phase 11 build: triage guard, re-date model, run-state rule and Prepare built; stopped at Prepare's timing, console and documents not changed (Claude Code session)
+
+**Scope.** Ran in Claude Code from `prompts/002-phase11-one-button-setup.md`. Every Appian call went through the Dev MCP (server `appian`) as `scott.thorn@appian.com`, a direct member of `SO Supervisors` (no condition on its case rule, so every read below is full-scope) and of `SO Demo Admins`. Identity was confirmed by a `validateExpression` assertion with a negative control (`alex.analyst` errored as it should). No sail session, by ruling. The runtime server's ten tools were present and never loaded or called. Two helper agents made read-only Dev MCP calls under the same account: one `listProcessModelNodeTypes`, and `listInterfaces` twice plus `testInterface` twice.
+
+**Preflight.** Plan populated. Design surface present: 218 `appian` tools counted in the session's tool list; `listRecordTypes` returned the application's 11 types and User. Plugin and server 26.9.5, build `20261026-140102`; the pins describe 26.6.105 and the App Market has 26.9.15 (update procedure not run, by ruling). The skill manifest (`274ce627`) equals the plugin's `composerCommit`. Groups by readback: `SO Users` holds `SO Administrators`, `SO Analysts`, `SO Supervisors`; `SO Analysts` holds `alex.analyst` and no group; `SO Supervisors` 11 users; `SO Demo Admins` 9 users. Every sail session on the machine is expired; none was needed. The fixture re-date ritual was skipped, by the prompt. The local folder was one commit behind `origin/main` and was fast-forwarded first.
+
+**Skills (Part 0).** `~/.kiro/skills/appian-supplemental` and `~/.kiro/skills/appian` were copied over `~/.claude/skills/` (old copies backed up outside the repo first), and the supplemental's `SKILL.md` into `skills/appian-supplemental/`. Before: `~/.claude` supplemental Version 2026-10-28, repo 2026-10-05.2, `~/.claude` pack `eb82064a`. After: all three supplemental copies Version 2026-11-10.4, both pack copies `274ce627`, zero differing files. The Skill tool then served a cached Version 2026-10-28 of the supplemental, so the new file was read from disk instead; the pack loaded from the new copy. Pack references read: `tools-mcp.md`, `process-models.md`, `expression-rules.md`, the Process Models part of `security.md`.
+
+### What changed, by object
+
+| Object | UUID | Change |
+|---|---|---|
+| `SO_triageCase` | `0000f04e-ff8f-8000-2381-7f0000014e7a` | 14.0 → 18.0. New XOR node 14 "Case still exists?" (`48e66b04-c4bd-4d28-a399-3666c7bdb33e`): one row by `caseID` → node 11, otherwise End. Node 10 (agent) now flows to 14 instead of 11; only its `connections` were sent and its inputs and outputs read back unchanged. Description rewritten; no "stub" |
+| `SO_intakePlan` | `_a-0000f060-57b9-8000-9c4d-011c48011c48_565618` | 1 → 2. Each story row gains `label` and `scriptedStatus`; new output `stories` (seq, label, scriptedStatus, tradeId). Nothing intake reads changed |
+| `SO_standingCaseOffsets` | `_a-0000f0af-7210-8000-9c5d-011c48011c48_613545` | New rule, version 3 (version 2 was a deliberate break; 3 is byte-identical to `.work/rule_SO_standingCaseOffsets.sail`). The offsets, in minutes |
+| `SO_standingCaseRedate` | `_a-0000f0af-7210-8000-9c5d-011c48011c48_613551` | New rule, version 1. Clock, stamps, the three record lists, `missing`, `expected` |
+| `SO_redateStandingCases` | `0000f0b2-31f0-8000-2c8b-7f0000014e7a` | New process model, version 5.0. Outline `.work/pm_SO_redateStandingCases.md` |
+| `SO_demoRunState` | `_a-0000f0af-7210-8000-9c5d-011c48011c48_613582` | New rule, version 1. Six states, the status line and tone, `isRunning`, counts, stamp, stories |
+| `SO_prepareRun` | `0000f0b2-3422-8000-2c92-7f0000014e7a` | New process model, version 2.0. Outline `.work/pm_SO_prepareRun.md`. **Not started by anything on a page** |
+| `SO_PM_REDATE_STANDING_CASES`, `SO_PM_PREPARE_RUN` | `…613589`, `…613595` | New PROCESS_MODEL constants; each value read back as the model's UUID |
+| Security | both new models | Set to `SO_simulateRun`'s role map: administrator `SO Administrators`; viewer `SO Users`, `SO Supervisors`, `SO Analysts`; initiator `SO Demo Admins`. Read back |
+
+**Not changed:** `SO_demoAdminConsole` (version 12), `SO_resetRun`, `SO_simulateRun`, `SO_intakeRun`, `SO_createTriageCase`, every persona screen, every record type.
+
+**Created and deleted in the session:** rules `zz_SO_guardProbe` (`…613529`) and `zz_SO_scratch` (`…613535`), both 404 on a read afterwards. Cases 135, 136 and 137 (session `ZZ-GUARD`, baseline trade `TRD000003`), with events 365 to 371 and comments 135 and 136; a row put back at id 136 and one at id 138, both session `ZZ-GUARD`, both deleted. Children were deleted before parents and read as absent while the parent still existed.
+
+### Part 1: the late write, measured
+
+- **Version 14.0, case 135.** Triage started at 06:21:32 UTC, the agent ran 06:21:39 to 06:22:02, the case was deleted in between through `deleteRecordData`. The process then completed and left: **case 135 back under its own id** with `status` "Pending Analyst", `proposedRemediation` and `confidenceScore` 0.88, and no trade, session, fail reason, desk or cutoff; **comment 135**, the 642-character assessment; **events 366 and 367**, both type 2 ("Agent assessed unknown reason; …" and "Referred to analyst: no straight-through disposition for this fail reason | …"). The analyst lane was taken at 0.88 because the fail reason read empty, so no disposition was found. This is the audit's inference of 2026-11-11, now measured.
+- **Version 18.0, case 136.** Same test. The process completed in 28 seconds with `assessment` and every later variable null. No case row. With a parent row put back at id 136, the only child was event 368, the Case Created event written before the delete: no comment, no type-2 event.
+- **Version 18.0, case 137, not deleted.** Completed in 45 seconds: confidence 0.88, reason `insufficient_securities`, disposition found, cutoff in the future, window not breached, so straight-through. Case: "Resolved - Straight Through", remediation, 0.88, "Settled - Borrow Executed", `resolvedOn`. Comment 136 (603 characters). Events 370 (type 2) and 371 (type 3). Those are the route and the writes the Route conditions give for those values.
+
+### Part 2: the re-date
+
+- **Ids first.** Read on NY before any write: 17 cases 36 to 52, all `P4-VERIFY`; comments 41 to 52 on cases 36, 38, 39, 40, 41, 42, 43, 44, 45, 47, 49, 50; events 111 to 124 on cases 36, 38, 39, 40, 41, 42. They match the script's three tables exactly, with no extra row.
+- **The rule against the script.** For clock 2026-11-12 06:00 UTC, `SO_standingCaseRedate`'s 43 lines equalled the string built from the script's own tables and functions (2,720 characters), with a deliberately wrong expectation failing as the control.
+- **The model against the script.** After a run, the rows stored on NY produced the same 2,720 characters, and case 39 was the only standing case past cutoff. Before the run all 17 were past cutoff, dated 2026-10-23.
+- **Break-tests.** Three rows set to 2026-01-01 on purpose (case 52's cutoff, comment 52, event 124) were restored by the next run. A wrong parent in the offsets table (comment 41 on case 37) stopped the run at "Stop: ids differ" with nothing written; the rule was restored and read back byte-identical. One Write Records node for all three types was tried and refused with "The input "Records" can only include related record types with the same data source as the base record type. Received: SO Case Comment"; the model's error path reported it and wrote nothing.
+- **Same hour.** Four successful runs wrote clock 06:00; the stored rows stayed equal to the script's after each.
+
+### Parts 3 and 4: the state rule and Prepare
+
+- **Six states, read on NY.** Nothing loaded (real, before the first load). Running (real, 12 seconds after a load). Ready (real): "Ready to present. Loaded today at 1:42 AM.", tone POSITIVE, in the reading account's time zone. Story out of place (real, by setting the hero case to "Escalated"): "Not ready. The hero case is Escalated, not Awaiting review. Prepare the demo again." Did not finish (real, by setting one case back to "New"): Running at 239 seconds, Did not finish at 302. Loaded before today (from the rule, with `asOf` a day ahead).
+- **Prepare, two runs through `testProcessModel`.**
+
+| | Run 1 | Run 2 |
+|---|---|---|
+| State at start | Nothing loaded | Did not finish (after the two status edits) |
+| Reset answered | `OK run=DEMO trades_deleted=0 predictions_deleted=0` | `OK run=DEMO trades_deleted=15 predictions_deleted=15` |
+| Re-date answered | OK, clock 06:00 UTC | OK, clock 06:00 UTC |
+| Load answered | `OK run=DEMO trades=15 predictions=15 high_or_critical=3` | the same |
+| Synchronous part | **34.0 s** (06:42:26.40 to 06:43:00.38) | **33.9 s** (06:48:02.77 to 06:48:36.67) |
+| Start to Ready | about 102 s | about 99 s |
+| Demo cases after | 138, 139, 140 | 141, 142, 143 (three, not six) |
+| Hero | Pending Analyst, 0.62, 3h 04m to cutoff | Pending Analyst, 0.62, 3h 03m to cutoff |
+| Story 02 | Escalated by policy (lag 26.0h, 2.4h remaining) | Escalated |
+| Story 03 | Resolved - Straight Through, Settled - Corrected | the same |
+
+- **Refusal.** A start while the state was Running completed in 1.1 seconds with "REFUSED: a demo run is being prepared now. …" and every step message null.
+- **Where the 34 seconds go (run 1):** about 2 s reading the state, about 9 s for the reset step, 8.2 s for the re-date (06:42:38.85 to 06:42:47.02), 3.7 s before the load starts, 8.0 s for the load (06:42:50.72 to 06:42:58.69), 1.7 s to report.
+- **Screens after run 2**, rendered as the design account: `SO_analystWatchlist` and `SO_supervisorCommand` both `diagnostics.error: null`, not truncated. The watchlist shows `TRD9DEMO01` under Needs your action at "3h 03m" and `TRD9DEMO02` under Escalated; the supervisor's escalations grid shows SO-142.
+
+### Decisions
+
+- **Stopped at Prepare's timing.** The prompt sets under 20 seconds on three runs and says to stop and report, not redesign. Two runs at 34 seconds settle it; a third was not run, since each costs three agent calls. The console's synchronous start gives up at 30 seconds, so the button as specified would not get Prepare's answer. The console and the three documents were therefore not changed. The console edit is drafted in `.work/gen/` and not deployed.
+- **The guard is an XOR straight after the agent node, reading by `a!queryRecordType`** (one row, filter on `caseID`), not `a!queryRecordByIdentifier`, whose behaviour on a missing id was not what the check should depend on.
+- **Write order on the live model.** Each node write over the Dev MCP publishes at once. Node 14 was created closed (`false()`), then the agent node was re-pointed, then the real condition was set, so no state in between could write.
+- **Offsets in minutes, clock from whole numbers.** `intervalds()` with 7,566 hours came back as 17 days, and a fraction of a day is not exact to the second. The clock is built with `datetime()` from a day count and an hour; offsets are minute intervals under two days.
+- **`resolvedOn` is written only on 41, 42 and 50; the other cases' records leave the field out**, so the re-date never touches it. The re-date moves times and nothing else.
+- **One write node per record type.** The single-node write was refused (above). The standing rule in the supplemental was right and I had tried to go round it.
+- **Prepare starts each step with the Start Process smart service, synchronous, and reads `ac!ProcessInfo.pv.message`.** `message` is not a parameter of `SO_resetRun` or `SO_simulateRun`, so a Sub-Process node cannot map it out, and those two models were not to be edited.
+- **The state rule carries the status line and its tone**, as `SO_cutoffDisplay` and `SO_autoReleaseDisplay` carry theirs, and takes an `asOf` input so a state can be read without waiting for it.
+
+### Verified (how; all as `scott.thorn@appian.com`, full scope)
+
+- Parts 1 to 4 as set out above: by reads of the rows by id, by `getProcessInstance` and `listProcessInstances`, and by an exact string comparison for the re-date.
+- Absence of every throwaway: cases 135, 136, 137 by id, with standing case 52 returned in the same read as the control; no case with session `ZZ-GUARD` (the state rule reports 0 for that run name); both `zz` rules 404.
+- `SO_triageCase` 18.0 has no newer draft (`listObjectVersions`).
+
+### Not verified
+
+- **The console, and the button press.** Not changed, so nothing to render. The six states were read from the rule, not from a page.
+- **The documents.** Not changed.
+- **What each persona sees.** By ruling. No persona screen and no security rule changed.
+- **A third Prepare run.**
+- **A hand-started Prepare from the site**, and Prepare started by an account other than the design account.
+- **How many assessment comments Reset has left behind.** They cannot be listed (below).
+- **The value-at-risk difference between the two screens** seen in the render check (698.4M against 662.5M). Reported, not investigated; neither screen changed.
+- **Geometry of anything.** Nothing visual was built.
+
+### Findings
+
+- **`SO_resetRun` deletes the cases and their audit events, and leaves their comments in the table.** After run 2's reset deleted case 138, a row put back at id 138 showed comment 137 still stored and events 372, 375 and 376 gone. `SO Case Comment` is readable only through its case, so the leftover is invisible to every account. The 2026-09-09 measurement ("comments 14 → 12") counted visibility. Measured once. `project.md` is corrected.
+- **The Dev MCP's `deleteRecordData` cascades to neither table.** Seen twice (cases 135 and 136): the Case Created event was invisible after the delete and visible again when a row existed at that id.
+- **The deployed agent node type has no error output.** `internal3.execute_ai_agent`: inputs `AgentUuid`, `AgentInputs`, `VersionId`, `Async`; outputs `AgentOutputs`, `RunSummary`, `RunId`. The `_v2` type declares `Success` and `ErrorMessage`.
+- **`RunSummary` again described a conversation that did not happen** on all three triage runs read ("I don't see any specific inputs provided…"), while `AgentOutputs` was complete. Already recorded in the staging section (2026-09-01).
+- **The two stuck `SO_triageCase` instances** were not touched; cancelling them is Scott's, in Process Monitoring.
+
+### Promotion candidates (staging)
+
+Eight found this session, none promoted, eight listed. Rulings on the four staged on 2026-11-11 come first.
+
+- **[RESOLVED 2026-11-12: already in `appian-supplemental` as `validateExpression/assertion-by-index-error`] the `validateExpression` assertion as a read-only identity check.** Its trigger fired: this session's preflight used it, with the control, on 26.9.5. The installed skill (Version 2026-11-10.4) already carries the harness; the identity use is one more application of it.
+- **Unchanged: a group named by text evaluating false inside the harness.** Trigger did not fire; the constant was used.
+- **[RULED 2026-11-12: confirmed by schema, stays staged at gate 1] a failed Execute AI Agent run stops the process with no fail-forward.** The v1 node type declares no error output and no pause-on-error input (read today). Whether the `_v2` type fails forward is unmeasured. *Trigger: the first build that moves an agent node to `_v2` and forces a failed run.*
+- **[MEASURED ONCE 2026-11-12, stays staged] a Write Records node handed a primary key that no longer exists inserts a row under that key, holding only the fields it was given.** Measured on one node, one case; the 2026-10-22 report is the second sighting but was not a readback. The docs page does not cover a supplied key that is missing on an auto-increment table. Working form: ask whether the row exists immediately before any write by id that follows a wait. *Trigger: the next build where a record can be deleted while a process holds its key.*
+- **NEW, STAGED (gate 1, two rows of one type): `deleteRecordData` does not cascade to related records, and with a related-records security rule the orphans read as deleted.** Trap: a count or a by-id read after the parent is gone proves nothing about the children. Working form: delete children first and read them absent while the parent exists, or put a parent back at the id and read again. *Trigger: the next cleanup of a parent with children on any build.*
+- **NEW, STAGED (gate 1, one case): the Delete Records smart service's cascade removed related rows of one type and left another's**, the one the Write Records node later called "not the same data source as the base record type". Cause not isolated. *Trigger: a Designer read of the two record types' data sources, or a second reveal on another case.*
+- **NEW, STAGED (gate 1, one observation): `intervalds()` wraps for large hour counts.** 7,566 hours added 17 days. Minutes up to 2,850 were exact. Working form: build a far date-time with `datetime()` from a day count; keep intervals short. *Trigger: the next expression that adds more than about 24 days as an interval.*
+- **NEW, STAGED (gate 1, one session): `text()` on a Date and Time prints in the caller's time zone, `hour()` reads GMT, and `text(gmt(x), …)` prints UTC.** Measured in one `testRule`. The console's own comment already says `text()` is local. *Trigger: the next rule that formats a time for comparison across systems.*
+- **NEW, STAGED (gate 1, one model): a multi-type Write Records node failed LOUDLY, with `ErrorOccurred` true and a message, where the supplemental's `process/one-write-node-per-handle` records a silent no-op.** On 26.9.5. Either the behaviour changed or the two cases differ. *Trigger: the next multi-type write attempted on any build; until then the entry's advice (one node per type) is unaffected.*
+- **NEW, STAGED (gate 1, one model): the Start Process smart service, synchronous, returns the child's variables, read as `ac!ProcessInfo.pv.<name>` in a custom output; a Sub-Process node's schema lists only the child's parameters.** Three nodes, one model, six runs. *Trigger: the next parent that needs a non-parameter value back from a child.*
+- **NEW, STAGED (gate 1, one model): each Dev MCP node write on a process model publishes a version at once.** So a model that is live is edited in an order whose every intermediate state is safe. Related to `createProcessModelNode/unconnected-node-runs-at-start`. *Trigger: the next edit of a model that can be started while it is being edited.*
+- **NEW, STAGED (gate 1, one observation): `testProcessModel`'s `maxResponseSizeBytes` did not cut a response** (256 asked, about 4 KB returned). *Trigger: the next run whose variables are large.*
+- Method note, not a platform fact: under Claude Code the Skill tool served the copy of a skill cached at session start after the file on disk was replaced. Read the file when the version line matters.
+
+**The header checkpoint line at the top of this file is still stale** (it reads "current through 2026-09-01"). The Blocking item in `TODO.md` stays open; this session did not reconcile it.
+
+**Promotion checkpoint: current through this entry.**

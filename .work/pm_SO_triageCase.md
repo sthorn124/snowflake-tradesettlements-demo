@@ -1,6 +1,6 @@
 # SO_triageCase: outline
 
-Read from NY on 2026-11-11 through the Dev MCP (`getProcessModel`) as `scott.thorn@appian.com`. Published version 14.0, saved 2026-09-22 23:45 UTC by `scott.thorn@appian.com`; no newer draft. UUID `0000f04e-ff8f-8000-2381-7f0000014e7a`.
+Read from NY on 2026-11-12 through the Dev MCP (`updateProcessModel` readback) as `scott.thorn@appian.com`. Published version 18.0, saved 2026-11-12 by `scott.thorn@appian.com` (Phase 11: node 14 added, node 10 re-pointed, description corrected). Version 14.0 was the model of 2026-09-22. UUID `0000f04e-ff8f-8000-2381-7f0000014e7a`.
 
 Started asynchronously by `SO_intakeRun`, once per newly written case, with `caseId`. Every node runs as the initiator.
 
@@ -15,7 +15,8 @@ Node ids are not in flow order. The order below is the flow.
 | 1 | Start (1) | | |
 | 2 | Script "Assemble case context" (9) | `rule!SO_caseContext(caseId)`: the case, its trade, instrument, prediction, counterparty and onward deliveries | `pv!caseContext` |
 | 3 | XOR "Context resolved?" (8) | The case by id: is `tradeID` present | Routes: yes to 10; no (no `caseId`, no such case, or no trade) to End |
-| 4 | Execute AI Agent "Execute SO_TriageAgent" (10) | `pv!caseContext`; agent `126a096b-787c-400c-ba21-6498d3ba0a0e`, synchronous | `agentOutputs`, `runSummary`, `runId`. The node has no error output |
+| 4 | Execute AI Agent "Execute SO_TriageAgent" (10) | `pv!caseContext`; agent `126a096b-787c-400c-ba21-6498d3ba0a0e`, synchronous | `agentOutputs`, `runSummary`, `runId`. The node has no error output. Its one flow goes to node 14 |
+| 4a | XOR "Case still exists?" (14), added 2026-11-12 | SO Settlement Case by `caseID` = `pv!caseId` (`a!queryRecordType`, one row) | Routes: a row came back, to 11; no row (or no `caseId`), to End. Nothing below runs for a case deleted while the agent ran |
 | 5 | Script "Unpack agent output + derive routing" (11) | `agentOutputs`; the case again by id (`failReason`, `cutoffTs`, the trade's `brokerConfirmationLagHrs`); `rule!SO_remediationForReason`; `rule!SO_cutoffDisplay` | `assessment`, `remediation`, `urgency`, `confidence`, `escalate`, `failReason`, `stDisposition`, `cutoffFuture`, `lagHrs`, `hoursRemaining` |
 | 6 | Script "Escalation policy: window breached?" (13) | `lagHrs`, `hoursRemaining` | `windowBreached` = lag above 0 and hours remaining at or below the lag |
 | 7 | Write Records "Set status Agent Triage" (3) | `pv!caseId` | SO Settlement Case `{caseID, status: "Agent Triage"}`. Saves `errTriage`, `errTriageMsg` |
@@ -39,7 +40,8 @@ Each lane is: write the case, write the assessment as a comment, check both writ
 
 Notes
 - Every Write Records node has `PauseOnError` false and `CaptureEvents` false, and addresses the case by `caseID` = `pv!caseId` alone.
-- The only check that the case exists is node 8, before the agent runs. Nothing checks again after the agent returns.
+- Two checks that the case exists: node 8 before the agent runs (is `tradeID` present), and node 14 straight after it returns (does the row exist). Every read and write of the case below node 14 is behind it.
+- Measured 2026-11-12 on version 14.0, before node 14: a case deleted during the agent call was re-created by node 3 under its own id with only a status; the analyst lane then wrote the remediation and score, one comment and two type-2 events. On version 18.0 the same test wrote nothing and the process completed.
 - The first write to the case (node 3, status "Agent Triage") comes after the agent has returned. During the agent call the case still reads "New".
-- The model's description still says it is a stub driven by placeholder parameters. The model runs the real agent node.
-- Run time in the process history: 35 to 44 seconds per case on 2026-11-05 and 2026-11-09.
+- The description was corrected on 2026-11-12; it no longer says "stub".
+- Run time in the process history: 35 to 44 seconds per case on 2026-11-05 and 2026-11-09; 42 and 45 seconds on 2026-11-12, and 28 seconds for the run that ended at node 14.
