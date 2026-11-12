@@ -1,197 +1,144 @@
-# Closeout — 2026-11-12 — Phase 11 built and verified: triage guard, re-date model, one-button Prepare with a run record, one-status-line console, documents; Ready now ends at the hero's cutoff
+# Closeout — 2026-11-12 — Ready ends two hours before the hero's cutoff and names who loaded the run; the watchlist's totals convert before adding
 
-**Session.** Ran in **Claude Code**, not Kiro, from `prompts/002-phase11-one-button-setup.md`. The credits step of core §10 is skipped: `CREDITS.md` is built from Kiro's own records. The session had three rounds. The first built Parts 0 to 4 and stopped, as the prompt says to, when Prepare's synchronous part measured 34 seconds against a limit of 20. Scott then ruled "Start without waiting", and the second round built that, the console and the documents. The second close-out asked whether "Ready" should stop showing once the hero's cutoff has passed; Scott answered "Yes, add it", and the third round built it. This file describes the work as it now stands.
+**Session.** Ran in **Claude Code**, not Kiro, from `prompts/003-ready-margin-watchlist-totals.md`. The credits step of core §10 is skipped: `CREDITS.md` is built from Kiro's own records. One round.
 
-**Scope and identity.** Every Appian call went through the Dev MCP (server `appian`) as `scott.thorn@appian.com`, a direct member of `SO Supervisors` and `SO Demo Admins`. The supervisors' case rule has no condition, so every read below is full-scope. Identity was confirmed by an assertion with a negative control. No sail session was used, by ruling. The runtime server's tools were present and never loaded or called. Helper agents made read-only Dev MCP calls under the same account (a node-type listing, and renders of three screens) and reported what they read.
+**Scope and identity.** Every Appian call went through the Dev MCP (server `appian`) as `scott.thorn@appian.com`. The account was confirmed by assertion: `loggedInUser()` equal to that name validated clean, and the same check with another name failed. It is a direct member of `SO Supervisors`, `SO Demo Admins` and `SO Users`, so every read below is full-scope. No sail, by the prompt. The runtime server's tools were present in the session and were never loaded or called. Three helper agents made read-only `testInterface` calls under the same account and reported what they read.
 
 ## Preflight
 
-- **Plan:** populated. **Dev MCP:** design surface present (218 tools counted); `listRecordTypes` returned the 11 record types and User.
-- **Versions:** plugin and server 26.9.5, build `20261026-140102`. The pins describe 26.6.105; the App Market has 26.9.15. The update procedure was not run, by ruling. The pack's manifest matches the plugin.
-- **Groups, by readback:** `SO Users` holds `SO Administrators`, `SO Analysts`, `SO Supervisors`. `SO Analysts` holds `alex.analyst` and no group. `SO Supervisors` 11 users, `SO Demo Admins` 9.
+- **Plan:** populated. **Dev MCP:** design surface present, 218 tools counted under `appian`; `listRecordTypes` returned the application's 12 record types and User.
+- **Versions:** plugin and server 26.9.5, build `20261026-140102`. The pins describe 26.6.105 (build `20260930-110421`) and sail 26.6.105; sail here is 26.9.5. The App Market has 26.9.15. The update procedure was not run; the plan item for it is open. Bundle paths for NY: `https://ny.appiancloud.com/suite/plugins/servlet/stateless/downloads`, and the link the version tool prints, `https://ny.appiancloud.com/suite/plugins/servlet/stateless/dev-mcp-bundle`.
+- **Skills:** `appian-supplemental` Version 2026-11-10.4, the installed copy byte-identical to the repo copy. The pack's manifest, `274ce627`, matches the plugin's `composerCommit`. Pack references read: `expression-rules.md`, `query-record-type-patterns.md`, `interface-generation-checklist.md`.
+- **Groups, by readback (direct members):** `SO Users` holds `SO Administrators`, `SO Analysts`, `SO Supervisors` and two users. `SO Analysts` holds `alex.analyst` and no group. `SO Supervisors` 11 users. `SO Demo Admins` 9 users.
 - **Personas:** every sail session on the machine is expired. None was needed.
-- **Ritual:** skipped, by the prompt. Part 2 replaced it.
-- **Git:** the local folder was one commit behind `origin/main` and was fast-forwarded first.
-
-## Part 0: skills
-
-| Copy | Before | After |
-|---|---|---|
-| `~/.kiro/skills/appian-supplemental` (master) | Version 2026-11-10.4 | unchanged |
-| `~/.claude/skills/appian-supplemental` | Version 2026-10-28 | Version 2026-11-10.4 |
-| `skills/appian-supplemental/SKILL.md` (repo) | Version 2026-10-05.2 | Version 2026-11-10.4 |
-| `~/.kiro/skills/appian` (master) | `274ce627` | unchanged |
-| `~/.claude/skills/appian` | `eb82064a` | `274ce627` |
-
-The copies are exact. The old `~/.claude` copies were backed up outside the repo first. After the copy the Skill tool still served the supplemental it had cached at session start, so the new file was read from disk; the pack loaded from the new copy.
+- **Ritual:** Prepare had run today at 14:28 UTC, and this session ran it again at 17:25 UTC before rendering the two screens.
+- **Git:** clean and level with `origin/main` at the start.
 
 ## What changed on NY
 
 | Object | Version | Change |
 |---|---|---|
-| `SO_triageCase` | 14.0 → 18.0 | New check "Case still exists?" (node 14) straight after the agent node. If the case is gone, the process ends and writes nothing. Description corrected |
-| `SO_intakePlan` | 1 → 2 | Each story carries a console label and its scripted status; a `stories` output hands them on. Intake reads nothing new |
-| `SO_standingCaseOffsets` | new, 5 | The standing cases' offsets, in minutes. The one home of them |
-| `SO_standingCaseRedate` | new, 1 | The clock, the stamps, the record values, and the ids missing from the site |
-| `SO_redateStandingCases` | new, 5.0 | Checks the ids, then writes cases, comments and events on one clock |
-| `SO Demo Run` | new record type | One row per press of Prepare: run name, who, when, PREPARING / LOADED / FAILED, the message |
-| `SO_demoRunState` | new, 3 | The run's state in seven values, the status line and its colour, and the last failure. Version 3 ends Ready when the hero case's cutoff passes |
-| `SO_prepareRun` | new, 4.0 | The part the page waits for: refuse if Running, record the start, hand off, answer |
-| `SO_prepareRunSteps` | new, 2.0 | In the background: reset, re-date, load; stops at a failed step; closes the run record |
-| `SO_demoAdminConsole` | 12 → 14 | One button, one status line, "Environment OK" / "Environment problem", no agent check |
-| Three constants | new | `SO_PM_REDATE_STANDING_CASES`, `SO_PM_PREPARE_RUN`, `SO_PM_PREPARE_RUN_STEPS` |
+| `SO_demoRunState` | 3 → 4 | Ready ends when the hero has under two hours to its cutoff. The two hours is `local!readyMarginHours`. The state that follows keeps its name, HERO_PAST_CUTOFF, and its line has two wordings. The Ready line ends "by <first and last name>". New outputs `heroPast` and `loadedBy` |
+| `SO_analystWatchlist` | 23 → 24 | Each row carries `usd`, from `SO_fxToUsd`. Both money totals add `usd`. Both tiles that show a "USD eq." amount carry the conversion basis in their tooltip |
 
-The three new process models carry `SO_simulateRun`'s security, read back: viewer for `SO Users` and its groups, start rights for `SO Demo Admins`. `SO Demo Run` has the application's default security (viewer for `SO Users` and its groups) and no record-level rule.
+**Not changed on NY:** `SO_demoAdminConsole` (version 14), `SO_supervisorCommand` (version 11), `SO_prepareRun`, `SO_prepareRunSteps`, `SO_kpiCard`, `SO_fxToUsd`, every record type, every group.
 
-**Not changed:** `SO_resetRun`, `SO_simulateRun`, `SO_intakeRun`, every persona screen, every other record type.
+**Data written:** one Prepare (run record 5). It cleared the 14:28 run, re-dated the standing cases and loaded a fresh packet. Demo cases are now 153, 154 and 155.
 
-**In the repo:** rule sources and model outlines in `.work/`; `.work/gen/` (a reference expander, two rule templates, the check that compares a re-date with the old script); `fixtures/p4-verify-redate.py` marked superseded; `.kiro/steering/project.md`; the three demo documents; the installed skill copy; `BUILD_PLAN.md`, `TODO.md`, `BUILD_LOG.md`, this file.
+## Part 1: the Ready line
 
-## How Prepare works now
+**How it works.** The rule already knew the hero case's cutoff. It now compares the time left with the margin: two hours or more is Ready; less is not. Past the cutoff the old line is used; before it, the new one. For the name, the rule reads the newest `SO Demo Run` row with status LOADED for the run name. If the packet's load stamp falls between that row's press and its close, the row belongs to the run now loaded, and the rule looks up the account's first and last name in the user directory. Otherwise the line ends at the time, as before.
 
-1. The button starts `SO_prepareRun` and waits for it. It reads `SO_demoRunState`. If the state is Running, it answers "REFUSED: a demo run is being prepared now. …" and changes nothing.
-2. Otherwise it writes one `SO Demo Run` row (PREPARING, who, when), starts `SO_prepareRunSteps` in the background, and answers. About 5 seconds.
-3. In the background: `SO_resetRun`, then `SO_redateStandingCases`, then `SO_simulateRun`, which starts intake. If a step fails or refuses, the chain stops there. The row is closed as LOADED, or as FAILED with that step's message word for word. About 30 seconds.
-4. Intake and triage run as before. Ready comes about 100 seconds after the press.
-5. Ready lasts until the hero case's cutoff, about three hours after the load. After that the line reads "Not ready. The hero case passed its cutoff at <time>. Prepare the demo again."
+**Reproduced first.** At 17:22 UTC version 3 read "Ready to present. Loaded today at 9:28 AM." with the hero's cutoff 11 minutes ahead.
 
-The state reads Running from the press because of the row. Without it, for the half minute in which the last run is cleared, the site holds no packet and no case, and a rule reading data alone said "No demo loaded." and let a second press through.
+**Pass conditions and results** (the prompt's; as the design account).
 
-## Part 1: the triage guard
-
-**Reproduced first, on version 14.0.** A throwaway case (135, session `ZZ-GUARD`, baseline trade `TRD000003`) was deleted while the agent ran. The late writes left the case **re-created under its own id** with status "Pending Analyst", the remediation and a score of 0.88, and no trade, session, fail reason, desk or cutoff; one comment (the 642-character assessment); and two "Agent Triage Complete" events. That is the blank case of 2026-10-22, measured.
-
-**With the guard, version 18.0.** The same test on case 136: the process ended in 28 seconds and wrote nothing. With a parent row put back at that id, the only child was the Case Created event from before the delete.
-
-**A case left alone (137)** ran in 45 seconds and routed straight-through at 0.88, writing the case, the comment and the two events that lane writes. The routing was not changed.
-
-## Part 2: re-dating the standing cases
-
-- **The ids match.** NY holds 17 cases (36 to 52), 12 comments (41 to 52) and 14 events (111 to 124), on the same parents as the script's tables, with no extra row.
-- **Same stamps as the script, on two clocks.** After runs on the 06:00 and the 07:00 UTC clocks, all 43 rows stored on NY equal what `fixtures/p4-verify-redate.py` produces for that hour: an exact comparison of 2,720 characters, with a wrong expectation failing as the control.
-- **Case 39 is the only standing case past cutoff** after every run that was checked. Before the first, all 17 were, dated 2026-10-23.
-- **A second run in the same hour changes nothing.** Four runs wrote the 06:00 clock; the comparison held after each.
-- **It stops rather than guess.** A wrong id in the table stopped it before any write, with a message naming the row. Three rows broken on purpose were put right by the next run.
-- **It writes times and nothing else.** A standing case a rehearsal has changed keeps the change.
-- The script says at its top that it is superseded. `project.md` names `SO_redateStandingCases` as the per-session ritual.
-
-## Parts 3 and 4: the state rule and Prepare
-
-**The part the page waits for:** 4.95, 5.55 and 5.20 seconds on the three runs of the second round, and 4.46 on the one run of the third. The limit was 20. (The first design, with the three steps inside it, took 34.0 and 33.9.)
-
-| | Run A | Run B (forced failure) | Run C | Run D (third round) |
-|---|---|---|---|---|
-| State at start | Ready | Ready | No demo loaded | Not ready, hero past cutoff |
-| Page-facing part | 4.95 s | 5.55 s | 5.20 s | 4.46 s |
-| Background half | 31.7 s | 17.6 s, stopped at the re-date | 29.9 s | 37.6 s |
-| Run record | LOADED | FAILED, with the re-date's message | LOADED | LOADED |
-| Ended in Ready with no other action | yes, by 114 s | no, by design | yes, by 105 s | yes, by 114 s |
-| Demo cases after | 3 | 0 | 3, not 6 | 3, not 6 |
-
-- **Straight after the start the state is Running:** 13 seconds into run A, with no packet and no case on the site.
-- **A start while a run is in progress is refused:** at that same moment, in 2.2 seconds, with nothing written.
-- **After a run:** the hero is "Pending Analyst" with about three hours to cutoff, story 02 is "Escalated", story 03 is "Resolved - Straight Through".
-- **After runs A and C:** the standing cases carry today's dates and only case 39 is past cutoff. Not re-checked after run D.
-- **A failed step stops the chain and is reported word for word.** In run B the re-date was made to stop; the load did not run, and the record holds "STOPPED: nothing was re-dated. These standing rows are listed in SO_standingCaseOffsets but this account cannot read them on the site: comment 41 on case 37. Either they were deleted, or this account is not in SO Supervisors."
-- **A run that dies unlocks itself:** with one story left "New", the state read Running at 239 seconds and Did not finish at 302.
-
-## Ready and the hero's cutoff (third round)
-
-**Reproduced first.** At 9:25 AM Eastern the rule (version 2) still returned "Ready to present. Loaded today at 2:09 AM." The hero case's cutoff had been 5:14 AM. Version 2 on NY was read back and matched the repo copy byte for byte before it was changed.
-
-**The change, `SO_demoRunState` version 3.** The rule reads each demo case's cutoff. When every story is in its scripted status and the hero case's cutoff is at or before now, the state is a seventh value, HERO_PAST_CUTOFF, and the line reads "Not ready. The hero case passed its cutoff at <time>. Prepare the demo again." in amber. The hero is the story labelled `hero` in `SO_intakePlan`'s story table. A story out of place is still reported first. Nothing else in the rule moved, and the console was not edited: it takes its text and colour from the rule.
-
-**Measured through `testRule`, pass conditions written first.** On the 2:09 AM run, whose hero cutoff was 10:14:21 UTC:
-
-| Clock | Returned |
+| Pass condition | Result |
 |---|---|
-| now, 9:27 AM Eastern | "Not ready. The hero case passed its cutoff at 5:14 AM. Prepare the demo again." Amber |
-| 22 seconds before the cutoff | "Ready to present. Loaded today at 2:09 AM." Green |
-| 38 seconds after the cutoff | "Not ready. …" Amber |
-| tomorrow | "Loaded before today. Prepare the demo again for fresh dates." As before |
+| 121 minutes before the hero's cutoff: Ready, with the name of the account that started the run | `asOf` 15:33:00 UTC on the 14:28 run: READY, "Ready to present. Loaded today at 9:28 AM by Scott Thorn." Run record 4 names `scott.thorn@appian.com` |
+| 119 minutes before: the new line | `asOf` 15:35:01 UTC: "Not ready. The hero case has under two hours to cutoff. Prepare the demo again.", amber tone |
+| After the cutoff: the existing line | `asOf` 17:35:00 UTC: "Not ready. The hero case passed its cutoff at 12:34 PM. Prepare the demo again." |
+| The console renders the Ready line and the new line with no error, the new line in amber with the button enabled | New line, 17:24:54 UTC: error null, colour `#96590A`, button `disabled` false, no "Ready to present" on the page. Ready line, 17:28:22 UTC: error null, "Ready to present. Loaded today at 12:25 PM by Scott Thorn.", colour `#17715B`, button `disabled` false |
+| A Prepare started from the new state ends in Ready | Started at 17:25:25 UTC with the state reading HERO_PAST_CUTOFF, 8 minutes 35 seconds before the cutoff. Answered in 4.72 seconds. Running at 29 and 73 seconds after the load. Run record 5 closed as LOADED 33.6 seconds after the press. Ready at 107 seconds |
 
-**The console rendered the new line** (one `testInterface` render, version 14, no error): the line above in `#96590A`, the button enabled, no "Not prepared" block, "Environment OK", and "Ready to present" nowhere on the page.
+**Also measured.** On the run now loaded, `asOf` 18:31:00 UTC (2 h 0.17 s before the cutoff) is Ready and 18:31:01 is the new line. A run name with no run record returns an empty `loadedBy` and no error.
 
-**Prepare starts from the new state (run D).** Started while the line read "Not ready", it answered "OK started run=DEMO. …" in 4.46 seconds. The rule read Running four times during the run, once with the packet loaded and no case yet, where the hero has no cutoff to read; it returned with no error. Ready came by 114 seconds: "Ready to present. Loaded today at 9:28 AM." With the clock set past the new hero's cutoff the rule returned "Not ready. The hero case passed its cutoff at 12:34 PM. Prepare the demo again."
+**The three demo documents.** Read. Each quotes only "Ready to present" from the status line: `demo-script-15min-client-awareness.md` lines 30, 31 and 168; `talk-track-10min-internal.md` line 11; `video-script-5min.md` line 9. None was changed.
 
-## Part 5: the console
+## Part 2: the watchlist's totals
 
-Rendered through `testInterface` as the design account, with no error in any render. One button, "Prepare the demo". The verdict reads "Environment OK · data 50,000/50,000 · 9/9 connections". Nothing on the page says "Load the demo", "Reset the demo" or "agent". Details has eight rows and no agent row; "Demo cases" read 3 with a run loaded and 0 without.
+**The saved copy.** It was version 21. NY held version 23. The deployed source was saved over the copy and committed before any edit. What differed:
 
-| State | Reached how | Line as rendered | Colour | Button disabled |
-|---|---|---|---|---|
-| Ready | real | "Ready to present. Loaded today at 2:04 AM." | green | no |
-| Running | real, 9 s into a run | "Preparing the demo. About two minutes. Refresh this page to check." | neutral | **yes** |
-| Nothing loaded | real, after the forced failure | "No demo loaded." | neutral | no |
-| Story out of place | real, by setting the hero case to Escalated | "Not ready. The hero case is Escalated, not Awaiting review. Prepare the demo again." | amber | no |
-| Did not finish | real, by setting one case back to New and waiting 5 minutes | "The last run did not finish. Prepare the demo again." | amber | no |
-| Hero past cutoff | real, seven hours after the 2:09 AM load | "Not ready. The hero case passed its cutoff at 5:14 AM. Prepare the demo again." | amber | no |
-| Loaded before today | from the rule only, clock set a day ahead | "Loaded before today. Prepare the demo again for fresh dates." | amber by the rule; not rendered | not rendered |
+- **Version 22** (2026-10-23 00:42 UTC, `scott.thorn@appian.com`): `todecimal()` around `cutoffSortKey`.
+- **Version 23** (2026-10-23 12:32 UTC, same account): parameters reordered throughout, as a Designer save does, and the "Cleared this batch" card's `showWhen` changed from `local!hasBatch` to the text `"false"`.
+- **No save:** `a!cardGroupLayout` now reads back as `a!cardGroupLayout_26r6` on every stored version.
 
-After the forced failure the page showed, under the button, "Not prepared" in red, the time, and the STOPPED sentence in full. It was gone on the next press.
+**The "Cleared this batch" card is not on the page.** The source hides it and the render does not contain its header. `demo-script-15min-client-awareness.md` line 92 and `video-script-5min.md` line 49 both tell the presenter to scroll to it. Nothing was changed; see Rulings needed.
 
-The two status edits were made on demo cases of an earlier run and put back; that run has since been cleared by Prepare.
+**Reproduced first.** Both screens rendered in one message; both stamped 12:28:24 Eastern.
 
-**The watchlist and the supervisor screen** rendered with no error after run C. The watchlist showed the hero (`TRD9DEMO01`) under Needs your action at "2h 58m" to cutoff, "Awaiting review", and `TRD9DEMO02` under Escalated; of the ten rows rendered, only the standing past-cutoff case mentioned "past cutoff". The supervisor's escalations grid listed SO-39, SO-43, SO-40 and SO-148. They were not rendered again after run D.
+| Screen | Open items | Value at risk | Inside critical window |
+|---|---|---|---|
+| Watchlist, version 23 | 16 | 662.5M USD eq. | 7 · 354.6M USD eq. |
+| Supervisor | 16 | 698.4M USD eq. | 7 · 393.7M USD eq. |
 
-## Part 6: documents
+**Cause, confirmed in the deployed source.** The watchlist's `local!varTotal` and `local!inWindowValue` added each row's amount as stored. The supervisor screen adds each row's `SO_fxToUsd` value. The two screens use the same open statuses and the same critical-window test, which is why the counts agreed and the amounts did not.
 
-Eleven lines changed across `demo-script-15min-client-awareness.md`, `talk-track-10min-internal.md` and `video-script-5min.md`: every line that named Load or Reset. The prep now reads: open the Demo Admin site; unless the status line says "Ready to present", press Prepare the demo, wait about two minutes, refresh, and confirm "Ready to present"; after a rehearsal or a session, press Prepare again. "Never click Load twice" is gone. In the 15-minute script the recovery line's "About 4 minutes end to end" became "About 3 minutes", since it described the two-button path.
+**After the fix.** Both screens rendered in one message; both stamped 12:32:48 Eastern; error null on both.
 
-The third round changed none of them. Their rule already covers the new line: anything other than "Ready to present" means press Prepare.
+| Screen | Open items | Value at risk | Inside critical window |
+|---|---|---|---|
+| Watchlist, version 24 | 16 | 698.4M USD eq. | 7 · 393.7M USD eq. |
+| Supervisor, version 11 | 16 | 698.4M USD eq. | 7 · 393.7M USD eq. |
 
-## Rulings given
+**Pass conditions and results.**
 
-- **"Start without waiting"** (Scott, 2026-11-12), for how the page starts Prepare.
-- **"Yes, add it"** (Scott, 2026-11-12), to: should "Ready" stop showing once the hero's cutoff has passed?
+| Pass condition | Result |
+|---|---|
+| Same account, same moment: the watchlist's two amounts equal the supervisor screen's when both count the same open items | Equal: 698.4M and 393.7M on both, 16 open items and 7 inside the window on both |
+| Apart from those amounts and the tooltip, the watchlist renders as before: same queues, counts, rows, order | The version 23 and version 24 renders compared leaf by leaf: 3,815 leaves each, none added or removed, 13 changed. Those are the two amounts, the two tooltips, the "last read" clock, six countdowns four minutes shorter (one changing colour as it passed two hours), and "2.4h to cutoff" becoming "2.3h" |
+| `SO_supervisorCommand` is not edited | Version 11, saved 2026-09-25, byte-identical to the saved copy. Its two renders differ only in clock-driven values (20 of 5,422 leaves) |
 
-## Rulings needed
+**The tooltip.** Value at risk: "Live from Snowflake — computed in Snowflake over the trade and prediction data, not copied here.  Cross-currency total: nothing in the source data carries an FX rate. Converted at indicative static rates (SO_fxToUsd) for aggregation only — not a market feed, not a rate of record." It names no currencies. The "Inside critical window" tile carries the second part, because its amount is converted too.
 
-1. **Reset leaves each run's assessment comments in the table.** After Reset deleted a demo case, a row put back under the same id showed its comment still stored and its audit events gone. A comment is readable only through its case, so the leftovers are invisible to every account and every count; the 2026-09-09 "comments 14 → 12" was a count of what could be seen. Measured once. Should Reset delete the comments before the cases, and should the rows already left be cleaned up? `SO_resetRun` was not edited.
-2. **Should the Ready line name who loaded the demo?** Proposed earlier and not ruled. `SO Demo Run` now stores it.
-3. **The words of the new line are mine.** You ruled the behaviour. "Not ready. The hero case passed its cutoff at <time>. Prepare the demo again." follows the story line's pattern. Say so if you want other words.
+**Per-row amounts** are unchanged and in their own currency: the row cells are among the leaves that did not change.
 
-Still yours from earlier: cancelling the two stuck `SO_triageCase` instances, in Process Monitoring.
+## Decisions
 
-## How NY was left
-
-- **Ready, from the last Prepare** (run D, loaded 14:28:53 UTC, 9:28 AM Eastern): 15 packet trades; cases 150 (hero, Pending Analyst), 151 (Escalated), 152 (Resolved - Straight Through). `SO_demoRunState` returned "Ready to present. Loaded today at 9:28 AM."
-- **The hero's cutoff is 12:34 PM Eastern.** From then the console reads "Not ready. The hero case passed its cutoff at 12:34 PM. Prepare the demo again." Press Prepare before presenting.
-- The standing cases were re-dated by run D, on the 14:00 UTC clock by the model's design. Their stamps were not compared this round.
-- `SO Demo Run` holds four rows (ids 1 to 4); id 2 is the forced failure, kept as history.
-- No throwaway is left: the four `zz` rules created in the session return 404, and no case carries session `ZZ-GUARD`. The third round created none.
+- **The state keeps its name.** HERO_PAST_CUTOFF now starts two hours before the cutoff; `heroPast` says which side.
+- **The margin is one number; the words "under two hours" are the ruled sentence.** A different margin needs a different sentence. The rule's header says so.
+- **The name comes from the row that matches the load,** not from the newest row. A later Prepare that failed, or a run loaded without Prepare, would otherwise put the wrong name on the line.
+- **The name is read with a query on the User record type, not `user()`.** A username the directory does not hold then gives no name. With `user()` it would fail the rule, and the console and Prepare with it.
+- **Both watchlist tiles carry the conversion basis.** The prompt names one. The project rule covers every converted figure.
+- **One Prepare only.** A second presenter uses NY, so the session started the one Prepare the pass condition needs and no other.
 
 ## Not verified
 
-- **The button press, and the page as a person sees it.** `testInterface` cannot press. Prepare was started through `testProcessModel` with the parameter the button passes. Colour, wrapping and the feel of the 5 seconds are browser checks, below.
-- **A Prepare started by another account.** By the docs, a presenter needs viewer on `SO_prepareRun` to get its answer back; the role map gives it to `SO Users`.
-- **A background half that dies before loading.** The unlock for it is built and was not forced.
-- **"Loaded before today" on the page.** Read from the rule only.
-- **A story out of place together with a passed cutoff.** The rule tests the story first; that order is read from the source and was not exercised.
-- **A hero case with no cutoff stored.** Only the moment with no case yet was seen; the rule returned with no error.
-- **The console's Ready render on rule version 3.** The rule's Ready answer was read after run D; the page was last rendered in Ready on version 2.
-- **The standing cases and the two persona screens after run D.** Checked after runs A and C only.
-- **What each persona sees.** By ruling. No persona screen or security rule changed.
-- **How many comments Reset has left behind.** They cannot be listed over the Dev MCP.
-- **A difference between the two screens' value at risk** in renders of the same second in the first round (698.4M on the supervisor screen, 662.5M on the watchlist). Not investigated; neither screen changed this phase.
-- **Geometry of the console.** The tree carries none.
+- **What each persona sees,** by ruling. `alex.analyst` is scoped to one desk, so her totals will not equal the house figures.
+- **Anything a person has to look at:** whether the row of tiles is level, the tooltip on hover, the colour of the line.
+- **Three ways the Ready line ends at the time:** a run loaded without Prepare, a run record with no account, an account missing from the directory. Read from the source. Only "no LOADED record" was measured.
+- **A story out of place inside the two-hour margin.** The order of the tests is read from the source and did not change.
+- **The re-date inside this Prepare.** The run record closed as LOADED. The stamps were not compared.
 
-## Browser checklist (Scott)
+## Operator's browser checklist (Scott)
 
-As an account in both `SO Demo Admins` and `SO Supervisors`, on https://ny.appiancloud.com/suite/sites/settlement-ops-admin:
+1. The console after a Prepare: the Ready line ends with your name.
+2. Your own account, Supervisor tab then Watchlist tab: the two Value at risk numbers match.
+3. As `alex.analyst`, the watchlist: the Value at risk tile reads "USD eq.", its tooltip gives the conversion note, and the row of tiles is still even.
+4. The console, about 65 minutes after a Prepare: the line reads "Not ready. The hero case has under two hours to cutoff. Prepare the demo again." in amber.
 
-1. Press **Prepare the demo**. Within about 5 seconds the status line reads "Preparing the demo. About two minutes. Refresh this page to check." and the button is disabled.
-2. Refresh after two minutes. The line reads "Ready to present. Loaded today at <time>", in green, with your local time.
-3. The page has one button and one status line, with nothing wrapped or cramped.
-4. The watchlist and the supervisor screen look as they did before this phase.
-5. About three hours after a Prepare, once the hero's cutoff has passed, refresh. The line reads "Not ready. The hero case passed its cutoff at <time>. Prepare the demo again." in amber, with your local time, and the button is enabled. Today that is any time after 12:34 PM Eastern, if nobody has pressed Prepare since 9:28 AM.
+## Rulings needed
 
-## Records
+1. **The "Cleared this batch" card.** Restore it on the watchlist (one line), or change the two lines in the demo script and the video script that point at it.
+2. **`nick.bethune`.** `nick.bethune` is in `SO Demo Admins` only. `nick.bethune@appian.com` is in `SO Supervisors` and `SO Users` only. They are two accounts. The first gets the console's instruction card; the second cannot see the admin site. Say which account presents, and add the missing group to it.
+3. **The supervisor screen's tooltip** still says "the book runs EUR, GBP, JPY and CHF", and its critical-window tile has no conversion note. Rule whether to bring it level with the watchlist.
 
-**Promotion candidates:** 11 found across the three rounds; 0 promoted; 11 listed in `BUILD_LOG.md` with triggers. Of the four staged on 2026-11-11: one resolved (already in the installed skill), one unchanged, two measured further and kept staged. New in the first two rounds: a Dev MCP record delete cascades to nothing and its orphans read as deleted; Reset's cascade removes one child type and leaves another; `intervalds()` wraps for large hour counts; `text()` prints local time and `gmt()` shifts it; a multi-type write failed loudly where the skill records a silent no-op; a synchronous Start Process returns the child's variables; each node write publishes at once; `maxResponseSizeBytes` did not cut a response; a short synchronous model that records and hands off; a marker written before a destructive first step. New in the third: `getExpressionRule` on a UUID that does not exist answered 404 where the skill records 403.
+## State of NY
 
-**TODO changes:** the Phase 11 section now holds thirteen items. Closed in the third round: Ready and the age of today's load. Added in the third round: Ready has no margin before the cutoff; a comment in the console's source is one state behind; the story-first order is not exercised. Changed: the browser checklist gained step 5. Closed earlier in the session: the timing ruling; the console; the documents; a second start during a Prepare. Still open: Reset's leftover comments; `SO Demo Run` is never pruned; the state rule reads the packet by prefix; the value-at-risk difference; the browser checklist. In the Phase 10 section, closed: the three skill copies, the "stub" description, the "agent OK" check. Unchanged and still open: the stale `BUILD_LOG.md` header checkpoint, under Blocking.
+Ready, from the Prepare of 17:25 UTC (12:25 PM Eastern), run record 5, started by `scott.thorn@appian.com`. Read at 17:37 UTC: "Ready to present. Loaded today at 12:25 PM by Scott Thorn." The hero case is 153; its cutoff is 20:31:00 UTC (3:31 PM Eastern).
 
-**BUILD_PLAN.md changes:** Phase 11: every console line, the three standing-case lines, the triage guard and the documents line are ticked; the timing ruling is recorded as found and ruled the same day; the status-line list gained the hero-past-cutoff line; "Ready and the age of today's load" is ticked as ruled and built. One added line stays open: Reset's leftover comments. Phase 10: the skills line ticked.
+**Ready ends at 18:31 UTC, 1:31 PM Eastern.** From then the line reads "Not ready. The hero case has under two hours to cutoff. Prepare the demo again." From 3:31 PM Eastern it reads "Not ready. The hero case passed its cutoff at 3:31 PM. Prepare the demo again."
 
-**Credits.** Not recorded. This session ran in Claude Code.
+## Promotion candidates
+
+Three found; none promoted; three listed in `BUILD_LOG.md` with their triggers.
+
+- Two renders of one interface differ only in component ids, save tokens and clock-driven values, so a before/after render can be compared leaf by leaf by a script. Measured on two interfaces.
+- `testInterface` did not honour `maxResponseSizeBytes`. One observation.
+- `testRule` returns an empty Text as `null`. One call, three fields.
+
+Promotion checkpoint: current through this session's entry. The header checkpoint line at the top of `BUILD_LOG.md` is still stale; its Blocking item stays open.
+
+## BUILD_PLAN.md changes
+
+Phase 11: the Ready line's copy updated, the second hero wording added, and a follow-up block for `prompts/003` with four items done and two open (the "Cleared this batch" ruling, the `nick.bethune` accounts).
+
+## Files
+
+- `.work/gen/rule_SO_demoRunState.sailt`, `.work/rule_SO_demoRunState.sail`: the rule, version 4. `.work/gen/expand.py` gained the User record type.
+- `.work/SO_analystWatchlist.sail`: version 24, the file the save wrote back.
+- `.work/gen/render_leafdiff.py`: new. Compares two saved `testInterface` renders leaf by leaf.
+- `.kiro/steering/project.md`: the status-line paragraph, the cross-currency rule, the `.work/gen` line.
+- `BUILD_PLAN.md`, `BUILD_LOG.md`, `TODO.md`, this file.
+
+**TODO changes:** closed "Value at risk differs between the two screens" and "Ready holds until the hero's cutoff itself, with no margin". Updated four: the `SO Demo Run` pruning item (half its trigger fired), the console-comment item (the description also says six states), the story-out-of-place item, and the Phase 11 browser checks (the Ready line's name, the 65-minute step). Added seven: the "Cleared this batch" card; the two `nick.bethune` accounts; the supervisor screen's tooltip; the watchlist's Value sort across currencies; the state name HERO_PAST_CUTOFF; the three unexercised no-name paths; the browser checks owed for `prompts/003`.

@@ -4411,3 +4411,147 @@ One found this round, none promoted, one listed.
 **The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-11-12 — Phase 11 follow-up: Ready ends two hours before the hero's cutoff and names who loaded; the watchlist's totals convert before adding (`SO_demoRunState` version 4, `SO_analystWatchlist` version 24; new Claude Code session)
+
+**Scope.** A new Claude Code session, from `prompts/003-ready-margin-watchlist-totals.md`. Every Appian call went through the Dev MCP (server `appian`) as `scott.thorn@appian.com`: `loggedInUser()` was asserted equal to that account through `validateExpression`, and the control with another name failed. The account is a direct member of `SO Supervisors` (full scope), `SO Demo Admins` and `SO Users`, read back this session. No sail, by the prompt. The runtime server's tools were listed in the session and never loaded or called. Three helper agents made read-only `testInterface` calls under the same account (two console renders, one paired render of the two screens) and reported what they read; the later renders were made by the session itself.
+
+**Rulings (Scott, 2026-11-12, in the prompt).** Ready ends when the hero has under two hours to its cutoff. Both hero lines are ruled wording. The Ready line names who loaded the run. The watchlist's totals are converted before they are added.
+
+### Part 1: `SO_demoRunState`
+
+**Read first.** Version 3 on NY was byte-identical to `.work/rule_SO_demoRunState.sail`.
+
+**Reproduced first.** At 17:22 UTC version 3 returned READY, "Ready to present. Loaded today at 9:28 AM.", on the run loaded at 14:28:53 UTC. The hero's cutoff was 17:34:00.950 UTC, 11 minutes ahead.
+
+**What changed, by object**
+
+| Object | UUID | Change |
+|---|---|---|
+| `SO_demoRunState` | `_a-0000f0af-7210-8000-9c5d-011c48011c48_613582` | 3 → 4. `local!readyMarginHours: 2` is the one place the margin is set. HERO_PAST_CUTOFF replaces READY when the hero's cutoff is less than that many hours ahead, or past. Its line has two wordings, chosen by whether the cutoff has passed. A second query reads the newest LOADED `SO Demo Run` row for the run name; if the load stamp falls between that row's press and its close, a third reads the account's first and last name from the User record type, and the Ready line ends "by <name>". New outputs `heroPast` and `loadedBy`. Description updated |
+
+**Not changed on NY:** `SO_demoAdminConsole` (version 14, read back), `SO_prepareRun`, `SO_prepareRunSteps`, `SO_intakePlan`, `SO Demo Run`.
+
+**In the repo:** `.work/gen/rule_SO_demoRunState.sailt`, `.work/gen/expand.py` (the User record type added, ids read from `listRecordTypeFields`), and the expanded `.work/rule_SO_demoRunState.sail` (the file sent, and the file the save wrote back).
+
+**Verified (as `scott.thorn@appian.com`, full scope).** Pass conditions are the prompt's, written before the runs.
+
+The rule on the 14:28 UTC run (run record 4), through `testRule`. Hero cutoff 17:34:00.950 UTC.
+
+| Clock | Expected | Returned |
+|---|---|---|
+| `asOf` 15:33:00 UTC, 121 min before | Ready, with the name of the account that started the run | READY, POSITIVE, "Ready to present. Loaded today at 9:28 AM by Scott Thorn." |
+| `asOf` 15:35:01 UTC, 119 min before | the new line | HERO_PAST_CUTOFF, WARN, "Not ready. The hero case has under two hours to cutoff. Prepare the demo again.", `heroPast` false |
+| now, 17:24 UTC, 9 min before | the new line | the same line, WARN |
+| `asOf` 17:35:00 UTC, after | the existing line | HERO_PAST_CUTOFF, WARN, "Not ready. The hero case passed its cutoff at 12:34 PM. Prepare the demo again.", `heroPast` true |
+
+Run record 4 names `scott.thorn@appian.com` as `startedBy`. Its press was 14:28:24, the load stamp 14:28:53.020 and its close 14:29:01.650 UTC.
+
+The console, version 14, in the new state: one `testInterface` render by a helper agent at 17:24:54 UTC. `diagnostics.error` null. Status line "Not ready. The hero case has under two hours to cutoff. Prepare the demo again.", colour `#96590A`, STRONG. Button "Prepare the demo", `disabled` false. The string "Ready to present" appears nowhere. No failure block.
+
+One Prepare started from the new state, through `testProcessModel` on `SO_prepareRun`.
+
+- **Started.** `pv!state` HERO_PAST_CUTOFF, 8 minutes 35 seconds before the cutoff; `ok` true; "OK started run=DEMO. The demo is being prepared in the background: about two minutes."; 4.72 seconds. Run record 5, PREPARING at 17:25:25.560 UTC.
+- **Running** at 29 and 73 seconds after the load stamp (17:25:52.020 UTC).
+- **The run record closed as LOADED** at 17:25:59.150 UTC, 33.6 seconds after the press.
+- **Ready at 107 seconds after the load stamp:** "Ready to present. Loaded today at 12:25 PM by Scott Thorn.", POSITIVE. Cases 153 (hero, Pending Analyst, cutoff 20:31:00.170 UTC), 154 (Escalated) and 155 (Resolved - Straight Through). Three demo cases.
+
+The console in Ready: one render by a helper agent at 17:28:22 UTC. `diagnostics.error` null. Status line "Ready to present. Loaded today at 12:25 PM by Scott Thorn.", colour `#17715B`, STRONG. Button `disabled` false. "Environment OK · data 50,000/50,000 · 9/9 connections". "Loaded now: 15 demo trades · 3 cases".
+
+The boundary on the run now loaded (hero cutoff 20:31:00.170 UTC): `asOf` 18:31:00 returned READY; `asOf` 18:31:01 returned the new line; `asOf` 20:31:01 returned "Not ready. The hero case passed its cutoff at 3:31 PM. Prepare the demo again."
+
+A run name with no run record (`ZZNONE`): `loadedBy` empty, state DID_NOT_FINISH, no error.
+
+**The three demo documents.** Read: each quotes only "Ready to present" from the status line (`demo-script-15min-client-awareness.md` lines 30, 31 and 168; `talk-track-10min-internal.md` line 11; `video-script-5min.md` line 9). None needed a change.
+
+### Part 2: `SO_analystWatchlist`
+
+**The saved copy.** `.work/SO_analystWatchlist.sail` was version 21 (2026-09-24). NY held version 23. Read through `listObjectVersions` and `getInterface` with a version token:
+
+| Version | Saved (UTC), by | Difference |
+|---|---|---|
+| 21 | 2026-09-24 22:23, `scott.thorn@appian.com` | The saved copy, except that it now reads back with `a!cardGroupLayout_26r6(` where the copy had `a!cardGroupLayout(`. No save made that change |
+| 22 | 2026-10-23 00:42, same account | `cutoffSortKey: todecimal(a!defaultValue(local!hrsLeft, 99999))`; `todecimal()` is new |
+| 23 | 2026-10-23 12:32, same account | Parameters reordered throughout, as a Designer save does. One real change: the "Cleared this batch" card's `showWhen` went from `local!hasBatch` to the text `"false"` |
+
+The deployed version 23 was saved over the copy and committed before any edit. **The "Cleared this batch" card is not on the page**: the source hides it, and the render does not contain "CLEARED THIS BATCH". Two demo documents point at it (`TODO.md`).
+
+**Reproduced first.** One helper agent rendered both screens in one message. Both stamped their read at 12:28:24 Eastern (17:28:24 UTC), as the design account.
+
+| Screen | Open items | Value at risk | Inside critical window |
+|---|---|---|---|
+| `SO_analystWatchlist` version 23 | 16 | 662.5M USD eq. | 7 · 354.6M USD eq. |
+| `SO_supervisorCommand` version 11 | 16 | 698.4M USD eq. | 7 · 393.7M USD eq. |
+
+The counts agree, so the two screens add the same rows. **Cause, confirmed in the deployed source:** `local!varTotal` and `local!inWindowValue` summed each row's `notional` as stored. The supervisor screen sums `usd`, which is `SO_fxToUsd` of each row. Both screens use the same five open statuses and the same `insideCriticalWindow` from `SO_cutoffDisplay`.
+
+**What changed, by object**
+
+| Object | UUID | Change |
+|---|---|---|
+| `SO_analystWatchlist` | `_a-0001f054-7a62-8000-9c49-011c48011c48_562262` | 23 → 24. Each row carries `usd: rule!SO_fxToUsd(amount, currency)`. `local!varTotal` and `local!inWindowValue` add `usd`. `local!fxBasisNote` holds the conversion basis, passed as `tooltip` to the "Value at risk" tile and the "Inside critical window" tile. Nothing else: `git diff` counts 18 insertions and 4 deletions against the saved version 23 |
+
+**Not changed on NY:** `SO_supervisorCommand` (version 11, saved 2026-09-25, byte-identical to `.work/SO_supervisorCommand.sail`), `SO_kpiCard`, `SO_fxToUsd`.
+
+**Verified (as `scott.thorn@appian.com`, full scope)**
+
+Both screens rendered by the session in one message. Both stamped 12:32:48 Eastern (17:32:48 UTC). `diagnostics.error` null on both.
+
+| Screen | Open items | Value at risk | Inside critical window |
+|---|---|---|---|
+| `SO_analystWatchlist` version 24 | 16 | 698.4M USD eq. | 7 · 393.7M USD eq. |
+| `SO_supervisorCommand` version 11 | 16 | 698.4M USD eq. | 7 · 393.7M USD eq. |
+
+The watchlist's tooltips, as rendered. Value at risk: "Live from Snowflake — computed in Snowflake over the trade and prediction data, not copied here.  Cross-currency total: nothing in the source data carries an FX rate. Converted at indicative static rates (SO_fxToUsd) for aggregation only — not a market feed, not a rate of record." Inside critical window: the second sentence onward.
+
+**The rest of the watchlist is as it was.** `.work/gen/render_leafdiff.py` compared the version 23 render of 17:28:24 with the version 24 render of 17:32:48, leaf by leaf, leaving out the per-render component ids and save tokens. 3,815 leaves on each side; none added, none removed; 13 changed:
+
+- the two amounts and the two tooltips;
+- the "last read" clock;
+- six countdowns, each four minutes shorter, one of them turning from `#96590A` to `#B3261E` as it passed two hours;
+- "2.4h to cutoff" to "2.3h" on the escalated demo row.
+
+Queues, counts, rows and order are in the leaves that did not change: "NEEDS YOUR ACTION (12)" showing six rows, "ESCALATED — WITH SUPERVISOR (4)", the four tiles, the batch band.
+
+The supervisor screen, the same comparison between its two renders: 5,422 leaves, 20 changed, all driven by the clock (the read time, waiting times, queue ages, the runway chart's hourly buckets).
+
+Stored source: two `getInterface` reads after the save, both byte-identical to `.work/SO_analystWatchlist.sail`. The first render after the save already showed version 24.
+
+### Decisions
+
+- **The state keeps its name.** The prompt says the state that follows Ready is the existing one. HERO_PAST_CUTOFF now starts two hours before the cutoff; `heroPast` says which side. Logged in `TODO.md`.
+- **The margin is a number; the line's words are ruled text.** "under two hours" is written out in the line because Scott ruled the sentence. A different margin needs a different sentence, and the rule's header says so.
+- **"The run now loaded" is matched, not assumed.** The name comes from the newest LOADED record whose press-to-close window holds the load stamp. A failed Prepare that left the old run in place is not the press that loaded it, and a run loaded without Prepare has no record. In both cases a name from the newest row would be the wrong person's.
+- **The name is read with a query, not `user()`.** A username the directory does not hold returns no row from a query. `user()` on it would fail the rule, and the console and `SO_prepareRun` both read the rule.
+- **Both tiles carry the basis.** The prompt names the Value at risk tile. The critical-window tile's amount is converted too, and the project rule says no converted figure renders without its basis.
+- **The tooltip names no currencies**, as ruled. The supervisor screen's still lists four; it was not edited.
+- **One Prepare was run**, the one the pass condition asks for. A second presenter uses NY, so no further Prepare was started.
+
+### Not verified
+
+- **What each persona sees**, by ruling. `alex.analyst` is scoped to EQ_FLOW, so her totals will differ from the house figures.
+- **Geometry and hover.** Whether the row of tiles is level, and the tooltip as a person sees it. Browser.
+- **Three ways the Ready line ends at the time:** a run loaded without Prepare, a record with no `startedBy`, an account missing from the directory. Read from the source. Only "no LOADED record" was measured, on the output.
+- **A story out of place inside the margin.** The order is read from the source, unchanged.
+- **The re-date inside this Prepare.** The record closed as LOADED, so the step answered OK. Stamps were not compared.
+
+### Findings
+
+- **`nick.bethune` and `nick.bethune@appian.com` are two accounts.** The first is a direct member of `SO Demo Admins` only, the second of `SO Supervisors` and `SO Users` only. Neither can use the console as built. `TODO.md`.
+- **The "Cleared this batch" card has been hidden since 2026-10-23**, by hand. `TODO.md`.
+- **`a!cardGroupLayout` reads back as `a!cardGroupLayout_26r6` on every stored version**, including version 21, whose saved copy has the plain name. The source was sent back with the versioned name and saved.
+- **The version tool's bundle link is `…/stateless/dev-mcp-bundle`** on 26.9.5. Core §2 step 4 quotes `…/stateless/lcp-mcp-bundle`.
+- **218 tools under `appian`** on 26.9.5, as in the last session. The pin describes 199 on 26.6.105.
+
+### Promotion candidates (staging)
+
+Three found this session, none promoted, three listed.
+
+- **NEW, STAGED (gate 1: two objects, one session): two `testInterface` renders of one interface differ only in `_cId` values, `saveInto` tokens and whatever the clock drives, so a before/after render can be compared leaf by leaf by a script.** Measured on two interfaces: 3,815 and 5,422 leaves, with every difference accounted for. It turns "renders as it did before" from a reading into a count. The half that depends on the client: under Claude Code an over-limit tool result is saved to a file, which is what the script reads. *Trigger: the next session that has to show an interface unchanged apart from a named edit, and the first such session in Kiro.*
+- **NEW, STAGED (gate 1, one observation): `testInterface` did not honour `maxResponseSizeBytes`.** Asked for 2,048 bytes, it returned 105,265 characters with `truncated` false. The same was seen on `testProcessModel` in the Phase 11 session. *Trigger: the Dev MCP update procedure, or the next call that sets the parameter on either tool.*
+- **NEW, STAGED (gate 1, one call, three fields): `testRule` returns an empty Text as `null`.** `loadedBy`, `lastMessage` and `runStatus`, each built as `""` on that path, read back `null`. A readback cannot tell an empty string from a null. *Trigger: the next rule whose output distinguishes the two.*
+- **Unchanged:** the candidate on `getExpressionRule` returning 404 for a UUID that does not exist, and the candidates staged in the entries above. The first read after `updateInterface` was current this time; the supplemental's entry says "can", so it stands.
+
+**The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
+
+**Promotion checkpoint: current through this entry.**
