@@ -205,7 +205,10 @@ The last build session on record is 2026-09-24. NY was changed after that withou
 - ✅ 2026-11-11: `CLAUDE.md` added as a loader for the rule files in `.kiro/steering/`, so Claude Code sessions start with the rules. Scott's local folder and GitHub brought level (the local plan edit discarded as already on GitHub, the re-date commit pushed).
 
 - [ ] Planning chat: bring the repo's records up to date. The 2026-11-11 plan commit is the first part. Still to do: sweep `TODO.md` (about 80 open boxes, many already done); close the stale Snowflake network-policy blocker lines here and in `deploy-notes.md`; tick the boxes in Phases 3 to 6 that are built but unticked; regenerate `PROJECT_INSTRUCTIONS.md` for Claude Code and the Databricks context.
-- [ ] Scott, in Claude Code: a short read-only session on NY. It confirms the rules loaded through `CLAUDE.md`, reads the Demo Admin console and the four process models Phase 11 changes, and lists the blank cases. It ends with a close-out and a push. The prompt is `prompts/001-phase10-read-only-audit.md`.
+- ✅ 2026-11-11: Scott, in Claude Code: a short read-only session on NY. It confirms the rules loaded through `CLAUDE.md`, reads the Demo Admin console and the four process models Phase 11 changes, and lists the blank cases. It ends with a close-out and a push. The prompt is `prompts/001-phase10-read-only-audit.md`. Result: the rules loaded; the console and the four models are unchanged since 2026-09-24; no case without a trade exists on NY (17 cases, ids 36 to 52). The answers are in `Closeout.md` under "Inputs for Phase 11".
+- [ ] Scott: bring the Dev MCP setup level before the Phase 11 build session (found in the audit). NY's plugin and the local server are 26.9.5, the pins in `reference/toolchain.md` describe 26.6.105, and the App Market has 26.9.15. Say "run the update procedure".
+- [ ] Scott: rule which copy of `appian-supplemental` is the master (found in the audit). `~/.kiro/skills/` holds Version 2026-11-10.4, `~/.claude/skills/` holds 2026-10-28 and is the one Claude Code loads, and the repo holds 2026-10-05.2. `~/.claude/skills/appian` is also one bundle behind the server.
+- [ ] Planning chat: correct two build parameters in `.kiro/steering/project.md` (found in the audit). The design account's username on NY is `scott.thorn@appian.com`, and `SO Supervisors` is not a member of `SO Analysts`.
 - [ ] Scott, in Snowsight: run `snowflake/verification-summary.sql` as FINSERVADMIN on COMPUTE_WH and paste the grid.
 - [ ] Scott: paste the regenerated `PROJECT_INSTRUCTIONS.md` block into the claude.ai Project, once the planning chat has regenerated it.
 - [ ] Planning chat: overwrite the Project's demo documents from the repo copies.
@@ -239,10 +242,12 @@ Standing cases
 
 Agent write-back and cleanup
 - [ ] `SO_triageCase` writes the agent's result only if its case still exists. Cause of the 2026-10-22 blank cases: Reset ran while triage was still running, and the late write created a case with no trade, desk or cutoff. This replaces the earlier idea of cancelling in-flight triage processes.
-- [ ] Delete the blank cases left from 2026-10-22 (reported as SO-106 to SO-110; confirm the ids in the Phase 10 audit).
+- [ ] Delete the blank cases left from 2026-10-22 (reported as SO-106 to SO-110; confirm the ids in the Phase 10 audit). Audit, 2026-11-11: none exists on NY now. The case table holds 17 rows, ids 36 to 52, each with a trade. Nothing is left to delete; Scott to close this line.
+- [ ] Cancel the two `SO_triageCase` instances that are stuck ACTIVE (found in the audit): process `536912644` from 2026-10-22, case 105, agent run failed; and process `536908653` from 2026-08-28, case 5. Neither case exists any more. Scott's word first.
+- [ ] Decide what a failed agent run leaves behind (found in the audit). The agent node has no error path, so a failed run stops triage there and the case stays "New". This is the "run that dies partway" the console has to unlock from.
 
 Investigate before fixing
-- [ ] The hero case landed in Escalated instead of Needs your action on one Load on 2026-10-22. The cause is unknown. Observe and report before any change.
+- [ ] The hero case landed in Escalated instead of Needs your action on one Load on 2026-10-22. The cause is unknown. Observe and report before any change. Audit, 2026-11-11: by the Route node's conditions, on a normal run the hero reaches Escalated only through the agent's own `escalate` flag. When it recurs, read the case's Escalated event and the triage instance's `agentOutputs` within seven days, before the instance is archived.
 
 Documents
 - [ ] `demo-script-15min-client-awareness.md`, `talk-track-10min-internal.md`, `video-script-5min.md` and the presenter note in `GETTING_STARTED.md` describe Load and Reset as two buttons. Update them to the one-button flow in the same phase.

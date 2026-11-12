@@ -4006,3 +4006,87 @@ The brief asked whether any **composed** label exceeded "the length that fit unt
 - **None from this entry.**
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-11-11 — Phase 10 read-only audit of NY (Claude Code): rules loaded, console and four process models read, no trade-less case found
+
+**Scope.** Read-only session in Claude Code, prompt `prompts/001-phase10-read-only-audit.md`. Nothing was created, updated or deleted in Appian; no `testProcessModel`; no record write; Snowflake was not read. Every readback ran through the Dev MCP (server `appian`) as **`scott.thorn@appian.com`**, a direct member of `SO Supervisors`, `SO Demo Admins` and `SO Users`. The `SO Settlement Case` security rule for `SO Supervisors` carries no condition, so case reads are full-scope. No sail data directory was used: every persona session on this machine is expired. The runtime server's ten tools were present in the session and were never loaded or called. Starting point: HEAD `40a226a`, two commits behind `origin/main` (the two prompt commits); fast-forwarded to `733a127` before any work.
+
+### What changed, by object
+
+- **Appian: nothing.**
+- **`.work/SO_demoAdminConsole.sail`**: saved from the deployed interface (version 12). `git diff` shows no change: the repo copy was already byte-identical.
+- **`.work/pm_SO_simulateRun.md`, `pm_SO_intakeRun.md`, `pm_SO_resetRun.md`, `pm_SO_triageCase.md`**: new. One outline per process model: nodes in flow order, what each reads and writes.
+- **`BUILD_PLAN.md`, `TODO.md`, `Closeout.md`**: updated for this session.
+
+### Objects read, with versions from readback
+
+| Object | Version | Last saved (UTC) | Note |
+|---|---|---|---|
+| `SO_demoAdminConsole` (interface) | 12 | 2026-09-24 16:24 | identical to the repo copy |
+| `SO_simulateRun` | 3.0 | 2026-09-11 15:47 | |
+| `SO_intakeRun` | 4.0 | 2026-09-22 22:15 | |
+| `SO_resetRun` | 3.0 | 2026-09-11 15:48 | |
+| `SO_triageCase` | 14.0 | 2026-09-22 23:45 | description still says "stub"; the model runs the real agent node |
+| `SO_createTriageCase` | not fetched | | nodes read for the intake outline; no outline file |
+| `SO_intakePlan` (rule) | 1 | | identical to `.work/rule_SO_intakePlan.sail` |
+| `SO_remediationForReason` (rule) | 3 | | identical to `.work/rule_SO_remediationForReason.sail` |
+
+All five were last saved by the design account. Each process model lists a draft whose timestamp is not later than its newest numbered version, so no unpublished work is pending. **None of the five has changed since the last recorded build session (2026-09-24).** The hand changes of 2026-10-22 and 2026-10-23 did not touch them.
+
+### Findings
+
+- **The rules loaded through `CLAUDE.md`.** The session listed the seven steps of core §10 from context before its first tool call.
+- **No case without a trade exists on NY.** `SO Settlement Case` holds 17 rows, ids 36 to 52, all session `P4-VERIFY`, all with a trade id. The cases reported as SO-106 to SO-110 are not there. Comments (12 rows) and audit events (14 rows) all belong to cases 36 to 50; there are no orphans. The repo holds no record of who removed the five or when. By reading `SO_resetRun`, Reset could not have: it selects cases by session id, and those cases had none.
+- **Case ids have moved on to at least 134.** The newest triage instance in the history (2026-11-09) ran for SO-134.
+- **A second presenter's account ran the demo on 2026-11-05 and 2026-11-09** (Load, then Reset; the last Reset completed 2026-11-09 20:54 UTC). All six triage runs completed in 35 to 44 seconds. From the Load press to the third agent decision: 73 seconds and 78 seconds.
+- **Two `SO_triageCase` instances are stuck ACTIVE.**
+  - Process `536912644`, started 2026-10-23 00:07 UTC (2026-10-22 8:07 PM EDT) by the second presenter's account, model version 14.0, case **105**, the hero trade `TRD9DEMO01`. Error: `Execute SO_TriageAgent: Agent run failed: 72a9983a-d5e9-4d45-8d5b-c84ed9a16403`. The context was assembled; `agentOutputs` is null; no write was made. Case 105 no longer exists.
+  - Process `536908653`, started 2026-08-29 00:44 UTC by the design account, model version 2.0, case 5. Error at "Event: Agent Triage Complete": `a!automationId("AI AGENT")` is not a valid value. A leftover from Phase 3.
+- **`SO_triageCase` writes "Agent Triage" after the agent returns, not before.** Node 3 follows the agent node, so a case reads "New" for the whole agent call and "Agent Triage" for the instant between two writes.
+- **The console's "agent OK" check is met by the standing cases.** It looks for the newest event with no user and a machine event type. The fixture events of 2026-10-23 qualify, so the check passes while the standing cases exist, whether or not the agent has run.
+- **The process history holds only 2026-11-05 onwards, plus the two stuck instances.** The 2026-10-22 Load and Reset runs are no longer listed, so the Reset-during-triage sequence cannot be rebuilt from history.
+
+### Preflight results (core §2)
+
+- **Plan:** populated.
+- **Dev MCP:** design surface present; `listRecordTypes` on the application returned its 11 record types and User. About 218 tools under `appian`, by hand count of the session's tool list, against the pin's 199.
+- **Versions, all drifted from the pins:** plugin and server are **26.9.5**, build `20261026-140102`, composer commit `274ce627`; `reference/toolchain.md` §1 pins 26.6.105, build `20260930-110421`. The App Market has **26.9.15**. sail is 26.9.5 against the §12 pin of 26.6.105. The tool the core calls `validateDesignObject` is `validateDesignObjects` in this generation, and the version tool now prints the bundle path as `/suite/plugins/servlet/stateless/dev-mcp-bundle`.
+- **Skills:** the session loaded `~/.claude/skills/appian-supplemental` (Version 2026-10-28). `~/.kiro/skills/appian-supplemental` is Version 2026-11-10.4 and the repo copy is Version 2026-10-05.2. Three different files; none was overwritten. `~/.claude/skills/appian` carries manifest `eb82064a`, one bundle behind the server; `~/.kiro/skills/appian` carries `274ce627`, which matches.
+- **Servers:** `appian` runs `lcp_mcp_server` and carries the camelCase design tools. `appian-runtime` carries nine `appian_*` tools and `ping`; none was loaded or called. Under Claude Code no permission file blocks them.
+- **Identity:** `scott.thorn@appian.com`. The build parameter records `scott.thorn`.
+- **Groups, by `listGroupMembers(directOnly: true)`:** `SO Users` holds the groups `SO Administrators`, `SO Analysts` and `SO Supervisors` and two users. `SO Supervisors` holds 11 users, among them `sam.supervisor`, `test.presenter` and the design account. `SO Analysts` holds one user, `alex.analyst`, and no group. `SO Demo Admins` holds nine users and is not under `SO Users`. **`SO Supervisors` is not a member of `SO Analysts`**; the build parameter says supervisors are also analysts.
+- **Per-session ritual:** not run. The session rendered no Phase 4 screen, and the ritual writes records. The standing cases are still dated 2026-10-23.
+- **Personas:** every sail session on this machine is expired, `alex.analyst` and `sam.supervisor` included. None was needed.
+
+### Decisions
+
+None. The session read and reported.
+
+### Verified (how, with scope)
+
+- **Executing identity.** `validateExpression` on `index({"ok"}, if(tostring(loggedInUser()) = "<name>", 1, 0))` validated clean for `scott.thorn@appian.com` and errored for `scott.thorn` and for `alex.analyst`. No object was created.
+- **Membership.** The same harness on `a!isUserMemberOfGroup` against `cons!SO_SUPERVISORS_GROUP` and `cons!SO_DEMO_ADMINS_GROUP` validated clean, and `listGroupMembers` lists the account in both.
+- **No trade-less case.** As `scott.thorn@appian.com` (`SO Supervisors`, unconditional rule): `listRecordData` returned 17 cases. A second path, `a!queryRecordType` through the harness: "no case with id above 52" validated clean, the control "no case with id above 51" errored as it should, and "no case with a null trade id" validated clean.
+- **Sources.** Each object read back through its `get` tool; versions from `listObjectVersions`.
+- **Stuck instances.** `getProcessInstance` and `listProcessEvents`.
+
+### Not verified
+
+- **What a late triage write does to a deleted case.** Not measured: the session was read-only and no blank case is left to read. The docs (Write Records, 26.6) say a record that carries its primary key is an update, and do not cover a key that no longer exists on an auto-increment table. The 2026-10-22 report says a row was created.
+- **Snowflake.** Whether packet trades are present was not read.
+- **The record layer was read, not the `SO_SETTLEMENT` table.** No Dev MCP tool reads table rows.
+- **The 2026-10-22 and 2026-10-23 hand changes** (watchlist sort fix, the "Cleared this batch" card, the hand re-date). The prompt was cut to the console and the four models; the watchlist and supervisor screens were not read.
+- **Nothing was rendered,** so no browser check is owed from this session.
+
+### Promotion candidates (staging)
+
+Four found, none promoted, four listed.
+
+- **STAGED (gate 1, one session with controls): the `validateExpression` assertion harness confirms the executing identity and group membership with no throwaway object.** Trap: core §6 confirms identity with a throwaway rule and then a delete, which a read-only session cannot do and a default-deny setup makes costly. Working form: `index({"ok"}, if(tostring(loggedInUser()) = "<username>", 1, 0))`, with a wrong name as the negative control. The same call evaluated `cons!` references and `a!queryRecordType` against record types, although the tool's description says record references are not stubbed. *Trigger: the next session's preflight identity check, on any build.* Home if confirmed: core §6 and the supplemental's harness entry.
+- **STAGED (gate 1, one observation, cause not isolated): a group named by text inside the harness evaluated false where the group constant evaluated true.** `a!isUserMemberOfGroup(groups: togroup("<group name>"))` errored the assertion for an account that `listGroupMembers` shows in the group; the same assertion with the GROUP constant validated clean. *Trigger: the next membership assertion written without a constant.*
+- **STAGED (gate 1, one stuck instance read): a failed Execute AI Agent run stops the process at that node with no fail-forward.** The deployed node saves `AgentOutputs`, `RunSummary` and `RunId` and nothing else; the instance has sat ACTIVE with the error for 20 days. Whether the node type offers a pause-on-error input was not read. *Trigger: the Phase 11 session reads `getProcessModelNodeTypeSchema` for `internal3.execute_ai_agent`.*
+- **STAGED (gate 1, reported not measured): a Write Records node handed a primary key that no longer exists creates a row instead of failing.** The reported ids fit a row re-created under the old id. *Trigger: the Phase 11 break-test of the triage guard, on a throwaway case.*
+
+**The header checkpoint line at the top of this file is still stale** (it reads "current through 2026-09-01"). The Blocking item in `TODO.md` stays open; this session did not reconcile the header against the staging section.
+
+**Promotion checkpoint: current through this entry.**
