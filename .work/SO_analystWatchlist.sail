@@ -297,7 +297,7 @@ a!localVariables(
         hasCutoff: index(local!co, "hasCutoff", false),
         /* 99999 keeps a null cutoff at the BOTTOM of a cutoff-ascending sort
            instead of the top, where a null would read as most urgent. */
-        cutoffSortKey: a!defaultValue(local!hrsLeft, 99999),
+        cutoffSortKey: todecimal(a!defaultValue(local!hrsLeft, 99999)),
         priority: local!pri,
         priorityLabel: index(local!band, "label", ""),
         priorityColor: index(local!band, "color", "#4A5462"),
@@ -645,37 +645,30 @@ a!localVariables(
      validateExpression ACCEPTS contentsWidth on a!headerContentLayout with no
      errors; only the object validator rejects it. */
   a!formLayout(
-    backgroundColor: "#F3F5F8",
-    contentsWidth: "FULL",
-    focusOnFirstInput: false,
     contents: {
       /* ===================== PAGE HEAD ===================== */
       a!richTextDisplayField(
         labelPosition: "COLLAPSED",
         value: {
-          a!richTextItem(text: "Pre-Settlement Watchlist", size: "MEDIUM_PLUS", style: "STRONG", color: "#1B2330"),
+          a!richTextItem(text: "Pre-Settlement Watchlist", size: "MEDIUM_PLUS", color: "#1B2330", style: "STRONG"),
           a!richTextItem(text: "    Settlement cycle " & rule!SO_fmtDayDate(value: today()) & " · T+1", size: "STANDARD", color: "#454F5C")
         }
       ),
       a!richTextDisplayField(
         labelPosition: "COLLAPSED",
-        tooltip: "Predictions are computed in Snowflake and read live; nothing is copied or synced.",
         value: {
           rule!SO_snowflakeMark(showWhen: true),
-          a!richTextItem(text: " Predictions live from Snowflake", color: "#3E7396", size: "SMALL", style: "STRONG"),
-          a!richTextItem(text: "  ·  last read " & text(local!lastRead, "hh:mm:ss") & "  ·  refreshes every 30s", color: "#6E7885", size: "SMALL")
-        }
+          a!richTextItem(text: " Predictions live from Snowflake", size: "SMALL", color: "#3E7396", style: "STRONG"),
+          a!richTextItem(text: "  ·  last read " & text(local!lastRead, "hh:mm:ss") & "  ·  refreshes every 30s", size: "SMALL", color: "#6E7885")
+        },
+        tooltip: "Predictions are computed in Snowflake and read live; nothing is copied or synced."
       ),
 
       /* ===================== KPI BAND ===================== */
       /* cardGroupLayout, not columnsLayout-of-cards: its cardHeight AUTO levels
          every card to the TALLEST, where cardLayout height AUTO would size each
          card to its own contents and leave the row ragged. */
-      a!cardGroupLayout(
-        cardWidth: "NARROW",
-        cardHeight: "AUTO",
-        fillContainer: true,
-        marginBelow: "STANDARD",
+      a!cardGroupLayout_26r6(
         cards: {
           rule!SO_kpiCard(
             label: "Predicted fails — open",
@@ -717,7 +710,11 @@ a!localVariables(
             accentColor: "#17715B",
             snowMarked: false
           )
-        }
+        },
+        marginBelow: "STANDARD",
+        cardHeight: "AUTO",
+        cardWidth: "NARROW",
+        fillContainer: true
       ),
 
       /* ===================== LATEST SCORING BATCH BAND =====================
@@ -736,82 +733,75 @@ a!localVariables(
          band, the cleared queue and the straight-through KPI together, so the
          three can never disagree about whether a batch exists. */
       a!cardLayout(
-        showWhen: local!hasBatch,
-        padding: "LESS",
-        style: "#EFF5F9",
-        showBorder: true,
-        shape: "SEMI_ROUNDED",
-        marginBelow: "STANDARD",
         contents: a!sideBySideLayout(
-          alignVertical: "MIDDLE",
           items: {
             a!sideBySideItem(
-              width: "MINIMIZE",
               item: a!richTextDisplayField(
                 labelPosition: "COLLAPSED",
-                preventWrapping: true,
-                tooltip: "Scored in Snowflake on arrival, not overnight — the packet is scored as it lands.",
                 value: {
                   rule!SO_snowflakeMark(showWhen: true),
-                  a!richTextItem(text: "  Latest scoring batch", style: "STRONG", color: "#1B2330", size: "STANDARD"),
+                  a!richTextItem(text: "  Latest scoring batch", size: "STANDARD", color: "#1B2330", style: "STRONG"),
                   a!richTextItem(
                     text: "  " & if(a!isNullOrEmpty(local!batchStamp), "time not recorded", text(local!batchStamp, "hh:mm")) & " today  ·  " & local!batchCount & " trade" & if(local!batchCount = 1, "", "s") & " on your desk",
-                    color: "#4A5462",
-                    size: "SMALL"
+                    size: "SMALL",
+                    color: "#4A5462"
                   )
-                }
-              )
+                },
+                tooltip: "Scored in Snowflake on arrival, not overnight — the packet is scored as it lands.",
+                preventWrapping: true
+              ),
+              width: "MINIMIZE"
             ),
             a!sideBySideItem(
               item: a!richTextDisplayField(
                 labelPosition: "COLLAPSED",
-                align: "RIGHT",
                 value: {
-                  a!richTextItem(text: local!snowClearedCount & " cleared by Snowflake", color: "#17715B", style: "STRONG", size: "SMALL"),
-                  a!richTextItem(text: "   " & local!agentResolvedCount & " agent-resolved", color: "#17715B", style: "STRONG", size: "SMALL"),
-                  a!richTextItem(text: "   " & local!analystResolvedCount & " analyst-resolved", color: "#17715B", style: "STRONG", size: "SMALL", showWhen: local!analystResolvedCount > 0),
-                  a!richTextItem(text: "   " & local!batchNeedsCount & " need" & if(local!batchNeedsCount = 1, "s", "") & " review", color: "#B3261E", style: "STRONG", size: "SMALL"),
-                  a!richTextItem(text: "   " & local!batchEscalatedCount & " escalated", color: "#96590A", style: "STRONG", size: "SMALL"),
+                  a!richTextItem(text: local!snowClearedCount & " cleared by Snowflake", size: "SMALL", color: "#17715B", style: "STRONG"),
+                  a!richTextItem(text: "   " & local!agentResolvedCount & " agent-resolved", size: "SMALL", color: "#17715B", style: "STRONG"),
+                  a!richTextItem(text: "   " & local!analystResolvedCount & " analyst-resolved", showWhen: local!analystResolvedCount > 0, size: "SMALL", color: "#17715B", style: "STRONG"),
+                  a!richTextItem(text: "   " & local!batchNeedsCount & " need" & if(local!batchNeedsCount = 1, "s", "") & " review", size: "SMALL", color: "#B3261E", style: "STRONG"),
+                  a!richTextItem(text: "   " & local!batchEscalatedCount & " escalated", size: "SMALL", color: "#96590A", style: "STRONG"),
                   /* Only ever non-zero while intake is still running, or if it
                      failed. Silent otherwise, and impossible to miss when it is
                      not — the chips always sum to the trade count. */
-                  a!richTextItem(text: "   " & local!uncasedCount & " awaiting intake", color: "#B3261E", style: "STRONG", size: "SMALL", showWhen: local!uncasedCount > 0)
-                }
+                  a!richTextItem(text: "   " & local!uncasedCount & " awaiting intake", showWhen: local!uncasedCount > 0, size: "SMALL", color: "#B3261E", style: "STRONG")
+                },
+                align: "RIGHT"
               )
             )
-          }
-        )
+          },
+          alignVertical: "MIDDLE"
+        ),
+        showWhen: local!hasBatch,
+        marginBelow: "STANDARD",
+        style: "#EFF5F9",
+        showBorder: true,
+        padding: "LESS",
+        shape: "SEMI_ROUNDED"
       ),
 
       /* ===================== WORKBENCH ===================== */
       a!columnsLayout(
-        alignVertical: "TOP",
         columns: {
           a!columnLayout(
-            width: "AUTO",
             contents: {
 
               /* ---------- QUEUE 1: NEEDS YOUR ACTION ---------- */
               a!cardLayout(
-                padding: "NONE",
-                showBorder: true,
-                style: "NONE",
-                shape: "SEMI_ROUNDED",
-                marginBelow: "STANDARD",
                 contents: {
                   a!cardLayout(
-                    padding: "LESS",
-                    style: "#FAFBFC",
-                    showBorder: false,
                     contents: a!richTextDisplayField(
                       labelPosition: "COLLAPSED",
                       value: {
-                        a!richTextIcon(icon: "circle", color: "#B3261E", size: "SMALL"),
-                        a!richTextItem(text: "  NEEDS YOUR ACTION ", style: "STRONG", size: "SMALL", color: "#454F5C"),
-                        a!richTextItem(text: "(" & local!needsCount & ")", style: "STRONG", size: "SMALL", color: "#6E7885"),
+                        a!richTextIcon(icon: "circle", size: "SMALL", color: "#B3261E"),
+                        a!richTextItem(text: "  NEEDS YOUR ACTION ", size: "SMALL", color: "#454F5C", style: "STRONG"),
+                        a!richTextItem(text: "(" & local!needsCount & ")", size: "SMALL", color: "#6E7885", style: "STRONG"),
                         a!richTextItem(text: "  ·  sorted by time to cutoff", size: "SMALL", color: "#6E7885")
                       }
-                    )
+                    ),
+                    style: "#FAFBFC",
+                    showBorder: false,
+                    padding: "LESS"
                   ),
                   /* PROVENANCE LEGEND. The mark belongs on the two model-output
                      columns, but a!gridColumn's label is a TEXT parameter: a
@@ -821,35 +811,144 @@ a!localVariables(
                      So the mark appears once here and names its columns, and
                      both headers keep a helpTooltip saying so on hover. */
                   a!cardLayout(
-                    padding: "EVEN_LESS",
-                    style: "NONE",
-                    showBorder: false,
                     contents: a!richTextDisplayField(
                       labelPosition: "COLLAPSED",
-                      tooltip: "Fail reason and fail risk are model output, computed in Snowflake and read live.",
                       value: {
                         rule!SO_snowflakeMark(showWhen: true),
-                        a!richTextItem(text: "  Fail reason", color: "#3E7396", size: "SMALL", style: "STRONG"),
-                        a!richTextItem(text: " and ", color: "#6E7885", size: "SMALL"),
-                        a!richTextItem(text: "Fail risk", color: "#3E7396", size: "SMALL", style: "STRONG"),
-                        a!richTextItem(text: " are model output — computed in Snowflake, read live, never copied here.", color: "#6E7885", size: "SMALL")
-                      }
-                    )
+                        a!richTextItem(text: "  Fail reason", size: "SMALL", color: "#3E7396", style: "STRONG"),
+                        a!richTextItem(text: " and ", size: "SMALL", color: "#6E7885"),
+                        a!richTextItem(text: "Fail risk", size: "SMALL", color: "#3E7396", style: "STRONG"),
+                        a!richTextItem(text: " are model output — computed in Snowflake, read live, never copied here.", size: "SMALL", color: "#6E7885")
+                      },
+                      tooltip: "Fail reason and fail risk are model output, computed in Snowflake and read live."
+                    ),
+                    style: "NONE",
+                    showBorder: false,
+                    padding: "EVEN_LESS"
                   ),
                   a!gridField(
                     labelPosition: "COLLAPSED",
-                    data: local!needsVisible,
                     emptyGridMessage: "Nothing needs your action. The scoring batch has raised nothing on your book — or the feed has not arrived yet.",
+                    data: local!needsVisible,
+                    columns: {
+                      a!gridColumn(
+                        label: "Trade",
+                        /* A LINK COMPONENT MUST NEVER SIT IN A TEXT CONTEXT.
+                           a!gridColumn's value is Text-typed, so a bare
+                           a!recordLink VALIDATES CLEAN and renders its
+                           serialized object graph in the cell (MEASURED twice).
+                           The working form is always a rich text component
+                           carrying the link in a!richTextItem(link: ...). */
+                        value: a!richTextDisplayField(
+                          labelPosition: "COLLAPSED",
+                          value: {
+                            a!richTextItem(
+                              text: index(fv!row, "tradeId", ""),
+                              link: a!recordLink(
+                                recordType: 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case',
+                                identifier: index(fv!row, "caseId", null)
+                              ),
+                              style: "STRONG"
+                            ),
+                            a!richTextItem(
+                              text: "  " & index(fv!row, "batchTag", ""),
+                              showWhen: index(fv!row, "batchTag", "") <> "",
+                              size: "SMALL",
+                              color: "#3E7396",
+                              style: "STRONG"
+                            )
+                          },
+                          preventWrapping: true
+                        ),
+                        sortField: "tradeId",
+                        width: "NARROW_PLUS"
+                      ),
+                      a!gridColumn(
+                        label: "Instrument",
+                        value: a!richTextDisplayField(
+                          labelPosition: "COLLAPSED",
+                          value: {
+                            a!richTextItem(text: index(fv!row, "sideLabel", ""), size: "SMALL", color: index(fv!row, "sideColor", "#4A5462"), style: "STRONG"),
+                            a!richTextItem(text: "  " & index(fv!row, "ticker", ""), style: "STRONG"),
+                            a!richTextItem(text: "  " & index(fv!row, "instrumentName", ""), size: "SMALL", color: "#454F5C")
+                          }
+                        ),
+                        sortField: "ticker",
+                        width: "AUTO"
+                      ),
+                      a!gridColumn(
+                        label: "Counterparty",
+                        value: index(fv!row, "counterparty", ""),
+                        sortField: "counterparty",
+                        width: "NARROW_PLUS"
+                      ),
+                      a!gridColumn(
+                        label: "Value",
+                        value: index(fv!row, "valueDisplay", ""),
+                        sortField: "notional",
+                        align: "END",
+                        width: "NARROW"
+                      ),
+                      a!gridColumn(
+                        label: "Fail risk",
+                        helpTooltip: "Live from Snowflake — the model's fail probability and risk tier for this trade.",
+                        value: a!richTextDisplayField(
+                          labelPosition: "COLLAPSED",
+                          value: {
+                            a!richTextItem(text: index(fv!row, "probDisplay", "—"), color: index(fv!row, "tierColor", "#4A5462"), style: "STRONG"),
+                            char(10),
+                            a!richTextItem(text: index(fv!row, "riskTier", ""), size: "SMALL", color: index(fv!row, "tierColor", "#4A5462"))
+                          },
+                          align: "RIGHT",
+                          preventWrapping: true
+                        ),
+                        sortField: "probPct",
+                        align: "END",
+                        width: "NARROW"
+                      ),
+                      a!gridColumn(
+                        label: "Agent",
+                        value: a!richTextDisplayField(
+                          labelPosition: "COLLAPSED",
+                          value: {
+                            a!richTextItem(text: index(fv!row, "agentLine", ""), size: "SMALL", color: index(fv!row, "agentColor", "#454F5C"), style: "STRONG"),
+                            char(10),
+                            a!richTextItem(text: index(fv!row, "agentSub", ""), size: "SMALL", color: "#6E7885")
+                          }
+                        ),
+                        sortField: "agentLine",
+                        width: "NARROW_PLUS"
+                      ),
+                      a!gridColumn(
+                        label: "Cutoff",
+                        value: a!richTextDisplayField(
+                          labelPosition: "COLLAPSED",
+                          value: {
+                            a!richTextItem(text: index(fv!row, "countdown", ""), color: index(fv!row, "cutoffColor", "#1B2330"), style: "STRONG"),
+                            char(10),
+                            a!richTextItem(text: index(fv!row, "cutoffAt", ""), size: "SMALL", color: "#6E7885")
+                          },
+                          preventWrapping: true
+                        ),
+                        sortField: "cutoffSortKey",
+                        width: "NARROW"
+                      ),
+                      a!gridColumn(
+                        label: "Status",
+                        value: a!richTextDisplayField(
+                          labelPosition: "COLLAPSED",
+                          value: {
+                            a!richTextItem(text: index(fv!row, "statusLabel", ""), size: "SMALL", color: index(fv!row, "statusColor", "#454F5C"), style: "STRONG"),
+                            char(10),
+                            a!richTextItem(text: index(fv!row, "ownerLabel", ""), size: "SMALL", color: "#6E7885")
+                          }
+                        ),
+                        sortField: "statusLabel",
+                        width: "NARROW"
+                      )
+                    },
                     pageSize: 50,
-                    spacing: "DENSE",
-                    borderStyle: "LIGHT",
                     selectable: true,
-                    maxSelections: 1,
-                    /* SUBTLE_HIGHLIGHT, not ROW_HIGHLIGHT: the solid fill made
-                       every semantic colour in the row unreadable at once — the
-                       red countdown, the amber agent cell, the status colours.
-                       The row's meaning is carried by those colours. */
-                    selectionStyle: "SUBTLE_HIGHLIGHT",
                     selectionValue: local!selectedIndex,
                     selectionSaveInto: a!save(
                       local!selectedCaseId,
@@ -859,123 +958,14 @@ a!localVariables(
                         index(index(local!needsVisible, index(save!value, 1, 0), null), "caseId", null)
                       )
                     ),
-                    columns: {
-                      a!gridColumn(
-                        label: "Trade",
-                        width: "NARROW_PLUS",
-                        sortField: "tradeId",
-                        /* A LINK COMPONENT MUST NEVER SIT IN A TEXT CONTEXT.
-                           a!gridColumn's value is Text-typed, so a bare
-                           a!recordLink VALIDATES CLEAN and renders its
-                           serialized object graph in the cell (MEASURED twice).
-                           The working form is always a rich text component
-                           carrying the link in a!richTextItem(link: ...). */
-                        value: a!richTextDisplayField(
-                          labelPosition: "COLLAPSED",
-                          preventWrapping: true,
-                          value: {
-                            a!richTextItem(
-                              text: index(fv!row, "tradeId", ""),
-                              style: "STRONG",
-                              link: a!recordLink(
-                                recordType: 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case',
-                                identifier: index(fv!row, "caseId", null)
-                              )
-                            ),
-                            a!richTextItem(
-                              text: "  " & index(fv!row, "batchTag", ""),
-                              color: "#3E7396",
-                              size: "SMALL",
-                              style: "STRONG",
-                              showWhen: index(fv!row, "batchTag", "") <> ""
-                            )
-                          }
-                        )
-                      ),
-                      a!gridColumn(
-                        label: "Instrument",
-                        width: "AUTO",
-                        sortField: "ticker",
-                        value: a!richTextDisplayField(
-                          labelPosition: "COLLAPSED",
-                          value: {
-                            a!richTextItem(text: index(fv!row, "sideLabel", ""), color: index(fv!row, "sideColor", "#4A5462"), style: "STRONG", size: "SMALL"),
-                            a!richTextItem(text: "  " & index(fv!row, "ticker", ""), style: "STRONG"),
-                            a!richTextItem(text: "  " & index(fv!row, "instrumentName", ""), color: "#454F5C", size: "SMALL")
-                          }
-                        )
-                      ),
-                      a!gridColumn(
-                        label: "Counterparty",
-                        width: "NARROW_PLUS",
-                        sortField: "counterparty",
-                        value: index(fv!row, "counterparty", "")
-                      ),
-                      a!gridColumn(
-                        label: "Value",
-                        width: "NARROW",
-                        align: "END",
-                        sortField: "notional",
-                        value: index(fv!row, "valueDisplay", "")
-                      ),
-                      a!gridColumn(
-                        label: "Fail risk",
-                        width: "NARROW",
-                        align: "END",
-                        sortField: "probPct",
-                        helpTooltip: "Live from Snowflake — the model's fail probability and risk tier for this trade.",
-                        value: a!richTextDisplayField(
-                          labelPosition: "COLLAPSED",
-                          align: "RIGHT",
-                          preventWrapping: true,
-                          value: {
-                            a!richTextItem(text: index(fv!row, "probDisplay", "—"), color: index(fv!row, "tierColor", "#4A5462"), style: "STRONG"),
-                            char(10),
-                            a!richTextItem(text: index(fv!row, "riskTier", ""), color: index(fv!row, "tierColor", "#4A5462"), size: "SMALL")
-                          }
-                        )
-                      ),
-                      a!gridColumn(
-                        label: "Agent",
-                        width: "NARROW_PLUS",
-                        sortField: "agentLine",
-                        value: a!richTextDisplayField(
-                          labelPosition: "COLLAPSED",
-                          value: {
-                            a!richTextItem(text: index(fv!row, "agentLine", ""), color: index(fv!row, "agentColor", "#454F5C"), style: "STRONG", size: "SMALL"),
-                            char(10),
-                            a!richTextItem(text: index(fv!row, "agentSub", ""), color: "#6E7885", size: "SMALL")
-                          }
-                        )
-                      ),
-                      a!gridColumn(
-                        label: "Cutoff",
-                        width: "NARROW",
-                        sortField: "cutoffSortKey",
-                        value: a!richTextDisplayField(
-                          labelPosition: "COLLAPSED",
-                          preventWrapping: true,
-                          value: {
-                            a!richTextItem(text: index(fv!row, "countdown", ""), color: index(fv!row, "cutoffColor", "#1B2330"), style: "STRONG"),
-                            char(10),
-                            a!richTextItem(text: index(fv!row, "cutoffAt", ""), color: "#6E7885", size: "SMALL")
-                          }
-                        )
-                      ),
-                      a!gridColumn(
-                        label: "Status",
-                        width: "NARROW",
-                        sortField: "statusLabel",
-                        value: a!richTextDisplayField(
-                          labelPosition: "COLLAPSED",
-                          value: {
-                            a!richTextItem(text: index(fv!row, "statusLabel", ""), color: index(fv!row, "statusColor", "#454F5C"), style: "STRONG", size: "SMALL"),
-                            char(10),
-                            a!richTextItem(text: index(fv!row, "ownerLabel", ""), color: "#6E7885", size: "SMALL")
-                          }
-                        )
-                      )
-                    }
+                    maxSelections: 1,
+                    /* SUBTLE_HIGHLIGHT, not ROW_HIGHLIGHT: the solid fill made
+                       every semantic colour in the row unreadable at once — the
+                       red countdown, the amber agent cell, the status colours.
+                       The row's meaning is carried by those colours. */
+                    selectionStyle: "SUBTLE_HIGHLIGHT",
+                    spacing: "DENSE",
+                    borderStyle: "LIGHT"
                   ),
                   /* THE FOOTER IS THE PAGER. A grid pageSize of four would page
                      the whole queue four rows at a time; what the queue wants is
@@ -983,32 +973,37 @@ a!localVariables(
                      one click away, which is a toggle over the assembled list,
                      not a page control. Hidden entirely when everything fits. */
                   a!cardLayout(
-                    showWhen: local!needsCount > local!nearest,
-                    padding: "LESS",
-                    style: "#FAFBFC",
-                    showBorder: false,
                     contents: a!richTextDisplayField(
                       labelPosition: "COLLAPSED",
                       value: {
                         a!richTextItem(
                           text: if(local!showAllNeeds, "showing all " & local!needsCount, "showing " & local!nearest & " nearest cutoffs"),
-                          color: "#4A5462",
-                          size: "SMALL"
+                          size: "SMALL",
+                          color: "#4A5462"
                         ),
                         a!richTextItem(text: "     ", size: "SMALL"),
                         a!richTextItem(
                           text: if(local!showAllNeeds, "Show nearest " & local!nearest, "View all " & local!needsCount),
-                          style: "STRONG",
-                          size: "SMALL",
                           link: a!dynamicLink(
                             value: not(local!showAllNeeds),
                             saveInto: local!showAllNeeds
-                          )
+                          ),
+                          size: "SMALL",
+                          style: "STRONG"
                         )
                       }
-                    )
+                    ),
+                    showWhen: local!needsCount > local!nearest,
+                    style: "#FAFBFC",
+                    showBorder: false,
+                    padding: "LESS"
                   )
-                }
+                },
+                marginBelow: "STANDARD",
+                style: "NONE",
+                showBorder: true,
+                padding: "NONE",
+                shape: "SEMI_ROUNDED"
               ),
 
               /* ---------- QUEUE 2: ESCALATED — WITH SUPERVISOR ----------
@@ -1020,139 +1015,139 @@ a!localVariables(
                  whose whole purpose is deciding a case this analyst may not
                  decide. */
               a!cardLayout(
-                showWhen: local!escalatedCount > 0,
-                padding: "NONE",
-                showBorder: true,
-                style: "NONE",
-                shape: "SEMI_ROUNDED",
-                marginBelow: "STANDARD",
                 contents: {
                   a!cardLayout(
-                    padding: "LESS",
-                    style: "#FAFBFC",
-                    showBorder: false,
                     contents: a!richTextDisplayField(
                       labelPosition: "COLLAPSED",
                       value: {
-                        a!richTextIcon(icon: "circle", color: "#96590A", size: "SMALL"),
-                        a!richTextItem(text: "  ESCALATED — WITH SUPERVISOR ", style: "STRONG", size: "SMALL", color: "#454F5C"),
-                        a!richTextItem(text: "(" & local!escalatedCount & ")", style: "STRONG", size: "SMALL", color: "#6E7885"),
+                        a!richTextIcon(icon: "circle", size: "SMALL", color: "#96590A"),
+                        a!richTextItem(text: "  ESCALATED — WITH SUPERVISOR ", size: "SMALL", color: "#454F5C", style: "STRONG"),
+                        a!richTextItem(text: "(" & local!escalatedCount & ")", size: "SMALL", color: "#6E7885", style: "STRONG"),
                         a!richTextItem(text: "  ·  raised from your book, no action needed", size: "SMALL", color: "#6E7885")
                       }
-                    )
+                    ),
+                    style: "#FAFBFC",
+                    showBorder: false,
+                    padding: "LESS"
                   ),
                   a!gridField(
                     labelPosition: "COLLAPSED",
-                    data: local!escalated,
                     emptyGridMessage: "Nothing escalated.",
-                    pageSize: 25,
-                    spacing: "DENSE",
-                    borderStyle: "LIGHT",
-                    selectable: false,
+                    data: local!escalated,
                     columns: {
                       a!gridColumn(
                         label: "Trade",
-                        width: "NARROW_PLUS",
-                        sortField: "tradeId",
                         value: a!richTextDisplayField(
                           labelPosition: "COLLAPSED",
-                          preventWrapping: true,
                           value: {
                             a!richTextItem(
                               text: index(fv!row, "tradeId", ""),
-                              color: "#5A7392",
                               link: a!recordLink(
                                 recordType: 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case',
                                 identifier: index(fv!row, "caseId", null)
-                              )
+                              ),
+                              color: "#5A7392"
                             ),
                             a!richTextItem(
                               text: "  " & index(fv!row, "batchTag", ""),
-                              color: "#3E7396",
+                              showWhen: index(fv!row, "batchTag", "") <> "",
                               size: "SMALL",
-                              showWhen: index(fv!row, "batchTag", "") <> ""
+                              color: "#3E7396"
                             )
-                          }
-                        )
+                          },
+                          preventWrapping: true
+                        ),
+                        sortField: "tradeId",
+                        width: "NARROW_PLUS"
                       ),
                       a!gridColumn(
                         label: "Instrument",
-                        width: "AUTO",
-                        sortField: "ticker",
                         value: a!richTextDisplayField(
                           labelPosition: "COLLAPSED",
                           value: {
-                            a!richTextItem(text: index(fv!row, "sideLabel", ""), color: "#6E7885", size: "SMALL"),
+                            a!richTextItem(text: index(fv!row, "sideLabel", ""), size: "SMALL", color: "#6E7885"),
                             a!richTextItem(text: "  " & index(fv!row, "ticker", ""), color: "#454F5C"),
-                            a!richTextItem(text: "  " & index(fv!row, "instrumentName", ""), color: "#6E7885", size: "SMALL")
+                            a!richTextItem(text: "  " & index(fv!row, "instrumentName", ""), size: "SMALL", color: "#6E7885")
                           }
-                        )
+                        ),
+                        sortField: "ticker",
+                        width: "AUTO"
                       ),
                       a!gridColumn(
                         label: "Counterparty",
-                        width: "NARROW_PLUS",
-                        sortField: "counterparty",
                         value: a!richTextDisplayField(
                           labelPosition: "COLLAPSED",
-                          value: a!richTextItem(text: index(fv!row, "counterparty", ""), color: "#454F5C", size: "SMALL")
-                        )
+                          value: a!richTextItem(text: index(fv!row, "counterparty", ""), size: "SMALL", color: "#454F5C")
+                        ),
+                        sortField: "counterparty",
+                        width: "NARROW_PLUS"
                       ),
                       a!gridColumn(
                         label: "Value",
-                        width: "NARROW",
-                        align: "END",
-                        sortField: "notional",
                         value: a!richTextDisplayField(
                           labelPosition: "COLLAPSED",
-                          align: "RIGHT",
-                          value: a!richTextItem(text: index(fv!row, "valueDisplay", ""), color: "#454F5C", size: "SMALL")
-                        )
+                          value: a!richTextItem(text: index(fv!row, "valueDisplay", ""), size: "SMALL", color: "#454F5C"),
+                          align: "RIGHT"
+                        ),
+                        sortField: "notional",
+                        align: "END",
+                        width: "NARROW"
                       ),
                       a!gridColumn(
                         label: "Fail risk",
-                        width: "NARROW",
-                        align: "END",
-                        sortField: "probPct",
                         helpTooltip: "Live from Snowflake — the model's fail probability and risk tier for this trade.",
                         value: a!richTextDisplayField(
                           labelPosition: "COLLAPSED",
-                          align: "RIGHT",
-                          preventWrapping: true,
                           value: {
-                            a!richTextItem(text: index(fv!row, "probDisplay", "—"), color: index(fv!row, "tierColor", "#4A5462"), style: "STRONG", size: "SMALL"),
-                            a!richTextItem(text: "  " & index(fv!row, "riskTier", ""), color: "#6E7885", size: "SMALL")
-                          }
-                        )
+                            a!richTextItem(text: index(fv!row, "probDisplay", "—"), size: "SMALL", color: index(fv!row, "tierColor", "#4A5462"), style: "STRONG"),
+                            a!richTextItem(text: "  " & index(fv!row, "riskTier", ""), size: "SMALL", color: "#6E7885")
+                          },
+                          align: "RIGHT",
+                          preventWrapping: true
+                        ),
+                        sortField: "probPct",
+                        align: "END",
+                        width: "NARROW"
                       ),
                       a!gridColumn(
                         label: "Escalation",
-                        width: "MEDIUM",
-                        sortField: "escLine",
                         value: a!richTextDisplayField(
                           labelPosition: "COLLAPSED",
                           value: {
-                            a!richTextItem(text: index(fv!row, "escLine", ""), color: "#B3261E", style: "STRONG", size: "SMALL"),
+                            a!richTextItem(text: index(fv!row, "escLine", ""), size: "SMALL", color: "#B3261E", style: "STRONG"),
                             char(10),
-                            a!richTextItem(text: index(fv!row, "escSub", ""), color: "#6E7885", size: "SMALL")
+                            a!richTextItem(text: index(fv!row, "escSub", ""), size: "SMALL", color: "#6E7885")
                           }
-                        )
+                        ),
+                        sortField: "escLine",
+                        width: "MEDIUM"
                       ),
                       a!gridColumn(
                         label: "Status",
-                        width: "NARROW",
-                        sortField: "statusLabel",
                         value: a!richTextDisplayField(
                           labelPosition: "COLLAPSED",
                           value: {
-                            a!richTextItem(text: index(fv!row, "statusLabel", ""), color: "#6E7885", style: "STRONG", size: "SMALL"),
+                            a!richTextItem(text: index(fv!row, "statusLabel", ""), size: "SMALL", color: "#6E7885", style: "STRONG"),
                             char(10),
-                            a!richTextItem(text: "cutoff " & index(fv!row, "cutoffAt", ""), color: "#6E7885", size: "SMALL")
+                            a!richTextItem(text: "cutoff " & index(fv!row, "cutoffAt", ""), size: "SMALL", color: "#6E7885")
                           }
-                        )
+                        ),
+                        sortField: "statusLabel",
+                        width: "NARROW"
                       )
-                    }
+                    },
+                    pageSize: 25,
+                    selectable: false,
+                    spacing: "DENSE",
+                    borderStyle: "LIGHT"
                   )
-                }
+                },
+                showWhen: local!escalatedCount > 0,
+                marginBelow: "STANDARD",
+                style: "NONE",
+                showBorder: true,
+                padding: "NONE",
+                shape: "SEMI_ROUNDED"
               ),
 
               /* ---------- QUEUE 3: CLEARED THIS BATCH ----------
@@ -1169,136 +1164,120 @@ a!localVariables(
                  is the honest affordance: a resolved case opens, a
                  never-opened case does not pretend to. */
               a!cardLayout(
-                showWhen: local!hasBatch,
-                padding: "NONE",
-                showBorder: true,
-                style: "NONE",
-                shape: "SEMI_ROUNDED",
                 contents: {
                   a!cardLayout(
-                    padding: "LESS",
-                    style: "#FAFBFC",
-                    showBorder: false,
                     contents: a!richTextDisplayField(
                       labelPosition: "COLLAPSED",
                       value: {
-                        a!richTextIcon(icon: "circle", color: "#17715B", size: "SMALL"),
-                        a!richTextItem(text: "  CLEARED THIS BATCH ", style: "STRONG", size: "SMALL", color: "#454F5C"),
-                        a!richTextItem(text: "(" & count(local!cleared) & ")", style: "STRONG", size: "SMALL", color: "#6E7885"),
+                        a!richTextIcon(icon: "circle", size: "SMALL", color: "#17715B"),
+                        a!richTextItem(text: "  CLEARED THIS BATCH ", size: "SMALL", color: "#454F5C", style: "STRONG"),
+                        a!richTextItem(text: "(" & count(local!cleared) & ")", size: "SMALL", color: "#6E7885", style: "STRONG"),
                         a!richTextItem(text: "  ·  scoring and agent together", size: "SMALL", color: "#6E7885")
                       }
-                    )
+                    ),
+                    style: "#FAFBFC",
+                    showBorder: false,
+                    padding: "LESS"
                   ),
                   a!cardLayout(
-                    padding: "LESS",
-                    style: "NONE",
-                    showBorder: false,
                     contents: a!richTextDisplayField(
                       labelPosition: "COLLAPSED",
                       value: {
-                        a!richTextItem(text: local!snowClearedCount, style: "STRONG", color: "#1B2330", size: "SMALL"),
-                        a!richTextItem(text: " cleared by Snowflake scoring", color: "#4A5462", size: "SMALL"),
-                        a!richTextItem(text: "   ·   ", color: "#9AA6B3", size: "SMALL"),
-                        a!richTextItem(text: local!agentResolvedCount, style: "STRONG", color: "#1B2330", size: "SMALL"),
-                        a!richTextItem(text: " resolved by the agent", color: "#4A5462", size: "SMALL"),
-                        a!richTextItem(text: "   ·   ", color: "#9AA6B3", size: "SMALL", showWhen: local!analystResolvedCount > 0),
-                        a!richTextItem(text: local!analystResolvedCount, style: "STRONG", color: "#1B2330", size: "SMALL", showWhen: local!analystResolvedCount > 0),
-                        a!richTextItem(text: " resolved by an analyst", color: "#4A5462", size: "SMALL", showWhen: local!analystResolvedCount > 0),
-                        a!richTextItem(text: "   ·   ", color: "#9AA6B3", size: "SMALL"),
-                        a!richTextItem(text: local!noTouchCount & " of " & local!batchCount & " without analyst touch", style: "STRONG", color: "#17715B", size: "SMALL")
+                        a!richTextItem(text: local!snowClearedCount, size: "SMALL", color: "#1B2330", style: "STRONG"),
+                        a!richTextItem(text: " cleared by Snowflake scoring", size: "SMALL", color: "#4A5462"),
+                        a!richTextItem(text: "   ·   ", size: "SMALL", color: "#9AA6B3"),
+                        a!richTextItem(text: local!agentResolvedCount, size: "SMALL", color: "#1B2330", style: "STRONG"),
+                        a!richTextItem(text: " resolved by the agent", size: "SMALL", color: "#4A5462"),
+                        a!richTextItem(text: "   ·   ", showWhen: local!analystResolvedCount > 0, size: "SMALL", color: "#9AA6B3"),
+                        a!richTextItem(text: local!analystResolvedCount, showWhen: local!analystResolvedCount > 0, size: "SMALL", color: "#1B2330", style: "STRONG"),
+                        a!richTextItem(text: " resolved by an analyst", showWhen: local!analystResolvedCount > 0, size: "SMALL", color: "#4A5462"),
+                        a!richTextItem(text: "   ·   ", size: "SMALL", color: "#9AA6B3"),
+                        a!richTextItem(text: local!noTouchCount & " of " & local!batchCount & " without analyst touch", size: "SMALL", color: "#17715B", style: "STRONG")
                       }
-                    )
+                    ),
+                    style: "NONE",
+                    showBorder: false,
+                    padding: "LESS"
                   ),
                   a!sectionLayout(
                     label: "Show the " & count(local!cleared) & " cleared trade" & if(count(local!cleared) = 1, "", "s"),
-                    labelSize: "EXTRA_SMALL",
-                    labelColor: "SECONDARY",
-                    isCollapsible: true,
-                    isInitiallyCollapsed: true,
-                    marginBelow: "NONE",
                     contents: a!gridField(
                       labelPosition: "COLLAPSED",
-                      data: local!cleared,
                       emptyGridMessage: "Nothing cleared in this batch.",
-                      pageSize: 25,
-                      spacing: "DENSE",
-                      borderStyle: "LIGHT",
-                      selectable: false,
+                      data: local!cleared,
                       columns: {
                         a!gridColumn(
                           label: "Trade",
-                          width: "NARROW_PLUS",
-                          sortField: "tradeId",
                           value: a!richTextDisplayField(
                             labelPosition: "COLLAPSED",
-                            preventWrapping: true,
                             value: {
                               /* A scored-clear trade has no case, so its id is
                                  plain text: there is nothing to open, and a
                                  dead link would be worse than no link. */
                               a!richTextItem(
                                 text: index(fv!row, "tradeId", ""),
-                                color: "#454F5C",
-                                showWhen: a!isNullOrEmpty(index(fv!row, "clearedCaseId", null))
+                                showWhen: a!isNullOrEmpty(index(fv!row, "clearedCaseId", null)),
+                                color: "#454F5C"
                               ),
                               a!richTextItem(
                                 text: index(fv!row, "tradeId", ""),
-                                style: "STRONG",
+                                showWhen: not(a!isNullOrEmpty(index(fv!row, "clearedCaseId", null))),
                                 link: a!recordLink(
                                   recordType: 'recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case',
                                   identifier: index(fv!row, "clearedCaseId", null)
                                 ),
-                                showWhen: not(a!isNullOrEmpty(index(fv!row, "clearedCaseId", null)))
+                                style: "STRONG"
                               )
-                            }
-                          )
+                            },
+                            preventWrapping: true
+                          ),
+                          sortField: "tradeId",
+                          width: "NARROW_PLUS"
                         ),
                         a!gridColumn(
                           label: "Instrument",
-                          width: "AUTO",
-                          sortField: "ticker",
                           value: a!richTextDisplayField(
                             labelPosition: "COLLAPSED",
                             value: {
-                              a!richTextItem(text: index(fv!row, "sideLabel", ""), color: index(fv!row, "sideColor", "#4A5462"), style: "STRONG", size: "SMALL"),
+                              a!richTextItem(text: index(fv!row, "sideLabel", ""), size: "SMALL", color: index(fv!row, "sideColor", "#4A5462"), style: "STRONG"),
                               a!richTextItem(text: "  " & index(fv!row, "ticker", ""), color: "#454F5C"),
-                              a!richTextItem(text: "  " & index(fv!row, "quantityDisplay", ""), color: "#6E7885", size: "SMALL")
+                              a!richTextItem(text: "  " & index(fv!row, "quantityDisplay", ""), size: "SMALL", color: "#6E7885")
                             }
-                          )
+                          ),
+                          sortField: "ticker",
+                          width: "AUTO"
                         ),
                         a!gridColumn(
                           label: "Counterparty",
-                          width: "NARROW_PLUS",
+                          value: index(fv!row, "counterparty", ""),
                           sortField: "counterparty",
-                          value: index(fv!row, "counterparty", "")
+                          width: "NARROW_PLUS"
                         ),
                         a!gridColumn(
                           label: "Value",
-                          width: "NARROW",
-                          align: "END",
+                          value: index(fv!row, "valueDisplay", ""),
                           sortField: "notional",
-                          value: index(fv!row, "valueDisplay", "")
+                          align: "END",
+                          width: "NARROW"
                         ),
                         a!gridColumn(
                           label: "Fail risk",
-                          width: "NARROW",
-                          align: "END",
-                          sortField: "probPct",
                           helpTooltip: "Live from Snowflake — the model's fail probability and risk tier for this trade.",
                           value: a!richTextDisplayField(
                             labelPosition: "COLLAPSED",
-                            align: "RIGHT",
-                            preventWrapping: true,
                             value: {
-                              a!richTextItem(text: index(fv!row, "probDisplay", "—"), color: index(fv!row, "tierColor", "#4A5462"), style: "STRONG", size: "SMALL"),
-                              a!richTextItem(text: "  " & index(fv!row, "riskTier", ""), color: "#6E7885", size: "SMALL")
-                            }
-                          )
+                              a!richTextItem(text: index(fv!row, "probDisplay", "—"), size: "SMALL", color: index(fv!row, "tierColor", "#4A5462"), style: "STRONG"),
+                              a!richTextItem(text: "  " & index(fv!row, "riskTier", ""), size: "SMALL", color: "#6E7885")
+                            },
+                            align: "RIGHT",
+                            preventWrapping: true
+                          ),
+                          sortField: "probPct",
+                          align: "END",
+                          width: "NARROW"
                         ),
                         a!gridColumn(
                           label: "Disposition",
-                          width: "MEDIUM",
-                          sortField: "dispLine",
                           value: a!richTextDisplayField(
                             labelPosition: "COLLAPSED",
                             value: {
@@ -1306,34 +1285,51 @@ a!localVariables(
                                  the one disposition on this screen that IS a
                                  Snowflake decision; the agent's is not. */
                               rule!SO_snowflakeMark(showWhen: index(fv!row, "isSnowCleared", false)),
-                              a!richTextItem(text: " ", size: "SMALL", showWhen: index(fv!row, "isSnowCleared", false)),
-                              a!richTextItem(text: index(fv!row, "dispLine", ""), color: index(fv!row, "dispColor", "#454F5C"), style: "STRONG", size: "SMALL"),
+                              a!richTextItem(text: " ", showWhen: index(fv!row, "isSnowCleared", false), size: "SMALL"),
+                              a!richTextItem(text: index(fv!row, "dispLine", ""), size: "SMALL", color: index(fv!row, "dispColor", "#454F5C"), style: "STRONG"),
                               char(10),
-                              a!richTextItem(text: index(fv!row, "dispSub", ""), color: "#6E7885", size: "SMALL")
+                              a!richTextItem(text: index(fv!row, "dispSub", ""), size: "SMALL", color: "#6E7885")
                             }
-                          )
+                          ),
+                          sortField: "dispLine",
+                          width: "MEDIUM"
                         ),
                         a!gridColumn(
                           label: "Time",
-                          width: "NARROW",
+                          value: a!richTextDisplayField(
+                            labelPosition: "COLLAPSED",
+                            value: a!richTextItem(text: index(fv!row, "timeDisplay", ""), size: "SMALL", color: "#6E7885"),
+                            preventWrapping: true
+                          ),
                           /* Sorts on what the column SHOWS. A scored-clear row
                              shows its scoring time and an agent-resolved row
                              shows when it resolved, so sorting on the scoring
                              stamp would order the column by a value one of its
                              row kinds never displays. */
                           sortField: "timeDisplay",
-                          value: a!richTextDisplayField(
-                            labelPosition: "COLLAPSED",
-                            preventWrapping: true,
-                            value: a!richTextItem(text: index(fv!row, "timeDisplay", ""), color: "#6E7885", size: "SMALL")
-                          )
+                          width: "NARROW"
                         )
-                      }
-                    )
+                      },
+                      pageSize: 25,
+                      selectable: false,
+                      spacing: "DENSE",
+                      borderStyle: "LIGHT"
+                    ),
+                    isCollapsible: true,
+                    isInitiallyCollapsed: true,
+                    marginBelow: "NONE",
+                    labelSize: "EXTRA_SMALL",
+                    labelColor: "SECONDARY"
                   )
-                }
+                },
+                showWhen: "false",
+                style: "NONE",
+                showBorder: true,
+                padding: "NONE",
+                shape: "SEMI_ROUNDED"
               )
-            }
+            },
+            width: "AUTO"
           ),
 
           /* ---------- PREVIEW RAIL ----------
@@ -1342,7 +1338,6 @@ a!localVariables(
              it is which grid feeds the selection — NEEDS YOUR ACTION, the only
              queue whose rows are a decision the analyst still owns. */
           a!columnLayout(
-            width: "NARROW_PLUS",
             contents: rule!SO_watchlistPreviewRail(
               row: local!selected,
               assessmentText: if(
@@ -1355,10 +1350,15 @@ a!localVariables(
                 null,
                 local!assessment['recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{4143f703-c044-40d9-a2fd-927d6a67795d}createdOn']
               )
-            )
+            ),
+            width: "NARROW_PLUS"
           )
-        }
+        },
+        alignVertical: "TOP"
       )
-    }
+    },
+    focusOnFirstInput: false,
+    contentsWidth: "FULL",
+    backgroundColor: "#F3F5F8"
   )
 )
