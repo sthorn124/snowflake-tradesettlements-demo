@@ -233,6 +233,7 @@ Console (`SO_demoAdminConsole`)
   - Loaded before today: "Loaded before today. Prepare the demo again for fresh dates." Button enabled.
   - Did not finish: "The last run did not finish. Prepare the demo again." Button enabled.
   - Story out of place: "Not ready. The <hero | escalation | straight-through> case is <its status>, not <its scripted status>. Prepare the demo again." Button enabled.
+  - Hero past cutoff (a seventh state, added 2026-11-12 on Scott's "Yes, add it"; the words are the session's): "Not ready. The hero case passed its cutoff at <time>. Prepare the demo again." Amber. Button enabled. `SO_demoRunState` version 3; the console is unchanged at version 14 and rendered the line.
 - ✅ 2026-11-12: The button is disabled for the whole run, from the press until all three stories have an agent decision. The state reads Running from the press, because `SO_prepareRun` records the start before it answers. Rendered during a run: the button's `disabled` is true; in every other state rendered it is false.
 - ✅ 2026-11-12: A run that dies partway unlocks itself. After 5 minutes with no finish, the console treats the run as over and enables the button (press to Ready measured at 73 and 78 seconds in the audit). Measured on the rule with one story left "New": Running at 239 seconds, Did not finish at 302. A Prepare whose background half died before loading unlocks the same way, by the age of its run record; that path was built and not forced.
 - ✅ 2026-11-12: The status line counts real demo cases only. On 2026-10-23 it read "Demo loaded" with 0 trades and 5 cases, because cases with no trade behind them were counted. The console counts cases whose session id is the run name, through `SO_demoRunState`.
@@ -262,7 +263,7 @@ Documents
 Proposed by the planning chat, not ruled
 - ✅ Ruled 2026-11-12, now in scope above: Ready also requires each of the three stories to sit in its scripted queue. If one does not, the line names it and says to prepare again.
 - [ ] The Ready line names who loaded the demo, so a second SC can see that someone else's run is live before pressing. Note 2026-11-12: `SO Demo Run` now stores who pressed Prepare (`startedBy`), so this needs only the line.
-- [ ] Ready does not look at how old today's load is (found 2026-11-12). A run loaded at 2 AM still reads "Ready to present" at 9 AM with the hero's cutoff past. Scott rules whether Ready should also require the hero's cutoff to be in the future.
+- ✅ Ruled 2026-11-12 ("Yes, add it"), now in scope above: Ready does not look at how old today's load is (found 2026-11-12). A run loaded at 2 AM still reads "Ready to present" at 9 AM with the hero's cutoff past. Built the same day: Ready ends when the hero case's cutoff passes. Measured on the live run: Ready 22 seconds before the cutoff, "Not ready" 38 seconds after it.
 
 The status-line copy above is the contract for the build prompt.
 

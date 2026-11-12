@@ -17,13 +17,18 @@
  *     name. A case with any other session id, or none, is not a demo case;
  *   - the stories and where each should end up: SO_intakePlan's story table.
  *
- * SIX STATES, tested in this order:
+ * SEVEN STATES, tested in this order:
  *   NOTHING_LOADED       no TRD9 trades and no cases tagged with the run name
  *   LOADED_BEFORE_TODAY  the load stamp's date is not today
- *   READY                loaded today; every story has its decision and is in
- *                        its scripted status
  *   STORY_OUT_OF_PLACE   loaded today; every story has its decision and at
  *                        least one is not in its scripted status
+ *   HERO_PAST_CUTOFF     loaded today; every story has its decision and is in
+ *                        its scripted status; the hero case's cutoff has
+ *                        passed. Added 2026-11-12 on Scott's yes: a load at
+ *                        2 AM still read "Ready to present" at 9 AM, four
+ *                        hours after the hero's cutoff
+ *   READY                loaded today; every story has its decision and is in
+ *                        its scripted status; the hero's cutoff is still ahead
  *   RUNNING              a Prepare recorded as PREPARING whose packet has not
  *                        landed, under 5 minutes old (tested FIRST); or loaded
  *                        today, a story has no decision yet and the stamp is
@@ -36,6 +41,12 @@
  * A STORY HAS ITS DECISION when its case's status is neither "New" nor
  * "Agent Triage". "Agent Triage" is not progress: triage writes it after the
  * agent has returned, so for the whole agent call the case still reads "New".
+ *
+ * THE HERO IS THE STORY LABELLED "hero" IN SO_intakePlan: the one case the
+ * presenter still has to act on, so the one whose cutoff ends Ready. The other
+ * two stories are finished when the run is. A story out of place is reported
+ * first, because that line names the status. A hero with no cutoff stored
+ * never leaves Ready on this test.
  *
  * THE 5 MINUTES IS WHAT UNLOCKS A RUN THAT DIED. A failed agent run leaves its
  * case "New" for good; press to Ready measures about 100 seconds.
@@ -75,7 +86,7 @@ a!localVariables(
 
   local!cases: a!queryRecordType(
     recordType: @{C},
-    fields: { @{C.caseID}, @{C.tradeID}, @{C.status} },
+    fields: { @{C.caseID}, @{C.tradeID}, @{C.status}, @{C.cutoffTs} },
     filters: a!queryFilter(field: @{C.sessionID}, operator: "=", value: local!name),
     pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 500, sort: a!sortInfo(field: @{C.caseID}, ascending: true))
   ).data,
@@ -89,7 +100,7 @@ a!localVariables(
       local!mine: if(a!isNullOrEmpty(local!cases), {}, a!flatten(a!forEach(
         items: local!cases,
         expression: if(tostring(fv!item[@{C.tradeID}]) = tostring(local!story.tradeId),
-          a!map(caseId: fv!item[@{C.caseID}], status: tostring(fv!item[@{C.status}])), {})
+          a!map(caseId: fv!item[@{C.caseID}], status: tostring(fv!item[@{C.status}]), cutoff: fv!item[@{C.cutoffTs}]), {})
       ))),
       local!case: if(a!isNullOrEmpty(local!mine), null, index(local!mine, count(local!mine), null)),
       local!status: tostring(a!defaultValue(index(local!case, "status", ""), "")),
@@ -100,6 +111,7 @@ a!localVariables(
         scriptedStatus: local!story.scriptedStatus,
         caseId: index(local!case, "caseId", null),
         status: local!status,
+        cutoff: index(local!case, "cutoff", null),
         decided: and(not(a!isNullOrEmpty(local!case)), not(contains({ "New", "Agent Triage" }, local!status))),
         inPlace: local!status = local!story.scriptedStatus
       )
@@ -108,6 +120,12 @@ a!localVariables(
   local!undecided: sum(a!forEach(items: local!storyStates, expression: if(fv!item.decided, 0, 1))),
   local!outOfPlace: a!flatten(a!forEach(items: local!storyStates, expression: if(and(fv!item.decided, not(fv!item.inPlace)), fv!item, {}))),
   local!firstOut: if(a!isNullOrEmpty(local!outOfPlace), null, index(local!outOfPlace, 1, null)),
+
+  /* the hero: the story the presenter still has to act on before its cutoff */
+  local!heroLabel: "hero",
+  local!heroStories: a!flatten(a!forEach(items: local!storyStates, expression: if(tostring(fv!item.label) = local!heroLabel, fv!item, {}))),
+  local!heroCutoff: if(a!isNullOrEmpty(local!heroStories), null, index(index(local!heroStories, 1, null), "cutoff", null)),
+  local!heroPast: if(a!isNullOrEmpty(local!heroCutoff), false, todecimal(local!heroCutoff) <= todecimal(local!now)),
 
   local!hasStamp: not(a!isNullOrEmpty(local!loadStamp)),
 
@@ -139,29 +157,35 @@ a!localVariables(
     if(and(local!packetTrades = 0, local!demoCases = 0), "NOTHING_LOADED",
     if(and(local!hasStamp, not(local!loadedToday)), "LOADED_BEFORE_TODAY",
     if(not(local!loadedToday), "DID_NOT_FINISH",
-    if(local!undecided = 0, if(a!isNullOrEmpty(local!firstOut), "READY", "STORY_OUT_OF_PLACE"),
+    if(local!undecided = 0,
+      if(not(a!isNullOrEmpty(local!firstOut)), "STORY_OUT_OF_PLACE", if(local!heroPast, "HERO_PAST_CUTOFF", "READY")),
     if(a!defaultValue(local!ageSeconds, local!runningLimitSeconds) < local!runningLimitSeconds, "RUNNING", "DID_NOT_FINISH"))))))
   ),
   /* the pieces of the status line, each safe to build in any state */
   local!loadedAt: if(local!hasStamp, text(local!loadStamp, "h:mm a"), ""),
+  local!heroCutoffAt: if(a!isNullOrEmpty(local!heroCutoff), "", text(local!heroCutoff, "h:mm a")),
   local!outLabel: tostring(index(local!firstOut, "label", "")),
   local!outStatus: rule!SO_statusDisplay(status: tostring(index(local!firstOut, "status", ""))).label,
   local!outScripted: rule!SO_statusDisplay(status: tostring(index(local!firstOut, "scriptedStatus", ""))).label,
 
   a!map(
     state: local!state,
-    /* the status line, word for word as ruled 2026-11-11 and 2026-11-12 */
+    /* the status line, word for word as ruled 2026-11-11 and 2026-11-12. The
+       HERO_PAST_CUTOFF line is the exception: Scott ruled the state, and the
+       session wrote its words on the pattern of the story line below */
     line: a!match(
       value: local!state,
       equals: "NOTHING_LOADED", then: "No demo loaded.",
       equals: "RUNNING", then: "Preparing the demo. About two minutes. Refresh this page to check.",
       equals: "READY", then: "Ready to present. Loaded today at " & local!loadedAt & ".",
+      equals: "HERO_PAST_CUTOFF", then: "Not ready. The " & local!heroLabel & " case passed its cutoff at "
+        & local!heroCutoffAt & ". Prepare the demo again.",
       equals: "LOADED_BEFORE_TODAY", then: "Loaded before today. Prepare the demo again for fresh dates.",
       equals: "STORY_OUT_OF_PLACE", then: "Not ready. The " & local!outLabel & " case is "
         & local!outStatus & ", not " & local!outScripted & ". Prepare the demo again.",
       default: "The last run did not finish. Prepare the demo again."
     ),
-    /* READY is green; nothing loaded and running are neutral; the other three are amber */
+    /* READY is green; nothing loaded and running are neutral; every other state is amber */
     tone: a!match(
       value: local!state,
       equals: "READY", then: "POSITIVE",
@@ -180,6 +204,7 @@ a!localVariables(
     demoCases: local!demoCases,
     loadStamp: local!loadStamp,
     ageSeconds: local!ageSeconds,
+    heroCutoff: local!heroCutoff,
     stories: local!storyStates
   )
 )

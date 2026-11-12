@@ -4328,3 +4328,86 @@ Two found this round, none promoted, two listed.
 **The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
 
 **Promotion checkpoint: current through this entry.**
+
+---
+
+## 2026-11-12 — Phase 11, third round: Ready ends at the hero's cutoff (`SO_demoRunState` version 3; same Claude Code session)
+
+**Scope.** Same session and identity as the two entries above: the Dev MCP as `scott.thorn@appian.com`, direct member of `SO Supervisors` (full scope) and `SO Demo Admins`. No sail. The runtime server was never called. One helper agent made one read-only `testInterface` call on the console under the same account and reported what it read.
+
+**Ruling.** The second round's close-out asked: should "Ready" stop showing once the hero's cutoff has passed? Scott answered "Yes, add it" (2026-11-12).
+
+### Reproduced first
+
+At 14:25 UTC (9:25 AM Eastern) `SO_demoRunState` version 2 returned READY, "Ready to present. Loaded today at 2:09 AM.", on the run loaded at 07:09:15 UTC. The hero case (147) had its cutoff at 10:14:21 UTC, four hours earlier. Version 2 was read back from NY first and was byte-identical to `.work/rule_SO_demoRunState.sail`.
+
+### What changed, by object
+
+| Object | UUID | Change |
+|---|---|---|
+| `SO_demoRunState` | `_a-0000f0af-7210-8000-9c5d-011c48011c48_613582` | 2 → 3. The case query also reads `cutoffTs`. A seventh state, HERO_PAST_CUTOFF, replaces READY when the hero case's cutoff is at or before now. Its line: "Not ready. The hero case passed its cutoff at <time>. Prepare the demo again." Tone WARN. New outputs: `heroCutoff`, and `cutoff` on each story. Description updated |
+
+**Not changed on NY:** `SO_demoAdminConsole` (version 14; it picks the colour from the rule's tone), `SO_prepareRun`, `SO_prepareRunSteps`, `SO_intakePlan`, every persona screen.
+
+**In the repo:** `.work/gen/rule_SO_demoRunState.sailt` and the expanded `.work/rule_SO_demoRunState.sail` (the file sent, and the file the save wrote back); `.kiro/steering/project.md` (the status-line list and "seven values"); `BUILD_PLAN.md`; `TODO.md`. The three demo documents needed no change: their rule is already "unless the status line says Ready to present, press Prepare".
+
+### Verified (as `scott.thorn@appian.com`, full scope)
+
+Pass conditions were written down before each run.
+
+**The rule, on the 07:09 UTC run, through `testRule`.** The hero's cutoff was 10:14:21.970 UTC.
+
+| Clock | Expected | Returned |
+|---|---|---|
+| now (14:27 UTC, no `asOf`) | HERO_PAST_CUTOFF, WARN | HERO_PAST_CUTOFF, WARN, "Not ready. The hero case passed its cutoff at 5:14 AM. Prepare the demo again.", `isRunning` false |
+| `asOf` 10:14:00 UTC, 22 s before the cutoff | READY | READY, POSITIVE, "Ready to present. Loaded today at 2:09 AM." |
+| `asOf` 10:15:00 UTC, 38 s after | HERO_PAST_CUTOFF | HERO_PAST_CUTOFF, WARN, the same line |
+| `asOf` 2026-11-13 14:00 UTC | LOADED_BEFORE_TODAY, as before | LOADED_BEFORE_TODAY, "Loaded before today. Prepare the demo again for fresh dates." |
+
+`ageSeconds` read 11,085 on the second row, which is 10:14:00 less 07:09:15, so `testRule` reads the `asOf` input as UTC.
+
+**The console, version 14, one `testInterface` render by the helper agent at 9:27 AM Eastern:** `diagnostics.error` null. Status line "Not ready. The hero case passed its cutoff at 5:14 AM. Prepare the demo again.", colour `#96590A`, STRONG. Button "Prepare the demo", `disabled` false. No "Not prepared" block. Verdict "Environment OK" with "data 50,000/50,000 · 9/9 connections". "Loaded now: 15 demo trades · 3 cases". The string "Ready to present" appears nowhere in the render.
+
+**One Prepare started from the new state (run D), through `testProcessModel`.**
+
+- **Started from "Not ready".** `pv!state` read HERO_PAST_CUTOFF; `ok` true; "OK started run=DEMO. The demo is being prepared in the background: about two minutes."; 4.46 seconds. Run record id 4, PREPARING at 14:28:24 UTC.
+- **Running during the run.** The rule read Running at 31, 43, 61 and 84 seconds after the start. At 31 seconds the packet had landed and no case existed: `heroCutoff` was null and the rule returned with no error.
+- **The run record closed as LOADED** at 14:29:01 UTC, 37.6 seconds after the start, with the load's own answer, "OK run=DEMO trades=15 predictions=15 high_or_critical=3".
+- **Ready by 114 seconds after the start** (read at 14:30:18 UTC, no `asOf`): "Ready to present. Loaded today at 9:28 AM.", POSITIVE. Cases 150 (hero, Pending Analyst, cutoff 17:34:00 UTC), 151 (Escalated) and 152 (Resolved - Straight Through). Three demo cases, not six.
+- **The new run flips at its own cutoff.** `asOf` 17:35:00 UTC returned HERO_PAST_CUTOFF, "Not ready. The hero case passed its cutoff at 12:34 PM. Prepare the demo again."
+
+### Decisions
+
+- **A seventh state, not a reuse of an existing line.** "Loaded before today" and "The last run did not finish" would both be false of a run loaded this morning that finished. The state table in the plan was six; Scott's yes adds the seventh.
+- **The words of the line are the session's.** Scott ruled the behaviour. The line follows the story line's pattern ("Not ready. The … case … Prepare the demo again.") and keeps to the console's budget of 15 words a sentence. The rule's comment says so.
+- **The hero is the story labelled `hero` in `SO_intakePlan`'s story table.** The literal is in the rule once and is used for both the selection and the line. The other two stories are finished when the run is, so their cutoffs do not end Ready.
+- **A story out of place is reported first.** Its line names the status, which is the more specific fault.
+- **No margin.** Ready holds until the cutoff itself, as the ruling was put. Logged in `TODO.md` with a trigger.
+- **The console was not edited.** Its colour comes from the rule's tone and its text from the rule's line, so the new state rendered amber with no change to the page. One comment in its source ("the other three amber") is now a state behind; logged in `TODO.md`.
+- **One Prepare was run after the change.** It proves `SO_prepareRun` starts from the new state, and it leaves NY in the Ready state from the last Prepare, as the build prompt's close-out asks.
+
+### Not verified
+
+- **Story out of place together with a passed cutoff.** The order is read from the source. No demo case was put out of place this round.
+- **A hero case that exists with no cutoff stored.** Only the no-case path was seen (mid-run, `heroCutoff` null, no error).
+- **The console's Ready render on rule version 3.** The rule's READY output was read; the page was last rendered in Ready on rule version 2.
+- **Colour and wrapping of the new line as a person sees them.** Browser; step 5 of the checklist in `TODO.md`.
+- **The re-date inside run D.** The run record closed as LOADED, so the re-date step answered OK. The stored stamps were not compared with the old script this round (they were on the 06:00 and 07:00 UTC clocks earlier in the session).
+- **What each persona sees.** By ruling. No persona screen changed.
+
+### Findings
+
+- **The session's own notes held the rule's UUID abbreviated**, and the first two calls of the round went to a UUID with the wrong prefix. `getExpressionRule` answered HTTP 404, "Expression rule … not found"; `testRule` answered HTTP 403, "Not found or access denied". The full UUID was then read from this log.
+- **The background half of run D took 37.6 seconds**, against 31.7 and 29.9 on the two full runs of the second round. The page does not wait for it.
+- **The escalation story's cutoff is earlier than the hero's** (09:39 against 10:14 UTC on the 07:09 run), and the straight-through story's is about nine hours after the load. Only the hero's ends Ready.
+
+### Promotion candidates (staging)
+
+One found this round, none promoted, one listed.
+
+- **NEW, STAGED (gate 1, one observation): on DevMCP 26.9.5 `getExpressionRule` on a UUID that does not exist returns HTTP 404 "not found", where the supplemental (§3, objects outside an application) records the same 403 as for "is not a rule". `testRule` on the same UUID still returns 403.** If it holds, "does not exist" and "exists but is not readable" can be told apart on this generation with a get call. *Trigger: the Dev MCP update procedure's re-check of the supplemental's §3, or the next get on a UUID known to exist outside the account's reach.*
+- The candidates staged in the two entries above are unchanged.
+
+**The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
+
+**Promotion checkpoint: current through this entry.**
