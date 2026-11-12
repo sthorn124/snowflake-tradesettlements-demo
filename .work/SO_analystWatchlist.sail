@@ -258,6 +258,10 @@ a!localVariables(
         cptyFailRate: fv!item['recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.relationships.{eab4eb75-cb43-43fc-a4a5-bea724b02294}counterparty.fields.{5a121680-38f4-4c04-9da7-7babb625c638}historicalFailRate'],
         notional: todecimal(fv!item['recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional']),
         currency: fv!item['recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{c5b04fca-3b01-4e51-8e23-5b1ddff6376e}currency'],
+        /* The amount in USD, for totals only. Every total that adds amounts across
+           currencies adds THIS, never notional (project rule: cross-currency totals
+           go through SO_fxToUsd). The row's own display stays in its own currency. */
+        usd: rule!SO_fxToUsd(amount: fv!item['recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional'], currency: fv!item['recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{c5b04fca-3b01-4e51-8e23-5b1ddff6376e}currency']),
         valueDisplay: rule!SO_fmtMoney(amount: fv!item['recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional'], currency: fv!item['recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{c5b04fca-3b01-4e51-8e23-5b1ddff6376e}currency'], compact: true),
         valueFull: rule!SO_fmtMoney(amount: fv!item['recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{80c0a476-8c55-482c-b799-e6fbec4124ab}notional'], currency: fv!item['recordType!{09405a10-06c7-4368-9d5e-41a148dffd15}SO Settlement Case.relationships.{1507a3f2-0feb-4df3-80f8-7b1a28e192c7}trade.fields.{c5b04fca-3b01-4e51-8e23-5b1ddff6376e}currency'], compact: false),
         quantityDisplay: index(local!qty, "display", ""),
@@ -574,12 +578,20 @@ a!localVariables(
      rather than reporting a number from a different question.
      --------------------------------------------------------------------------- */
   local!openCount: count(local!rows),
-  local!varTotal: a!defaultValue(sum(a!forEach(items: local!rows, expression: a!defaultValue(index(fv!item, "notional", 0), 0))), 0),
+  /* BOTH MONEY TOTALS ADD THE CONVERTED AMOUNT. Until 2026-11-12 they added
+     each row's notional as stored, across currencies, and labelled the result
+     "USD eq."; the supervisor screen converted first, so the two screens
+     disagreed on the same open items (662.5M here against 698.4M there). */
+  local!varTotal: a!defaultValue(sum(a!forEach(items: local!rows, expression: a!defaultValue(index(fv!item, "usd", 0), 0))), 0),
   local!inWindowCount: a!defaultValue(sum(a!forEach(items: local!rows, expression: if(index(fv!item, "inWindow", false), 1, 0))), 0),
   local!inWindowValue: a!defaultValue(
-    sum(a!forEach(items: local!rows, expression: if(index(fv!item, "inWindow", false), a!defaultValue(index(fv!item, "notional", 0), 0), 0))),
+    sum(a!forEach(items: local!rows, expression: if(index(fv!item, "inWindow", false), a!defaultValue(index(fv!item, "usd", 0), 0), 0))),
     0
   ),
+
+  /* The conversion basis, carried in the tooltip of every tile that shows a
+     "USD eq." figure. It names no currencies: the rule holds the list. */
+  local!fxBasisNote: "Cross-currency total: nothing in the source data carries an FX rate. Converted at indicative static rates (SO_fxToUsd) for aggregation only — not a market feed, not a rate of record.",
 
   /* ---------------------------------------------------------------------------
      VIEW STATE. Plain locals, not refresh variables — a variable carrying
@@ -686,7 +698,8 @@ a!localVariables(
             unit: "USD eq.",
             sub: "across " & local!openCount & " open item" & if(local!openCount = 1, "", "s"),
             accentColor: "#3E7396",
-            snowMarked: true
+            snowMarked: true,
+            tooltip: local!fxBasisNote
           ),
           rule!SO_kpiCard(
             label: "Inside critical window",
@@ -695,7 +708,8 @@ a!localVariables(
             unit: "",
             sub: "cutoff within 4h · " & rule!SO_fmtMoney(amount: local!inWindowValue, currency: "", compact: true) & " USD eq.",
             accentColor: "#B3261E",
-            snowMarked: false
+            snowMarked: false,
+            tooltip: local!fxBasisNote
           ),
           rule!SO_kpiCard(
             label: "Straight-through today",
