@@ -174,7 +174,7 @@ Watchlist (added 2026-10-09)
 
 Hero story
 - [ ] The hero's scripted analyst action is now Record Disposition → Settled - Partial Release (ruled 2026-09-25; supersedes Borrow Executed in TODO).
-- [ ] The hero is a BUY, so the agent's proposed "cover borrow" only makes sense if the firm has an onward sale of those shares. Before client ops audiences, fix the packet story: give the hero an onward sale in the settlement window (the case page's onward-deliveries card would then show it), or make the hero a sell where our own desk is short.
+- [ ] The hero is a BUY, so the agent's proposed "cover borrow" only makes sense if the firm has an onward sale of those shares. Before client ops audiences, fix the packet story: give the hero an onward sale in the settlement window (the case page's onward-deliveries card would then show it), or make the hero a sell where our own desk is short. **2026-11-13, not ruled:** Scott asked whether this is the agent's error and whether the logic can be fixed in place of the data. Read in the repo: the text comes from `SO_remediationForReason`, which takes only the fail reason and returns "Arrange cover borrow / partial release" for every `insufficient_securities` case, BUY or SELL. The agent's `propose_remediation` tool wraps that rule and the agent may not invent a remediation; `SO_triageCase` node 11 calls the rule as well, and so does `SO_caseDetail`. The planning chat recommends that the rule also read the trade's direction and its onward deliveries, with no change to the packet and no Snowsight script. Open: the ruling, the wording for a BUY, and how many standing cases store the old text for a BUY (a session reads that on NY).
 
 Documents
 - [ ] One-pager Act 1 says the demo shows "a feed arrival scores new trades in real time"; the demo now opens on the finished batch (ruled 2026-09-23), with the live moment moved to Phase 9. The architecture section says the agent's tools come from Snowflake's MCP server; the Ask panels run through Snowflake's SQL API. Bring both lines in line with the build, or rule them as intended roadmap.
@@ -297,7 +297,7 @@ Approach proposed by the planning chat
 - Reads that reach trade data through the case become platform-aware. Counted in `.work/` on 2026-11-11: 144 field references from SO Settlement Case through its `trade` relationship, in `SO_caseDetail`, `SO_analystWatchlist`, `SO_supervisorCommand` and `SO_caseContext`.
 
 Gates, all open
-- [ ] NY offers the Databricks connected system. Appian documents it from release 26.10.
+- ✅ 2026-11-13: NY offers the Databricks connected system. Reported by Scott ("yes, NY offers the databricks connected system"); not read by a session. Appian documents it from release 26.10.
 - [ ] The service principal connects from NY and a record type reads one table.
 - [ ] An expression accepts a record field reference returned by a rule. This decides whether the four objects change once or need a deeper rewrite.
 - [ ] One timed read across Snowflake and Databricks at 50,000 rows.
