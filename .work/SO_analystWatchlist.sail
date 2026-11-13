@@ -224,11 +224,12 @@ a!localVariables(
       local!hasScore: index(local!ar, "hasScore", false),
       local!score: index(local!ar, "score", 0),
       local!gate: index(local!ar, "gate", 80),
-      /* THE BATCH TAG. A row belongs to the loaded packet if its trade sits in
-         the reserved TRD9 range — the same test the batch query uses, so the
-         tag and the band can never disagree about which rows are new. The tag
-         shows the SCORING stamp, not the case's own creation time: the batch is
-         a scoring event, and the case is its consequence. */
+      /* A row belongs to the loaded packet if its trade sits in the reserved
+         TRD9 range — the same test the batch query uses. Until 2026-11-13 the
+         Trade column showed the packet's scoring time beside these rows' trade
+         ids. It had no label and appeared on those rows only, so it read as a
+         mistake, and it was removed. The Latest scoring batch band still shows
+         that time, once, with its label. */
       local!isBatch: and(not(a!isNullOrEmpty(local!tid)), left(local!tid, 4) = "TRD9"),
       /* The agent cell. Three shapes, keyed to what the record actually holds:
          a score with the case still in the analyst's hands (HELD), a
@@ -278,7 +279,6 @@ a!localVariables(
         ),
         scoredAt: local!scored,
         isBatch: local!isBatch,
-        batchTag: if(or(not(local!isBatch), a!isNullOrEmpty(local!scored)), "", text(local!scored, "hh:mm")),
         failReason: local!reason,
         failReasonLabel: index(local!fr, "label", ""),
         failReasonNote: index(local!fr, "note", ""),
@@ -863,13 +863,6 @@ a!localVariables(
                                 identifier: index(fv!row, "caseId", null)
                               ),
                               style: "STRONG"
-                            ),
-                            a!richTextItem(
-                              text: "  " & index(fv!row, "batchTag", ""),
-                              showWhen: index(fv!row, "batchTag", "") <> "",
-                              size: "SMALL",
-                              color: "#3E7396",
-                              style: "STRONG"
                             )
                           },
                           preventWrapping: true
@@ -1061,12 +1054,6 @@ a!localVariables(
                                 identifier: index(fv!row, "caseId", null)
                               ),
                               color: "#5A7392"
-                            ),
-                            a!richTextItem(
-                              text: "  " & index(fv!row, "batchTag", ""),
-                              showWhen: index(fv!row, "batchTag", "") <> "",
-                              size: "SMALL",
-                              color: "#3E7396"
                             )
                           },
                           preventWrapping: true
