@@ -64,7 +64,7 @@
 
 **Screen: the answer lands. Read the two fail rates off the screen.**
 
-> "Diamond Trust fails [N] percent of the time against [N] for the rest of the book, mostly for this same reason. The flag is credible. The analyst accepts the agent's proposal, a partial release: Diamond Trust delivers the shares it has today, the rest follows, and most of the trade settles on time."
+> "Diamond Trust fails [N] percent of the time against [N] for the rest of the book, mostly for this same reason. The flag is credible. The analyst accepts the agent's proposal, a partial delivery: Diamond Trust delivers the shares it has today, the rest follows, and most of the trade settles on time."
 
 ## 4:20 to 5:05 · The decision and the record
 

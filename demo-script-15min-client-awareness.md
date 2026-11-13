@@ -111,7 +111,7 @@ Scroll to **Ask about this case**. Click **"How does Diamond Trust compare with 
 
 When the answer lands, read the two fail rates off the screen (Diamond Trust's and the rest of the book's).
 
-> "So Diamond Trust fails a lot more often than the book, and mostly for this same reason. The flag is credible. The analyst accepts the agent's proposal: a partial release. Diamond Trust delivers the shares it has today, the rest follows, and most of the trade settles on time instead of all of it failing."
+> "So Diamond Trust fails a lot more often than the book, and mostly for this same reason. The flag is credible. The analyst accepts the agent's proposal: take a partial delivery. Diamond Trust delivers the shares it has today, the rest follows, and most of the trade settles on time instead of all of it failing."
 
 **Scroll back to the top of the case.**
 

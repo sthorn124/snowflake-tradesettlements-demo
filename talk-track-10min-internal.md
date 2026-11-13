@@ -69,7 +69,7 @@ Recording the disposition resolves the hero case. If you rehearse it beforehand,
 
 *When it lands:*
 
-> "Diamond Trust fails about 22% of the time, against under 13% for the rest of the book, and most of its recent fails were for this exact reason. So the flag is credible. She takes the partial release the agent proposed: Diamond Trust delivers the shares it has today, the rest follows, and most of the trade settles on time instead of all of it failing. Any penalty only applies to the part that's late."
+> "Diamond Trust fails about 22% of the time, against under 13% for the rest of the book, and most of its recent fails were for this exact reason. So the flag is credible. She takes the partial delivery the agent proposed: Diamond Trust delivers the shares it has today, the rest follows, and most of the trade settles on time instead of all of it failing. Any penalty only applies to the part that's late."
 
 *Click* **Record Disposition** *→* **Settled - Partial Release** *→ submit. Then open the case history.*
 
