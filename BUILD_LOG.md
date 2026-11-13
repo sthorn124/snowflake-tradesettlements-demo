@@ -5004,11 +5004,119 @@ The four action models in the table above; `SO_triageCase` 25.0; `SO_remediation
 
 Four found, none promoted, four listed.
 
-- **NEW, STAGED (gate 1, one observation): an agent's rule tool takes its inputs from the rule as it stands.** Two optional inputs were added to a rule over the Dev MCP; with no change in Agent Studio the deployed agent passed one of them on its next run. The trap: "add an optional input, existing callers keep working" holds for expression callers and not for an agent, which reads the new input's description and starts filling it. Working form: treat a change to a tool rule's inputs as a change to the agent, and test the agent in the same change. *Trigger: what Scott finds on the tool in Agent Studio at this stop, and the next rule behind an agent tool that gains an input.*
-- **NEW, STAGED (gate 1, four models on one site, not yet seen in a browser): a related action's page waits only as far as the flows are activity-chained, so a write after the last chained flow is missing from the page that follows the submit.** The pack's `references/process-models.md` says to set `activityChained` true "only where the next attended node should open for the same user straight after a form submit", which reads as a rule about forms; the server's own tool text and the docs say it also sets how long the submit waits. *Trigger: Scott's browser check of step 3.*
+- **[RULED 2026-11-13, round 2: PASSES THE FIVE GATES; NOT WRITTEN INTO THE SKILL, see the round 2 entry] NEW, STAGED (gate 1, one observation): an agent's rule tool takes its inputs from the rule as it stands.** Two optional inputs were added to a rule over the Dev MCP; with no change in Agent Studio the deployed agent passed one of them on its next run. The trap: "add an optional input, existing callers keep working" holds for expression callers and not for an agent, which reads the new input's description and starts filling it. Working form: treat a change to a tool rule's inputs as a change to the agent, and test the agent in the same change. *Trigger: what Scott finds on the tool in Agent Studio at this stop, and the next rule behind an agent tool that gains an input.*
+- **[RULED 2026-11-13, round 2: PASSES THE FIVE GATES; NOT WRITTEN INTO THE SKILL, see the round 2 entry] NEW, STAGED (gate 1, four models on one site, not yet seen in a browser): a related action's page waits only as far as the flows are activity-chained, so a write after the last chained flow is missing from the page that follows the submit.** The pack's `references/process-models.md` says to set `activityChained` true "only where the next attended node should open for the same user straight after a form submit", which reads as a rule about forms; the server's own tool text and the docs say it also sets how long the submit waits. *Trigger: Scott's browser check of step 3.*
 - **NEW, STAGED (gate 1, one rule, two calls): `testRule` honours `maxResponseSizeBytes`.** 400 was asked and the result came back cut, with `truncated: true`. The earlier candidates record that `testProcessModel` and `testInterface` do not honour it. *Trigger: the next long `testRule` result on another rule.*
 - **NEW, STAGED (gate 1, one model, three nodes): `updateProcessModelNode` stores an input expression as sent, with or without a leading "=", and both forms run.** *Trigger: the Dev MCP update procedure's re-check.*
 - **Seen again:** a get on a deleted rule returns HTTP 404 "Expression rule … not found" (four more today). The ruled candidate stays staged, as Scott ruled.
+
+**The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
+
+**Promotion checkpoint: current through this entry.**
+
+## 2026-11-13 — Phase 6.5 session 2, round 2: the process decides the stored remediation, agent version 7 applied and re-run on its three test cases, two standing cases brought level, finished on a fresh Prepare (`SO_triageCase` 26.0, new rule `SO_remediationForCase`; same Claude Code session)
+
+**Scope.** Round 2 of `prompts/006`, in the same session as the entry above and under the same identity and scope: the Dev MCP as `scott.thorn@appian.com`, full scope through `SO Supervisors`. No sail. The runtime server's tools were never loaded. One helper agent made one read-only `testInterface` call on the Demo Admin console under the same account. This round ran one Prepare (23:23:12 UTC, run record 12), which ran the re-date.
+
+**What Scott said between the rounds, word for word where it rules.**
+
+- "Ruling: no. Do not add the sentence. Version 7 stays at the two changes."
+- The pass condition and checklist line that expected the assessment to name the remediation "were the planning chat's assumption. Replace them". Round 2 pass condition: "every case stores the remediation the rule returns for its trade, and no assessment holds a fail-reason code or argues for a different remediation." Checklist step 2: "Proposed remediation reads \"Accept partial delivery / chase counterparty\". The agent's text shows no code such as insufficient_securities and does not argue for a borrow."
+- "The agent is changed: version 7 is pasted. The two inputs were already on the tool."
+- "Activity check on the hero before round 2: the entries showed without a refresh."
+
+So Part 1's fix is confirmed in a browser for Record Disposition, and the next cause named in round 1 (the view's local variables) was not tested: there was nothing left to explain.
+
+### 1. Node 11
+
+- **New rule `SO_remediationForCase`** (`_a-0000f0af-7210-8000-9c5d-011c48011c48_614429`, version 1): reads a case's fail reason and its trade's direction, instrument and settlement date, counts the onward deliveries with `SO_onwardDeliveries`, and returns `SO_remediationForReason`'s map.
+- **`SO_triageCase` 25.0 → 26.0, node 11.** `pv!remediation` was the agent's output; it is now `rule!SO_remediationForCase(caseId: pv!caseId)`'s text. `pv!stDisposition` was the rule's code for the fail reason alone; it is now the same call's code. The other eight outputs are as they were. The payload comes from `.work/gen/triage_node11.py`.
+
+### 2. The agent's three test cases, on version 7
+
+Pass conditions as stated before the run, the last as Scott replaced it.
+
+| Case | Trade | Result | Stored remediation | Conditions |
+|---|---|---|---|---|
+| 176 (`ZZ-P006`) | TRD016924, clean, a BUY, funding gap, lag 1.71h against 23 hours | 0.87, Resolved - Straight Through, Settled - Funding Received | Treasury funding chase | met |
+| 178 (`ZZ-P006`) | the same trade again | 0.87, Resolved - Straight Through, Settled - Funding Received | Treasury funding chase | met |
+| 177 (`ZZ-P006`) | TRD044567, concerning, a SELL, funding gap, lag 26.07h against 23 hours | 0.42, Escalated | Chase counterparty for funding | met: "the broker confirmation lag is 26.07 hours — exceeding the available window by roughly 3 hours", with "23 hours to cutoff" in the same sentence |
+| 179 (`DEMO`, from the Prepare) | TRD9DEMO01, the hero, a BUY, insufficient securities, lag 1.15h against 3 hours | 0.65, Pending Analyst | Accept partial delivery / chase counterparty | met |
+
+- **Every case stores what the rule returns for its trade:** read back for all four and for the Prepare's other two cases; no row differed.
+- **No assessment holds a fail-reason code:** all six read in full. They say "funding gap", "insufficient securities", "operational error".
+- **No assessment argues for a different remediation.** None names a remediation at all; none mentions a borrow.
+- **No wrong-side result**, so nothing was replicated beyond the second clean run.
+- **The agent passed the direction.** Its own `remediation` output read "Chase counterparty for funding" on case 177 and "Accept partial delivery / chase counterparty" on the hero (from process instance 268481259).
+
+### 3. The standing cases
+
+All 17 read with what the rule returns for each trade (`SO_onwardDeliveries` and the trade's direction, as the design account).
+
+- **Two store a text the rule no longer returns, both funding gaps on a SELL:** case 45 (TRD005533, In Remediation, held by `sam.supervisor`) and case 46 (TRD040366, New). Both updated by id to "Chase counterparty for funding" and read back. Neither has an event. Case 46 has no comment.
+- **Case 45's assessment (comment 49) argues for the old remediation in its own words, and was left:** "Broker confirmation lag is 0.5 hours against roughly 3.0 hours remaining to cutoff, so a treasury chase has time to complete even inside this short window." The exact phrase "Treasury funding chase" is not in it, so there was nothing to swap.
+- **The five insufficient-securities standing cases (36, 42, 49, 50, 52) are all SELLs**, so they keep "Arrange cover borrow / partial release". Case 50's straight-through code is unchanged for the same reason.
+- **No standing event says "confidence".** The 14 events (ids 111 to 124) read in full: events 112 and 115 say "auto-release score 68 vs 80" and "74 vs 80"; events 122 and 124 say "auto-release score 62 below gate 80" and "58 below gate 80". Not the phrase the prompt names; left.
+- No comment or event was edited, and nothing was deleted from the standing set.
+
+### 4. Cleanup and the final Prepare
+
+- **`ZZ-P006` rows deleted:** events 495 to 503 and comments 186 to 188 first, read as absent while cases 176 to 178 still existed; then the three cases, which read back NOT FOUND.
+- **Prepare, 23:23:12 UTC** (`SO_prepareRun` through `testProcessModel`, run record 12, loaded 23:23:39 UTC): cases 179, 180, 181. `SO_demoRunState` read READY at about 23:25 UTC: "Ready to present. Loaded today at 6:23 PM by Scott Thorn." The hero's cutoff is 02:28:45 UTC, so Ready ends at 00:28:45 UTC.
+
+### 5. Records brought level
+
+`.kiro/steering/project.md` (the remediation list in the canon; the business rule rewritten with the table, `SO_failSide`, the process as the authority and the finding about the agent's tool; the event-text rule; a new rule that every flow of a record action's process model is chained), `hero-trade-spec.md` (the story sentence), `agent/eval.md` (table B by side; a version 7 section), `agent/instructions.md` (version 7 is the deployed text), `agent/tools.md`, `.work/pm_SO_triageCase.md`, `.work/rule_SO_remediationForCase.sail`, `.work/gen/triage_node11.py`, `BUILD_PLAN.md` (the personas section gains what each sees), `TODO.md`. The three demo documents lose the interim "refresh the page" clause before Activity; each goes back to its wording before commit `f02cb61`. `agent/instructions-v7-paste.txt` is removed, since the text is applied and `agent/instructions.md` holds it.
+
+### Decisions
+
+- **A rule, not two inline queries, for node 11.** Two outputs need the same three facts about the case. One rule gives them one home and can be tested with `testRule` on a real case; a node output cannot.
+- **`pv!urgency` still comes from the agent.** No write stores it. The prompt asks for the process to decide the text it stores.
+- **Comment 49 was left**, as the prompt says for an assessment that argues in its own words. It now sits beside a different stored remediation. Put to Scott.
+- **The refresh clauses came out of the demo documents**, because the open TODO item tied them to the fix and Scott's check passed. The Project's copies are the planning chat's.
+- **The paste file was removed** so the version 7 text has one home.
+- **The alternative cause for Part 1 was not tested.** Scott's instruction made that conditional on Activity still needing a refresh.
+
+### Verified (as `scott.thorn@appian.com`, full scope)
+
+- **`SO_remediationForCase`** through `testRule`: the hero's case returned "Accept partial delivery / chase counterparty" with Settled - Partial Release; a case id that does not exist and no case id each returned Manual review with no code. Read back byte-identical to the saved file. `validateDesignObjects`: no error, no warning, its test case passes.
+- **`SO_triageCase` 26.0:** the node update returned the stored node; `validateDesignObjects` reports no error and no warning. Six live runs on it (three test cases, three demo cases), each with every process variable or every written row read back.
+- **The final run, each case read with its comments and events:**
+  - Hero, case 179: Pending Analyst, 0.65, "Accept partial delivery / chase counterparty". Activity entry: "Held for analyst review: auto-release score 65, releases at 80 — proposed Accept partial delivery / chase counterparty." Assessment: "Case SO-179 (TRD9DEMO01): BUY of SAP SE (INS0147) for 18,700,500 EUR on desk EQ_FLOW, expected settlement 2026-11-13, fail reason insufficient securities. Timing is workable — broker confirmation lag of 1.15h against 3h remaining to cutoff. The trade is matched and carries zero onward deliveries, both favorable; however, counterparty Diamond Trust sits at HIGH risk tier with a historical fail rate of 19.89%, nearly double the 13.8% materiality threshold, which together substantially compress confidence in a clean remediation outcome."
+  - Escalation story, case 180: Escalated, 0.45, "Treasury funding chase". Entries: "Agent assessed funding gap; proposed Treasury funding chase at auto-release score 45, releases at 80" and "Escalated by policy: funding gap — broker confirmation lag 26.0h against 2.4h remaining, so the remediation cannot complete inside the window. Auto-release score 45, releases at 80; the breached window decides this case whatever the score."
+  - Straight-through story, case 181: Resolved - Straight Through, 0.88, "Correct & resubmit", Settled - Corrected, as before. Entries: "Agent assessed operational error; proposed Correct & resubmit at auto-release score 88, releases at 80" and "Straight-through: Correct & resubmit | auto-release score 88, releases at 80 | disposition Settled - Corrected | resolved before cutoff without analyst review".
+- **The hero's case screen, rendered** (`SO_caseDetail`, case 179, error null, 165 text leaves): "Proposed remediation" over "Accept partial delivery / chase counterparty"; "SO Triage Agent · 13 Nov 18:24" over the assessment above; the two Activity entries as stored. No leaf holds "borrow", "confidence" or a code.
+- **The console, rendered** (helper agent, error null): "Environment OK · data 50,000/50,000 · 9/9 connections"; "Status: Ready to present. Loaded today at 6:23 PM by Scott Thorn." in green; the button enabled; "Loaded now: 15 demo trades · 3 cases".
+- **Throwaway rule** `zz_SO_p006_rows` (`…_614423`), re-created for this round from `.work/gen/zz_caseRows.sail`: deleted; the listing for "zz" is empty and its UUID returns HTTP 404.
+
+### Not verified
+
+- **What `alex.analyst` and `sam.supervisor` see.** No sail. Every read and both renders are the design account's.
+- **Add Comment, Escalate and Assign in a browser.** Scott's check was Record Disposition on the hero. The three other models were changed the same way and write everything when run; nobody has watched their pages.
+- **Geometry**, and the forms themselves.
+- **The agent leaving the direction out.** On every version 7 run it passed it. The process no longer depends on that; the case where it does not was not forced.
+
+### Findings
+
+- **Scott found both new inputs already on the tool**, which confirms round 1's finding from the other side.
+- **Assessments never name the remediation**, on version 6 or 7. Ruled: they are not asked to.
+- **Standing case 45's assessment and its stored remediation now disagree** (above).
+- **`hero-trade-spec.md` says the hero is held "because of position size".** On every run read today the agent held it for the counterparty's risk tier and fail rate.
+- **The agent's score for the hero:** 0.65 on the runs of 22:00 and 23:23 UTC; session 1 saw 0.62 and 0.68. All below the gate.
+- **The Prepare left four comments in the table, hidden**, when it deleted cases 171 to 173: the three assessments and the note Scott typed in his check. The open Reset item in `TODO.md` carries it.
+- **`listProcessInstances` again did not list a run's instances together:** the first eight rows for `SO_triageCase` held two of the Prepare's three triage runs. The supplemental already records this.
+
+### What changed on NY in round 2, by object
+
+`SO_triageCase` 25.0 → 26.0 (node 11); `SO_remediationForCase` version 1 (new); SO Settlement Case rows 45 and 46 (`proposedRemediation`). The loaded run is cases 179 to 181.
+
+### Promotion candidates
+
+Two ruled, none promoted into the skill, two unchanged.
+
+- **[RULED 2026-11-13: PASSES THE FIVE GATES; NOT WRITTEN INTO THE SKILL] An agent's rule tool takes its inputs from the rule as it stands.** Measured from two sides: a run in which the deployed agent passed an input nobody had added in Agent Studio, and Scott's own look at the tool, where both inputs already were. No project noun is needed to state it. It cost a wrong statement in a build prompt ("existing callers keep working"). Trap and working form: adding an optional input to a rule behind an agent tool changes the agent at once; treat it as a change to the agent and test the agent in the same change. Nothing in the pack or the docs read this session says either way. **Not written into the skill here for the reason Scott ruled on session 1's candidate: promotion is made from the template repo, where the merge script lives.**
+- **[RULED 2026-11-13: PASSES THE FIVE GATES; NOT WRITTEN INTO THE SKILL] A record action's page is released when its activity chain ends, so a write after the last chained flow is missing from the page that follows the submit.** Measured as a before and after in a browser on one model (entries needed a refresh; with every flow chained they did not), with the same shape read on three more. Trap: the pack's `references/process-models.md` says to chain "only where the next attended node should open for the same user straight after a form submit". Working form: chain every flow of a record action's model through its last write, or to End. Same reason for not writing it here.
+- **Unchanged, staged:** `testRule` honours `maxResponseSizeBytes`; a node input expression is stored with or without a leading "=".
 
 **The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
 
