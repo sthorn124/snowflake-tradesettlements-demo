@@ -118,12 +118,22 @@ a!localVariables(
   ),
   local!tradeDate: if(a!isNullOrEmpty(local!settles), null, local!settles - 1),
 
-  /* ---- the agent's assessment: the LATEST comment is the assessment ---- */
+  /* ---- the agent's assessment: the newest comment THE AGENT wrote ----
+     A case's comments hold two kinds of row. The triage lanes write the
+     agent's assessment with NO author. Record Disposition, Add Comment and
+     Escalate write a person's note with the author set (pp!initiator). Until
+     2026-11-13 this took the newest comment whoever wrote it, so a disposition
+     note replaced the agent's reasoning under "SO Triage Agent". The agent card
+     reads only rows with no author. People's notes are local!notes, below,
+     and render in Activity. */
   local!assessment: if(not(local!hasId), null, index(
     a!queryRecordType(
       recordType: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment',
       fields: { 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{2bb72559-6a2b-4624-b156-efc8237287ce}commentText', 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{4143f703-c044-40d9-a2fd-927d6a67795d}createdOn', 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{ffa2f4eb-64b5-4a09-9f05-85fcd3f24d04}author' },
-      filters: a!queryFilter(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{387260a3-561d-4cd3-9df7-d65a5cc775b6}caseId', operator: "=", value: ri!caseId),
+      filters: a!queryLogicalExpression(operator: "AND", filters: {
+        a!queryFilter(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{387260a3-561d-4cd3-9df7-d65a5cc775b6}caseId', operator: "=", value: ri!caseId),
+        a!queryFilter(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{ffa2f4eb-64b5-4a09-9f05-85fcd3f24d04}author', operator: "is null")
+      }),
       pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 1, sort: a!sortInfo(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{4143f703-c044-40d9-a2fd-927d6a67795d}createdOn', ascending: false))
     ).data, 1, null
   )),
@@ -185,6 +195,45 @@ a!localVariables(
     filters: a!queryFilter(field: 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{6c3a39d8-6dc6-425d-ab58-1d72fb487426}recordId', operator: "=", value: ri!caseId),
     pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 25, sort: a!sortInfo(field: 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{2997cf09-138c-489d-a6ff-221de2e77243}timestamp', ascending: false))
   ).data),
+
+  /* ---- activity: the notes people wrote on this case ----
+     SO Case Comment rows WITH an author: a disposition note, an added comment,
+     an escalation reason. The agent's assessments have no author and stay out;
+     they are the agent card. Newest first, 25 at most, like the events. */
+  local!notes: if(not(local!hasId), {}, a!queryRecordType(
+    recordType: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment',
+    fields: { 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{2bb72559-6a2b-4624-b156-efc8237287ce}commentText', 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{4143f703-c044-40d9-a2fd-927d6a67795d}createdOn', 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{ffa2f4eb-64b5-4a09-9f05-85fcd3f24d04}author' },
+    filters: a!queryLogicalExpression(operator: "AND", filters: {
+      a!queryFilter(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{387260a3-561d-4cd3-9df7-d65a5cc775b6}caseId', operator: "=", value: ri!caseId),
+      a!queryFilter(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{ffa2f4eb-64b5-4a09-9f05-85fcd3f24d04}author', operator: "not null")
+    }),
+    pagingInfo: a!pagingInfo(startIndex: 1, batchSize: 25, sort: a!sortInfo(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{4143f703-c044-40d9-a2fd-927d6a67795d}createdOn', ascending: false))
+  ).data),
+
+  /* ---- activity: ONE LIST, events and notes together, newest first ----
+     Every entry is a map with the same five keys, so the panel renders one
+     loop and a note is built exactly the way an event is. `tie` settles two
+     entries stamped in the same instant: the event sits above the note it
+     was written with. */
+  local!activity: todatasubset(
+    a!flatten({
+      a!forEach(items: local!events, expression: a!map(
+        title: index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.relationships.{b87d38c6-5839-454c-aafa-32fb0b88c887}eventType.fields.{fd5aa5de-b897-46db-97ba-1cb2e37370a3}eventName', "Event"),
+        at: index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{2997cf09-138c-489d-a6ff-221de2e77243}timestamp', null),
+        user: index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{c4acbfe1-23ab-4f68-9874-464b794d360b}user', null),
+        detail: index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{6862ba51-9181-470c-8798-9bfd1cabc8bb}comment', ""),
+        tie: 0
+      )),
+      a!forEach(items: local!notes, expression: a!map(
+        title: "Note",
+        at: index(fv!item, 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{4143f703-c044-40d9-a2fd-927d6a67795d}createdOn', null),
+        user: index(fv!item, 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{ffa2f4eb-64b5-4a09-9f05-85fcd3f24d04}author', null),
+        detail: index(fv!item, 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{2bb72559-6a2b-4624-b156-efc8237287ce}commentText', ""),
+        tie: 1
+      ))
+    }),
+    a!pagingInfo(startIndex: 1, batchSize: 50, sort: { a!sortInfo(field: "at", ascending: false), a!sortInfo(field: "tie", ascending: true) })
+  ).data,
 
   a!formLayout(
     backgroundColor: "#F3F5F8",
@@ -809,19 +858,19 @@ a!localVariables(
               }
             ),
 
-            /* ---- 6 · ACTIVITY — the audit trail, as events ---- */
+            /* ---- 6 · ACTIVITY — the audit trail: events, and the notes people wrote ---- */
             a!cardLayout(
               padding: "LESS", shape: "SEMI_ROUNDED", showBorder: true, marginBelow: "STANDARD",
               contents: {
                 a!richTextDisplayField(labelPosition: "COLLAPSED", marginBelow: "STANDARD",
                   value: a!richTextItem(text: "ACTIVITY", color: "#454F5C", size: "SMALL", style: "STRONG")),
                 a!richTextDisplayField(
-                  showWhen: a!isNullOrEmpty(local!events),
+                  showWhen: a!isNullOrEmpty(local!activity),
                   labelPosition: "COLLAPSED",
                   value: a!richTextItem(text: "No activity recorded on this case yet.", color: "#6E7885", size: "STANDARD")
                 ),
                 a!forEach(
-                  items: local!events,
+                  items: local!activity,
                   expression: a!localVariables(
                     /* WHO acted. An event with no user is the platform acting —
                        the triage lane runs unattended — so it is attributed to
@@ -835,13 +884,14 @@ a!localVariables(
                        SYS, which credits the machine's judgement to plumbing.
                        The rule, in one line: anything a person did is USR;
                        otherwise the three decision types are AI and the
-                       mechanical writes (Case Created) are SYS. */
-                    local!noUser: a!isNullOrEmpty(index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{c4acbfe1-23ab-4f68-9874-464b794d360b}user', null)),
+                       mechanical writes (Case Created) are SYS. A note is
+                       always a person's, so it is USR under the writer's name. */
+                    local!noUser: a!isNullOrEmpty(index(fv!item, "user", null)),
                     local!isAgent: and(
                       local!noUser,
                       contains(
                         { "Agent Triage Complete", "Straight-Through Resolution", "Escalated" },
-                        index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.relationships.{b87d38c6-5839-454c-aafa-32fb0b88c887}eventType.fields.{fd5aa5de-b897-46db-97ba-1cb2e37370a3}eventName', "")
+                        index(fv!item, "title", "")
                       )
                     ),
                     a!sideBySideLayout(
@@ -859,14 +909,14 @@ a!localVariables(
                         a!sideBySideItem(item: a!richTextDisplayField(
                           labelPosition: "COLLAPSED",
                           value: {
-                            a!richTextItem(text: index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.relationships.{b87d38c6-5839-454c-aafa-32fb0b88c887}eventType.fields.{fd5aa5de-b897-46db-97ba-1cb2e37370a3}eventName', "Event"), color: "#1B2330", size: "STANDARD", style: "STRONG"),
+                            a!richTextItem(text: index(fv!item, "title", "Event"), color: "#1B2330", size: "STANDARD", style: "STRONG"),
                             a!richTextItem(
-                              text: "   " & text(index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{2997cf09-138c-489d-a6ff-221de2e77243}timestamp', null), "d mmm hh:mm")
-                                & if(local!noUser, "", "  ·  " & user(index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{c4acbfe1-23ab-4f68-9874-464b794d360b}user', null), "firstName") & " " & user(index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{c4acbfe1-23ab-4f68-9874-464b794d360b}user', null), "lastName")),
+                              text: "   " & text(index(fv!item, "at", null), "d mmm hh:mm")
+                                & if(local!noUser, "", "  ·  " & user(index(fv!item, "user", null), "firstName") & " " & user(index(fv!item, "user", null), "lastName")),
                               color: "#6E7885", size: "SMALL"),
                             a!richTextItem(
-                              showWhen: not(a!isNullOrEmpty(index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{6862ba51-9181-470c-8798-9bfd1cabc8bb}comment', ""))),
-                              text: char(10) & index(fv!item, 'recordType!{eede988b-5576-4daa-a49c-fa962d90b16b}SO Settlement Case Event History.fields.{6862ba51-9181-470c-8798-9bfd1cabc8bb}comment', ""),
+                              showWhen: not(a!isNullOrEmpty(index(fv!item, "detail", ""))),
+                              text: char(10) & index(fv!item, "detail", ""),
                               color: "#454F5C", size: "SMALL")
                           }
                         ))
