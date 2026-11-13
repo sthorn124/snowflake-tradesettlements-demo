@@ -31,7 +31,7 @@ Ruled by Scott in the planning chat on 2026-11-11. This section sets the order. 
 **Order**
 1. Phase 10, sync. No build.
 2. Phase 11, demo setup experience.
-3. Phase 6.5, in sessions (chosen by Scott 2026-11-13, on the planning chat's recommendation). Session 1 is the fixes with no new layout: `prompts/005-phase65-case-record-fixes.md`. **Built 2026-11-13; Scott's browser check is owed.** Then the remediation rule by side of the trade (Phase 6.5, Hero story). Then the resolution card and the "Missed cutoff" line, after a mockup.
+3. Phase 6.5, in sessions (chosen by Scott 2026-11-13, on the planning chat's recommendation). Session 1 is the fixes with no new layout: `prompts/005-phase65-case-record-fixes.md`. **Built 2026-11-13. Scott's browser check passed the same day ("it all checks out"), with one hitch: after Record Disposition the new Activity entries show only after a manual refresh. That goes first in the next session.** Then the remediation rule by side of the trade (Phase 6.5, Hero story). Then the resolution card and the "Missed cutoff" line, after a mockup.
 
 **On hold:** Phase 7 (governance layer), Phase 8 (make the AI real), Phase 9 (late-trade live beat).
 
@@ -184,6 +184,7 @@ Found in session 1 (2026-11-13), each needing a ruling
 - [ ] "Assigned to alex.analyst" still shows the assignee as a username. The acting person's tail is gone; the assignee was left.
 - [ ] The escalate and straight-through lanes still write two triage entries with different titles (the "Agent assessed …" entry, then "Escalated" or "Straight-Through Resolution"), and both say "confidence 0.35" where the analyst lane now says "auto-release score 62, releases at 80". Reported and left, as `prompts/005` says.
 - [ ] The agent's own assessment can carry a stored code in its prose ("Fail reason is insufficient_securities", hero run of 2026-11-13). It is the agent's text in the agent card; the agent's instructions were not in session 1.
+- [ ] Found in Scott's browser check, 2026-11-13: after Record Disposition the new Activity entries show only after a manual page refresh. On the demo path. First part of the next session; find the cause before changing anything. The three demo documents carry a "refresh the page" clause until it is fixed.
 
 Hero story
 - [ ] The hero's scripted analyst action is now Record Disposition → Settled - Partial Release (ruled 2026-09-25; supersedes Borrow Executed in TODO).

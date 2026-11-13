@@ -34,7 +34,7 @@ Joint Appian and Snowflake demo. The example is a settlements desk at a bank: Sn
 
 - **Tab A:** the **Supervisor** page.
 - **Tab B:** the **Watchlist** page.
-- **Tab C:** the hero case. On the Watchlist, under **Needs your action**, find the row for **SAP GY** with counterparty **Diamond Trust** (trade id `TRD9DEMO01`). Its position in the list moves with the time of day. Click it and leave this tab open.
+- **Tab C:** the hero case. On the Watchlist, under **Needs your action**, find the row for **SAP GY** with counterparty **Diamond Trust** (trade id `TRD9DEMO01`). It is the third or fourth row. Click it and leave this tab open.
 
 **Step 3. Before sharing.**
 
@@ -101,7 +101,7 @@ Scroll down the page, pointing at each section:
 
 - **Trade & counterparty** and the **Counterparty** card with **Recent settlement fails** (the line says *Live from Snowflake*).
 - **Timing** with the time remaining to cutoff.
-- **Agent assessment**: the agent's reasoning and the line **"auto-release score NN, releases at 80."** The score varies run to run, 60 to 66.
+- **Agent assessment**: the agent's reasoning and the line **"auto-release score NN, releases at 80."** The score varies run to run, in the sixties.
 
 > "Look at what's on this one page. The trade and the prediction, from Snowflake. The counterparty's recent fails, from Snowflake's settlement history. The time left to the cutoff. And the agent's assessment: it worked out a fix, but its score is around 60 and the rule is it only acts on its own above 80. So it held the case for a human and laid out its reasoning. That gate is set by the firm, not by the AI."
 
@@ -117,14 +117,14 @@ When the answer lands, read the two fail rates off the screen (Diamond Trust's a
 
 1. In the case header, click **Record Disposition**.
 2. In the **Disposition** dropdown choose **Settled - Partial Release**.
-3. Leave **Resolution note** empty. (Known display issue: a note renders under the agent's name.)
+3. **Resolution note** is optional. A note you type appears in Activity under your name.
 4. Click **Record Disposition** to submit.
 
-Scroll down to **Activity**.
+Refresh the page, then scroll down to **Activity**. The new entries show only after a refresh.
 
 > "Done. And here's the record: the prediction, what the agent recommended and why it held, and what the analyst decided, each with a time and a name. Nobody assembles this afterwards. It's the audit trail compliance asks for, written as the work happened."
 
-Point at the sequence of entries rather than reading them out; some carry internal codes.
+Point at the sequence of entries rather than reading them all out.
 
 ### Beat 5: What this means for you (11:00 to 13:00)
 

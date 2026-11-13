@@ -71,7 +71,7 @@ Recording the disposition resolves the hero case. If you rehearse it beforehand,
 
 > "Diamond Trust fails about 22% of the time, against under 13% for the rest of the book, and most of its recent fails were for this exact reason. So the flag is credible. She takes the partial release the agent proposed: Diamond Trust delivers the shares it has today, the rest follows, and most of the trade settles on time instead of all of it failing. Any penalty only applies to the part that's late."
 
-*Click* **Record Disposition** *→* **Settled - Partial Release** *→ submit. Then open the case history.*
+*Click* **Record Disposition** *→* **Settled - Partial Release** *→ submit. Refresh the page, then open the case history.*
 
 > "Done. And look at the history: the prediction, what the agent recommended, why it held, and what she decided, each with a time and a name. Nobody assembles that afterwards. That's the audit trail compliance asks for, written as the work happened."
 
@@ -130,4 +130,4 @@ Snowflake can predict and answer questions, but it has no cases, owners, deadlin
 
 - An Ask answer shows a plain amber error: say "live call, let me ask again" and click the chip once more.
 - An Ask takes longer than 30 seconds: keep talking; they've never exceeded about 36 seconds in testing.
-- The agent's confidence on the hero reads 0.62 one day and 0.65 the next. It's a live agent, and it's still below the gate.
+- The agent's confidence on the hero reads 0.62 one day and 0.68 the next. It's a live agent, and it's still below the gate.

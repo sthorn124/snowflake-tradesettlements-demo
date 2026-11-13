@@ -44,7 +44,7 @@
 
 **Screen: Needs your action. Cursor down the columns: risk, cutoff countdown, auto-release score.**
 
-> "Needs your action is her queue, sorted by time to cutoff. Each row carries the fail probability from Snowflake, the live countdown to cutoff, and the agent's auto-release score against the 80 it needs to act alone."
+> "Needs your action is her queue, sorted by priority: risk and time to cutoff together. Each row carries the fail probability from Snowflake, the live countdown to cutoff, and the agent's auto-release score against the 80 it needs to act alone."
 
 **Screen: scroll to Escalated, with supervisor. Point at the BATS LN / Horizon Securities row and its red Escalation text.**
 
@@ -68,7 +68,7 @@
 
 ## 4:20 to 5:05 · The decision and the record
 
-**Screen: scroll to the top. Click Record Disposition. Choose Settled - Partial Release. Leave the note empty. Submit. Scroll to Activity and move the cursor down the entries.**
+**Screen: scroll to the top. Click Record Disposition. Choose Settled - Partial Release. The note is optional. Submit. Refresh the page (trim it afterwards), then scroll to Activity and move the cursor down the entries.**
 
 > "Record the disposition. Done. And here's the record: the prediction, what the agent recommended and why it held, and what the analyst decided, each with a time and a name. Nobody assembles this afterwards. That's the audit trail compliance asks for, written as the work happened."
 
@@ -84,4 +84,4 @@
 
 - Trim the two Ask waits to about three seconds each. Leave everything else.
 - Demo Admin: press **Prepare the demo** again, so the hero is back in Awaiting review for the next presenter.
-- If the agent's score read something other than "around 60," say what was on screen; it varies between 60 and 66 and is always below 80.
+- If the agent's score read something other than "around 60," say what was on screen; it varies in the sixties and is always below 80.
