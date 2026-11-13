@@ -8,7 +8,7 @@ Sep 25, 2026 · @Scott
 
 Log in with your own account, not sam.supervisor. You're in both groups, so you see all three tabs and the admin site with no switching; sam can't open the admin site.
 
-- Admin site: unless the status line says "Ready to present", press Prepare the demo. Wait about two minutes, refresh, and confirm "Ready to present".
+- Admin site: refresh the page first, since a page left open shows the status it loaded with. Unless the status line says "Ready to present", press Prepare the demo. Wait about two minutes, refresh, and confirm "Ready to present".
 - Open three tabs: Supervisor, Watchlist, and the hero case (TRD9DEMO01, SAP GY).
 
 Recording the disposition resolves the hero case. If you rehearse it beforehand, press Prepare the demo again afterwards so the hero is back in Awaiting review. Do the same after the session, so the next presenter starts clean.

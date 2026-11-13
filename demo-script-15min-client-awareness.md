@@ -26,7 +26,7 @@ Joint Appian and Snowflake demo. The example is a settlements desk at a bank: Sn
 
 **Step 1. Prepare the demo.**
 
-- Open the Demo Admin site. Read the status line.
+- Open the Demo Admin site. Refresh the page first, since a page left open shows the status it loaded with. Read the status line.
 - If it says **"Ready to present"**, nothing to do.
 - If it says anything else, press **Prepare the demo**. Wait about two minutes, refresh the page, and confirm the line says **"Ready to present"**.
 
