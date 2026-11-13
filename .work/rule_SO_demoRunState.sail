@@ -80,6 +80,18 @@
  *
  * ri!asOf stands in for "now" when a state has to be read without waiting for
  * it (tomorrow, or six minutes after a load). Leave it empty everywhere else.
+ *
+ * ON A PAGE, THIS RULE IS READ ONCE, WHEN THE PAGE LOADS (found 2026-11-13).
+ * Its local variables, the queries and now() among them, re-evaluate only when
+ * what they depend on changes, and nothing they depend on changes while a page
+ * is open. A page variable set to refresh always does not change that: the
+ * docs say a rule's inner variables do not re-evaluate when the outer one
+ * refreshes ("Nested rules need refreshAlways"). So the console did not show
+ * Running after its own press until the page was refreshed. The rule is left
+ * as it is, because a page that never re-reads it is what the ruling asks for
+ * (no self-refresh). Instead it carries `whenRunning`: the line, tone and
+ * isRunning of the Running state, for a page to show from the moment its own
+ * press has started a run. The sentence and the tone stay defined here once.
  */
 a!localVariables(
   local!name: a!defaultValue(ri!runName, cons!SO_DEMO_RUN_NAME),
@@ -87,6 +99,9 @@ a!localVariables(
   local!runningLimitSeconds: 300,
   /* Ready ends this many hours before the hero's cutoff. The one place it is set */
   local!readyMarginHours: 2,
+  /* the Running state's line and tone, named because `whenRunning` returns them too */
+  local!runningLine: "Preparing the demo. About two minutes. Refresh this page to check.",
+  local!runningTone: "NEUTRAL",
   local!stories: rule!SO_intakePlan(runName: local!name).stories,
 
   local!packetTrades: tointeger(a!defaultValue(index(index(
@@ -243,7 +258,7 @@ a!localVariables(
     line: a!match(
       value: local!state,
       equals: "NOTHING_LOADED", then: "No demo loaded.",
-      equals: "RUNNING", then: "Preparing the demo. About two minutes. Refresh this page to check.",
+      equals: "RUNNING", then: local!runningLine,
       equals: "READY", then: "Ready to present. Loaded today at " & local!loadedAt
         & if(a!isNullOrEmpty(local!loadedBy), "", " by " & local!loadedBy) & ".",
       equals: "HERO_PAST_CUTOFF", then: if(local!heroPast,
@@ -260,10 +275,15 @@ a!localVariables(
     tone: a!match(
       value: local!state,
       equals: "READY", then: "POSITIVE",
-      whenTrue: contains({ "NOTHING_LOADED", "RUNNING" }, local!state), then: "NEUTRAL",
+      equals: "RUNNING", then: local!runningTone,
+      equals: "NOTHING_LOADED", then: "NEUTRAL",
       default: "WARN"
     ),
     isRunning: local!state = "RUNNING",
+    /* what a page shows from the moment its own press has started a run. The page
+       cannot learn that by re-reading this rule (header), so it reads these instead
+       of the three keys above. Same sentence, same tone, isRunning true */
+    whenRunning: a!map(state: "RUNNING", line: local!runningLine, tone: local!runningTone, isRunning: true),
     /* the newest press of Prepare: a failure stays here, word for word, until the next press */
     lastFailed: local!runStatus = "FAILED",
     lastMessage: if(local!hasRun, tostring(a!defaultValue(local!run['recordType!{c48c9eb9-96e3-4642-b9c5-63c67b6e023a}SO Demo Run.fields.{94f30f83-8a8e-4f51-bb08-d0b8a231865e}message'], "")), ""),
