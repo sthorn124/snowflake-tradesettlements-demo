@@ -32,7 +32,8 @@
  * is never a total).
  *
  * ================= CROSS-CURRENCY, STATED PLAINLY =================
- * The book runs EUR, GBP, JPY and CHF at once and NOTHING IN THE DATA CARRIES AN
+ * The book runs several currencies at once (rule!SO_fxToUsd holds the list;
+ * nothing here repeats it) and NOTHING IN THE DATA CARRIES AN
  * FX RATE. Every aggregate goes through rule!SO_fxToUsd, which holds indicative
  * static rates, and every figure it produces renders as "USD eq." with the basis
  * in its tooltip. See that rule's header. Per-currency totals would be honest
@@ -175,6 +176,11 @@ a!localVariables(
   local!resolvedCount: count(local!resolved),
   local!varUsd: if(local!openCount = 0, 0, sum(a!forEach(items: local!open, expression: index(fv!item, "usd", 0)))),
   local!insideUsd: if(count(local!inside) = 0, 0, sum(a!forEach(items: local!inside, expression: index(fv!item, "usd", 0)))),
+  /* The conversion note for every "USD eq." figure on this screen. The same
+     sentence the watchlist carries. It states the basis and names no list of
+     currencies: SO_fxToUsd holds the list, and a copy in a tooltip goes stale
+     (this one named four of seven until 2026-11-13). */
+  local!fxBasisNote: "Cross-currency total: nothing in the source data carries an FX rate. Converted at indicative static rates (SO_fxToUsd) for aggregation only — not a market feed, not a rate of record.",
   local!stCount: if(local!resolvedCount = 0, 0, sum(a!forEach(items: local!resolved, expression: if(index(fv!item, "straightThrough", false), 1, 0)))),
   local!stPct: if(local!resolvedCount = 0, 0, tointeger(round(100 * local!stCount / local!resolvedCount, 0))),
 
@@ -543,7 +549,7 @@ a!localVariables(
                sub-line. SO_kpiCard composes the two into one tooltip, so a reader
                who hovers the Snowflake mark gets both facts at once: where the
                number came from, and what was done to it. */
-            tooltip: "Cross-currency total: the book runs EUR, GBP, JPY and CHF, and nothing in the source data carries an FX rate. Converted at indicative static rates (SO_fxToUsd) for aggregation only — not a market feed, not a rate of record."
+            tooltip: local!fxBasisNote
           )),
           a!columnLayout(contents: rule!SO_kpiCard(
             label: "Inside critical window",
@@ -553,7 +559,7 @@ a!localVariables(
             sub: "cutoff within 4h · " & rule!SO_fmtMoney(amount: local!insideUsd, currency: "", compact: true) & " USD eq.",
             accentColor: "#C98A2B",
             snowMarked: false,
-            tooltip: ""
+            tooltip: local!fxBasisNote
           )),
           a!columnLayout(contents: rule!SO_kpiCard(
             label: "Escalations awaiting action",
