@@ -4611,3 +4611,103 @@ None found this round. The three staged in the entry above are unchanged.
 None found this round. The three staged two entries above are unchanged.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-11-13 — Two fixes from Scott's browser check: the console holds its own press; no time beside the demo trade ids (`SO_demoAdminConsole` version 18, `SO_demoRunState` version 5, `SO_analystWatchlist` version 25; Claude Code session)
+
+**Scope.** A Claude Code session from `prompts/004-console-press-and-batch-tag.md`. Every Appian call went through the Dev MCP (server `appian`) as `scott.thorn@appian.com`: `loggedInUser()` was asserted equal to that account through `validateExpression`, and the control with another name failed. Direct member of `SO Supervisors` (full scope), `SO Demo Admins` and `SO Users`, read back this session. No sail, by the prompt. The runtime server's tools were listed and never loaded or called. Three helper agents made read-only `testInterface` renders of the console under the same account. No Prepare was run, by the prompt. The local folder was one commit behind `origin/main` (the prompt's second revision) and was fast-forwarded first.
+
+### Part 1: the console after the press
+
+**What Scott saw (2026-11-13).** He pressed Prepare the demo. The line and the button did not change until he refreshed; then the line read "Preparing the demo…".
+
+**Read first.** `SO_demoAdminConsole` version 14 and `SO_demoRunState` version 4 on NY were byte-identical to the saved copies.
+
+**The cause, from the docs and the deployed source. Not measured: a session renders a page once and cannot press.**
+
+- The synchronous start is not it. The docs for `a!startProcess`: with `isSynchronous` true, "`onSuccess` is not evaluated until the child process is complete, regardless of any activity chaining", and `onIncomplete` fires after 30 seconds. `SO_prepareRun` writes the run record before it completes, so the record existed when the press returned. Scott saw no "Not prepared" block, which is what a start that had not completed would have produced.
+- The refresh-always variable does re-evaluate after the saves. The docs: all saves in a `saveInto` are evaluated before any local variable is refreshed, and a `refreshAlways` variable is refreshed after each user interaction.
+- **What does not re-evaluate is the rule inside it.** `local!runState` is `rule!SO_demoRunState(...)`, and that rule is built from plain local variables: its queries and its `now()`. The docs, under Refresh always and again under troubleshooting ("Nested rules need refreshAlways"): "If your variable's value comes from an expression rule that contains its own `a!localVariables()`, the inner variables won't re-evaluate when the outer variable refreshes—unless they use `refreshAlways: true`." Nothing those inner variables depend on changes while the page is open. So the page held what the rule read at load, and only a new page load read the PREPARING record.
+- **Not confirmed:** that this, and nothing else, is what happened in Scott's browser. It fits what he saw at every point, and the docs state it for this exact shape.
+
+**What changed, by object**
+
+| Object | UUID | Change |
+|---|---|---|
+| `SO_demoRunState` | `_a-0000f0af-7210-8000-9c5d-011c48011c48_613582` | 4 → 5. The Running line and tone are named locals, used by the line and tone matches and by a new output, `whenRunning` (state, line, tone, `isRunning` true). The tone match names RUNNING and NOTHING_LOADED separately where it had one `whenTrue`. No line changed. The rule's own variables were not made refresh-always |
+| `SO_demoAdminConsole` | `_a-0000f057-1da8-8000-9c4b-011c48011c48_564828` | 14 → 15, then 16 and 17 (probes), then 18 (the version 15 source restored). New `local!startedHere`: this press's answer says a run started. New `local!shownState`: the rule's `whenRunning` when `startedHere`, otherwise what the page loaded with. The status line, its colour and the button's `disabled` read `shownState`. `local!prepFailed` no longer shows the previous run's failure once this press has started a run. One comment and the description corrected (below) |
+
+**Not changed on NY:** `SO_prepareRun`, `SO_prepareRunSteps`, `SO Demo Run`, the supervisor screen.
+
+**Verified (as `scott.thorn@appian.com`, full scope)**
+
+The rule, version 5, through `testRule` at 15:48 UTC on the run loaded at 15:25:29 UTC (run record 6, hero cutoff 18:30:37 UTC). Expected lines were written down first.
+
+| Read | Returned |
+|---|---|
+| now | READY, POSITIVE, "Ready to present. Loaded today at 10:25 AM by Scott Thorn." |
+| `asOf` 16:31:00 UTC | HERO_PAST_CUTOFF, WARN, "Not ready. The hero case has under two hours to cutoff. Prepare the demo again." |
+| `asOf` 18:31:00 UTC | HERO_PAST_CUTOFF, WARN, "Not ready. The hero case passed its cutoff at 1:30 PM. Prepare the demo again." |
+| `asOf` 2026-11-14 14:00 UTC | LOADED_BEFORE_TODAY, WARN, "Loaded before today. Prepare the demo again for fresh dates." |
+| run name `ZZNONE`, `asOf` 15:27:00 UTC | RUNNING, NEUTRAL, "Preparing the demo. About two minutes. Refresh this page to check.", `isRunning` true |
+| run name `ZZNONE`, now | DID_NOT_FINISH, WARN, "The last run did not finish. Prepare the demo again." |
+
+Every one returned `whenRunning` with the Running sentence, NEUTRAL and `isRunning` true. NOTHING_LOADED and STORY_OUT_OF_PLACE cannot be reached on today's data; their lines are untouched in the source.
+
+The page's logic, through `validateExpression`, as a truth table over the same expressions the console holds: eight cases covering no press, a started press, a refused press and an answer with no `ok`, on pages loaded Ready, loaded Running and loaded with a failed last run, and one with a rule that has no `whenRunning`. All eight held. The control, with one expectation made wrong, failed.
+
+The console, rendered:
+
+| Version | When (UTC) | State | Status line | Button | After the button |
+|---|---|---|---|---|---|
+| 14 | 15:45 | as NY is | "Ready to present. Loaded today at 10:25 AM by Scott Thorn.", `#17715B` | enabled | nothing |
+| 15 | 15:49 and 15:50 | as NY is | the same, `#17715B` | enabled | nothing |
+| 16, probe A: `prepResult` defaulted to a started press | 15:50 | press started | "Preparing the demo. About two minutes. Refresh this page to check.", `#454F5C` | `disabled` true | nothing |
+| 17, probe B: `prepResult` defaulted to a refused press | 15:51 | press refused | "Ready to present. …", `#17715B` | enabled | "Not prepared", `#B3261E`; "13 Nov 10:51"; the probe's message in full |
+| 18, restored | 15:52, twice | as NY is | "Ready to present. …", `#17715B` | enabled | nothing; no "PROBE", no "Not prepared" |
+
+`diagnostics.error` null on every render. The verdict line, "Loaded now", the Details rows, the header and the caption were the same on versions 14, 15, 16 and 18. The restore: two `getInterface` reads of version 18, both byte-identical to `.work/SO_demoAdminConsole.sail`, which is the committed version 15 source. The probes were live for about a minute in all, from just after 15:50:44 UTC to before 15:52:01.
+
+### Part 2: the watchlist's Trade column
+
+**Read first.** Version 24 on NY was byte-identical to the saved copy.
+
+**What changed.** `SO_analystWatchlist` 24 → 25. The rich text item that showed the row's `batchTag` is gone from the Trade cell of "Needs your action" and of "Escalated, with supervisor". The `batchTag` row key, which nothing else read (the rail does not), is gone, and the comment above `local!isBatch` says what was removed and why. `git diff` counts 6 insertions and 19 deletions.
+
+**Verified.** Version 24 rendered at 10:45:41 Eastern and version 25 at 10:50:04, compared by `.work/gen/render_leafdiff.py`:
+
+- 3,815 leaves before, 3,799 after. 16 removed: the two "  10:25" items, eight leaves each, on TRD9DEMO01 and TRD9DEMO02. None added.
+- 8 changed, all the clock: "last read", six countdowns, "2.1h to cutoff" to "2.0h".
+- The Trade cells after the change hold the trade id and nothing else, on all ten rows.
+- The band still reads "10:25 today · 15 trades on your desk".
+- Stored source: read back byte-identical to the local file.
+
+### Decisions
+
+- **The rule gained an output, though the prompt names only the console.** The page has to show the Running sentence without the rule telling it the state. Writing the sentence into the console would have made a second copy of ruled wording. `whenRunning` keeps one.
+- **The rule's variables were left as they are.** Making them refresh-always would let an open page re-read the state on each interaction. The ruling is no self-refresh, the prompt asks for a fix that does not depend on a re-read, and the button now stays disabled on the pressing page by its own value.
+- **The previous run's failure is hidden once this press starts a run.** The block is specified to show "until the next press". Without this the pressing page would read "Preparing the demo" above "Not prepared", because it cannot re-read the record.
+- **The hidden branches were rendered on the real page by probe**, as core §4 prescribes, one line each, restored and verified. The probe messages said what they were.
+- **The console's stale comment and description were corrected** in the same edit; the open `TODO.md` item named this edit as its trigger.
+
+### Not verified
+
+- **The press.** Scott's four steps in `prompts/004`. A session cannot press, so the page's own re-evaluation after a save was never seen: that `startedHere` turns true when `prepResult` is saved. The docs say a variable refreshes when one it references changes.
+- **The cause, by measurement** (above).
+- **What each persona sees, and geometry.** No persona screen's layout changed.
+
+### Findings
+
+- **A page left open shows what it loaded with.** The console's Ready line will not turn amber at the two-hour margin on an open page. `TODO.md`.
+- **The watchlist's countdowns may freeze between page loads** for the same reason: `SO_cutoffDisplay` computes from `now()` inside its own local variables. Not measured. `TODO.md`, as a one-minute browser check.
+- **Three `updateInterface` saves in a row, and the first read after each was current** (versions 16, 17 and 18).
+
+### Promotion candidates (staging)
+
+One found, none promoted, one listed.
+
+- **NEW, STAGED (gate 1: documented, and seen once in a browser by the operator, not measured by a session): a rule's local variables are evaluated once per page, so a page value that must change after the page's own action cannot come from re-reading a rule, whatever the calling variable's refresh setting.** The docs state it; it still cost a round trip, because the calling variable was `refreshAlways` and the rule read like a function. The working form: the action saves a page value, and the rule returns the wording for it. *Trigger: Scott's check of this fix; or the next page whose line must change after its own button.*
+- **Unchanged:** the three staged on 2026-11-12 (render comparison by leaves, used again here; `maxResponseSizeBytes`; empty Text read back as null), and the `getExpressionRule` 404 candidate.
+
+**The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
+
+**Promotion checkpoint: current through this entry.**
