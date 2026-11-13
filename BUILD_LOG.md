@@ -4711,3 +4711,155 @@ One found, none promoted, one listed.
 **The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-11-13 — Phase 6.5 session 1: the agent card reads the agent's text, notes show in Activity, event text fixed at the write, Needs your action sorts by priority (`SO_caseDetail` version 14, `SO_analystWatchlist` version 26, `SO_supervisorCommand` version 12, new rule `SO_triageLane`, six process models; Claude Code session)
+
+**Scope.** A Claude Code session from `prompts/005-phase65-case-record-fixes.md`. Every Appian call went through the Dev MCP (server `appian`, 218 tools, plugin and server 26.9.5, build `20261026-140102`) as `scott.thorn@appian.com`: `loggedInUser()` was asserted equal to that account through `validateExpression`, and the control with another name failed. Direct member of `SO Supervisors` (full scope), `SO Demo Admins` and `SO Users`, read back this session. No sail, by the prompt; every persona session on the machine is expired. The runtime server's tools were listed and never loaded or called. One helper agent made read-only `listProcessModelNodes` reads of six process models under the same account. The local folder was five commits behind `origin/main` (records and the prompt) and was fast-forwarded first. Prepare had run today (Scott, 16:03 UTC), so the re-date was not run on its own; this session ran Prepare twice (18:22 and 18:27 UTC), and each ran the re-date.
+
+### Read first
+
+- `SO_caseDetail` version 13, `SO_analystWatchlist` version 25, `SO_watchlistPreviewRail` version 16 and `SO_supervisorCommand` version 11 on NY were byte-identical to the saved copies. The saved copy of `SO_caseDetail` was from 2026-09-24; nothing differed.
+- Comments on NY (16 rows, read as the design account): the 12 standing comments and the 3 from the loaded run had no `author`; the one written by a person had one. A query filter confirmed it: 15 rows `is null`, 1 `not null`, and the control (16) failed.
+- Who writes `author`: `SO_recordDispositionCase` node 5, `SO_addCommentCase` node 3 and `SO_escalateCase` node 5 write `pp!initiator`. `SO_triageCase` nodes 21, 31 and 41 write null (saved outline of 2026-11-12).
+
+### Part 1: the agent card
+
+**Reproduced before the change (18:05 UTC, demo case 159, the hero of the 16:03 run).** `SO_recordDispositionCase` with Settled - Partial Release and a note. The case screen then read "SO Triage Agent · 13 Nov 13:05" over the note, and the note was not in Activity. The watchlist's preview was reproduced the same way on a throwaway copy of version 25 with a default selection: after an added comment on case 160 it read "SO Triage Agent · 13:13" over the comment.
+
+**Cause, confirmed in the source.** Both screens took the newest comment on the case, whoever wrote it.
+
+**Fix.** `SO_caseDetail` 13 → 14 and `SO_analystWatchlist` 25 → 26: the assessment query also filters `author` `is null`.
+
+### Part 2: notes in Activity
+
+`SO_caseDetail` version 14. A second query reads the case's comments that have an author (25 at most, newest first). Events and notes become one list of maps with the same keys (`title`, `at`, `user`, `detail`, `tie`), sorted newest first, and the Activity panel renders that one list with the component it had. A note's title is "Note"; its chip is USR; its header is the time and the writer's first and last name. Where an event and a note share an instant the event sorts first.
+
+**Standing cases that gained entries: none.** All 12 standing comments are the agent's.
+
+### Part 3: event text
+
+**Every process model that writes event text, read on NY (six by this session, six by the helper agent):**
+
+| Model, node | Event | Text before | Text now |
+|---|---|---|---|
+| `SO_createTriageCase` 7 | Case Created (1) | "Case created from feed for trade <trade> (<stored reason>, desk <desk>)" | the reason is the display label, lower-cased |
+| `SO_triageCase` 5 | Agent Triage Complete (2), before the route | "Agent assessed <stored reason>; proposed <remediation> at confidence 0.00" | the reason is the display label, lower-cased; the node no longer runs on the analyst lane |
+| `SO_triageCase` 43 | Agent Triage Complete (2), analyst lane | "Referred to analyst: confidence 0.62 below threshold 0.80 \| proposed <remediation>" | "Held for analyst review: auto-release score 62, releases at 80 — proposed <remediation>." With "; held because this fail reason has no straight-through disposition." or "; held because the cutoff has already passed." when the score clears the gate |
+| `SO_triageCase` 23 | Escalated (7) | "Escalated by policy: <label> — …" or "Escalated by agent: <label> — …" | unchanged; it already used the label |
+| `SO_triageCase` 33 | Straight-Through Resolution (3) | "Straight-through: <remediation> \| confidence 0.90 >= threshold 0.80 \| disposition <code> \| resolved before cutoff without analyst review" | unchanged |
+| `SO_recordDispositionCase` 4 | Disposition Recorded (6) | "Disposition: <code> by <username>" | "Disposition: <code>" |
+| `SO_addCommentCase` 4 | Comment Added (5) | "Comment added by <username>" | "Comment added" |
+| `SO_escalateCase` 4 | Escalated (7), by a person | "Escalated by <username>: <reason typed>" | "Escalated: <reason typed>" |
+| `SO_assignCase` 3 (composed), 5 (written) | Assigned (4) | "Assigned to <assignee> by <username>" | "Assigned to <assignee>" |
+
+`SO_intakeRun`, `SO_simulateRun`, `SO_resetRun`, `SO_redateStandingCases`, `SO_prepareRun` and `SO_prepareRunSteps` write no event text (helper agent's read of all their nodes). `SO_redateStandingCases` node 10 writes the event `id` and `timestamp` only.
+
+**The duplicate.** Node 5 ran on every lane, so the analyst lane wrote two type-2 entries. New rule `SO_triageLane` (`_a-0000f0af-7210-8000-9c5d-011c48011c48_614285`) returns ESCALATE, STRAIGHT_THROUGH or ANALYST from the six routing variables. Node 12 (Route) reads it where its conditions were inline. Node 4 (Triage write ok?) now has three ways out: failed, to End; written and ANALYST, to node 40, past node 5; written and any other lane, to node 5. Node 43 writes the lane's one entry and stays behind check 42, so it is written only after the case and comment writes succeeded.
+
+**The escalate and straight-through lanes** write two entries with different titles (node 5, then 23 or 33). Not the duplicate the prompt names. Reported and left.
+
+**The 17 standing cases' 14 events (ids 111 to 124), read on NY.** None holds a stored fail-reason code. None ends in "by" and a username. None was updated and none was deleted. Event 113 reads "Assigned to alex.analyst from the EQ_FLOW watchlist.": a username that names the assignee, not a tail; left.
+
+### Part 4: the order of Needs your action
+
+`SO_analystWatchlist` version 26. Each row carries `pastSortKey` (0 inside the window, 1 past cutoff). `needsAll` sorts on `pastSortKey` ascending, `priority` descending, `cutoffSortKey` ascending. The caption reads "sorted by priority"; the short view reads "showing top 6 by priority" and its link "Show top 6". The Escalated queue's sort is unchanged. `SO_casePriority` was not edited.
+
+- **The short view's cut** is still the first six rows of the queue's order.
+- **The preview has no default row.** It opens on "Select a row to review the case", as before.
+
+**The hero's rank, worked out from the cutoffs and probabilities read on NY** (a mirror of `SO_casePriority` in Python agreed with the rule on 12 of 12 rows at 18:25:08 UTC, and the rendered queue at 18:25 UTC was in the same order):
+
+| Moment | Rank | Rows above it, with priority |
+|---|---|---|
+| The load of 18:22:31 UTC | 3rd (priority 66) | TRD030639 75, TRD026551 68 |
+| 65 minutes after it | 4th (priority 66) | TRD026551 85, TRD005533 81, TRD030639 75 |
+
+It depends on the minute Prepare is pressed, because the standing cutoffs are pinned to the hour and the hero's is 3 h 05 m after the load. At the load: 3rd for a load in minutes 00 to 29, 4th in minutes 30 to 59 (TRD005533 at 81 joins the rows above). At 65 minutes: 4th for minutes 00 to 24, 5th for 25 to 54 (TRD026800 at 79 joins), 4th for 55 to 59. One minute later the hero has under two hours and its priority is 83. **The hero is never first. Nothing was changed to move it.**
+
+### Part 5: riders
+
+- `SO_supervisorCommand` 11 → 12. A local holds the watchlist's conversion note; the Value at risk tile and the Inside critical window tile both carry it. The header comment no longer lists four currencies.
+- `demo-script-15min-client-awareness.md`, `talk-track-10min-internal.md`, `video-script-5min.md`: one sentence in each prep step, "refresh the page first, since a page left open shows the status it loaded with." One line changed in each.
+
+### What changed on NY, by object (versions from readback)
+
+| Object | UUID | Version |
+|---|---|---|
+| `SO_caseDetail` | `_a-0000f057-1da8-8000-9c4b-011c48011c48_564319` | 13 → 14 |
+| `SO_analystWatchlist` | `_a-0001f054-7a62-8000-9c49-011c48011c48_562262` | 25 → 26 (description rewritten: two queues show, the third is hidden) |
+| `SO_supervisorCommand` | `_a-0000f057-1da8-8000-9c4b-011c48011c48_564509` | 11 → 12 |
+| `SO_triageLane` (new rule) | `_a-0000f0af-7210-8000-9c5d-011c48011c48_614285` | 1 |
+| `SO_triageCase` | `0000f04e-ff8f-8000-2381-7f0000014e7a` | 18.0 → 22.0 (nodes 43, 5, 12, 4, one version each; published 18:20:07 UTC) |
+| `SO_createTriageCase` | `0000f04e-fee5-8000-237d-7f0000014e7a` | 5.0 (node 7) |
+| `SO_recordDispositionCase` | `0000f04e-7fcc-8000-233d-7f0000014e7a` | 6.0 (node 4) |
+| `SO_addCommentCase` | `0000f04e-7fca-8000-233c-7f0000014e7a` | 7.0 (node 4) |
+| `SO_escalateCase` | `0000f04e-7fce-8000-233f-7f0000014e7a` | 6.0 (node 4) |
+| `SO_assignCase` | `0000f04e-7ef7-8000-2336-7f0000014e7a` | 9.0 (node 3) |
+
+**Not changed on NY:** `SO_casePriority`, `SO_watchlistPreviewRail`, `SO_remediationForReason`, the agent, every record type, group and membership, `SO_demoAdminConsole`, `SO_demoRunState`, the standing cases' rows.
+
+**Throwaway objects, created and deleted this session (Scott's yes in the prompt):** interfaces `zz_SO_caseDetail_005` (`…_614247`), `zz_SO_analystWatchlist_005` (`…_614257`, four versions) and `zz_SO_analystWatchlist_005_old` (`…_614271`), and rule `zz_SO_p005_openRows` (`…_614291`). After the deletes: both `zz` listings empty, and a get on each UUID returned HTTP 404.
+
+**Data written by tests, all on demo cases that a later Prepare deleted:** case 159, a disposition with a note; case 160, two comments, an assignment to `alex.analyst` and an escalation with a reason; case 162, a comment and a disposition with a note. No standing case was written by a test.
+
+### Decisions
+
+- **The lane logic became a rule** because two gateways now need it. Copying node 12's conditions onto node 4 would have left two copies to keep level.
+- **Node 4 sends the analyst lane to node 40, not to the Route gateway.** The docs say an XOR lets the first token through and that only one path should enter a gateway. Node 40 is a Write Records node; one token reaches it per instance.
+- **The one entry is node 43's, not node 5's.** Node 43 is behind the lane's write check. An entry that states a decision is written after the decision's write succeeded.
+- **The wording uses the screen's vocabulary:** "auto-release score N, releases at G" is the ratified analyst-screen phrase, and the score is rounded as `SO_autoReleaseDisplay` rounds it.
+- **The acting user's name left four event texts, not one.** The prompt names the disposition entry and says to list every write and fix each. `SO_addCommentCase`, `SO_escalateCase` and `SO_assignCase` wrote the same tail.
+- **A note is titled "Note".** It covers a disposition note, an added comment and an escalation reason.
+- **`todatasubset` sorts on a number for "past cutoff"** (`pastSortKey`), not on the boolean.
+- **The watchlist's description and header comment were brought level** with the hidden third queue; the open TODO item named this edit as its trigger. The Value column's sort and the case screen's inline risk-tier casing were left: the prompt kept the rest of both renders unchanged.
+
+### Verified (as `scott.thorn@appian.com`, full scope)
+
+- **Stored sources.** Each of the three interfaces and the new rule was read back (the interfaces twice) and was byte-identical to the local file. Each node update's response returned the stored node; `listObjectVersions` shows each model's draft level with its newest published version.
+- **`SO_triageLane` against the old conditions:** 972 combinations of the six inputs (nulls included), 0 differences; 684 ESCALATE, 16 STRAIGHT_THROUGH, 272 ANALYST. The first run failed on expected counts I had worked out wrongly (756, 8, 208); the lane comparison itself was not in doubt, and that failure is the harness's control.
+- **The new sentences**, composed with test values through `validateExpression`: ten expected strings held, and a control with one wrong score failed.
+- **The case screen on a throwaway copy before the live save:** standing case 36 (agent comment, three events), 3,810 leaves, 0 differences from version 13; standing case 37 (no comment, no event), 3,048 leaves, 0 differences. The live version 14 render of case 159 matched the copy's apart from 4 clock leaves.
+- **The watchlist, old and new source side by side with view-all on:** the same 11 rows as a set, in a different order; outside the rows, 2 of 2,644 leaves changed (the caption and the link). Collapsed, on the live screen: "showing top 6 by priority".
+- **The supervisor screen:** 5,422 leaves before and after; 7 changed, the 2 tooltips and 5 clock values.
+- **One run on a fresh Prepare (load 18:22:31 UTC, run record 8; cases 162, 163, 164):**
+  1. Hero case 162: agent card "SO Triage Agent · 13 Nov 13:23" over the agent's assessment. Activity, two entries: "Held for analyst review: auto-release score 62, releases at 80 — proposed Arrange cover borrow / partial release." and "Case created from feed for trade TRD9DEMO01 (insufficient securities, desk EQ_FLOW)".
+  2. The other two cases' events: "Case created from feed for trade TRD9DEMO02 (funding gap, desk EQ_FLOW)", "Agent assessed funding gap; proposed Treasury funding chase at confidence 0.35", "Escalated by policy: funding gap — broker confirmation lag 26.0h against 2.4h remaining, so the remediation cannot complete inside the window. Agent confidence 0.35; the breached window decides this case whatever the score."; "Case created from feed for trade TRD9DEMO03 (operational error, desk EQ_FLOW)", "Agent assessed operational error; proposed Correct & resubmit at confidence 0.88", "Straight-through: Correct & resubmit | confidence 0.88 >= threshold 0.80 | disposition Settled - Corrected | resolved before cutoff without analyst review".
+  3. The watchlist at 18:25 UTC: ULVR LN, GBPUSD 1M FWD, SAP GY (the hero), GBPSEK 1M FWD, ENGI FP, AUDJPY 1M FWD; view-all on the throwaway copy showed all 12 in priority order. The preview for the hero: "SO Triage Agent · 13:23" over the agent's assessment, and the same after a person's comment was added to the hero.
+  4. A disposition on the hero, Settled - Partial Release, with a note. The case screen: the agent card unchanged; "Disposition Recorded · 13 Nov 13:25 · Scott Thorn", "Disposition: Settled - Partial Release"; "Note · 13 Nov 13:25 · Scott Thorn" with the note; "Comment Added", "Comment added"; "Note" with the comment.
+  5. The supervisor screen: error null; two tooltips carry the note; no list of currencies anywhere in the render.
+- **Add Comment, Escalate and Assign on demo case 160 (before that Prepare):** "Comment added", "Escalated: <reason>", "Assigned to alex.analyst", each with its note where one was written.
+- **All three lanes ran live twice** (the Prepares of 18:22 and 18:27 UTC): the three stories were in place both times, the analyst lane wrote one type-2 entry, and the other two lanes wrote node 5's entry and their own.
+- **`validateDesignObjects`:** `SO_triageCase` and `SO_triageLane`, no errors and no warnings at the check level.
+
+### Not verified
+
+- **What `alex.analyst` and `sam.supervisor` see.** No sail session was live. Every render above is the design account's.
+- **Geometry:** how the longer Activity list and a long note wrap, the hover on the two tiles, the look of the queue.
+- **The record header's actions** and the forms: the tests started the process models directly, not through the forms.
+- **Node 43's two other wordings and node 4's failed-write path** did not run live.
+- **The hero's rank at 65 minutes** is worked out, not rendered at that time.
+
+### Findings
+
+- **The hero is not first under the priority order** (Part 4). `TODO.md`, `BUILD_PLAN.md`.
+- **Add Comment and a person's Escalate now show two entries for one act**, and the escalation reason reads twice. "Comment added" repeats its entry's title.
+- **The assignee in "Assigned to …" is a username.**
+- **The agent's own assessment can hold a stored code** ("Fail reason is insufficient_securities", hero run of 18:23 UTC).
+- **The agent's score for the hero moved between runs:** 0.62 at 16:04 and 18:23 UTC, 0.68 at 18:29 UTC. All below the gate.
+- **The resolved hero's case screen still shows a live countdown.** Already a Phase 6.5 item (Resolution panel).
+- **`SO_prepareRun` stored state STORY_OUT_OF_PLACE** at 18:22 and 18:27 UTC, with the hero resolved by a test and inside the two-hour margin: the story test comes before the margin.
+- **Lint on `SO_triageLane`:** no test cases, and "Duplicate role map entry detected". Not looked into.
+- **This session's test runs left 12 more comments in the table, hidden** (their cases are gone). The open Reset item in `TODO.md` carries it.
+
+### Promotion candidates (staging)
+
+Three considered, none promoted, three listed.
+
+- **[RULED 2026-11-13: PASSES THE FIVE GATES; NOT WRITTEN INTO THE SKILL] `getExpressionRule` tells "does not exist" from "is not a rule" on DevMCP 26.9.5.** Staged on 2026-11-12 on one observation (HTTP 404 for a UUID that does not exist). Today: a rule deleted this session returned HTTP 404 "Expression rule … not found", and an interface's UUID returned HTTP 403 "Content with UUID … is not an expression rule". Two sessions, three objects. It contradicts the supplemental's own entry `mcp/orphans-unfindable` ("the same 403 for 'does not exist' as for 'is not a rule'") and `reference/mcp-capability-boundaries.md` §2 ("a missing rule 403"). Working form: on a get, 404 means the UUID is gone and 403 means it exists and is another kind of object; re-verify per instance. **Why it was not promoted here:** the supplemental says a promotion goes into the repo copy and then through `python3 .kiro/scripts/skill_merge.py --sync`, and that script is not in this repo's `.kiro/scripts/`. The repo copy and the two installed copies (`~/.claude/skills`, `~/.kiro/skills`) are byte-identical today; a hand edit would have to be made in all three. *Trigger: Scott's word on how a promotion is written from this build, or the template's next update.*
+- **NEW, STAGED (gate 1, one observation): `testProcessModel` accepts a username as a literal for a User-typed process parameter.** `{"assignee": "alex.analyst"}` reached `SO_assignCase` as a User: the case's assignee was written and the event read "Assigned to alex.analyst". `reference/mcp-capability-boundaries.md` §4 lists the types that do not pass and does not mention User. *Trigger: the next model with a User parameter.*
+- **NEW, STAGED (gate 1, one site, six models): `updateProcessModelNode` publishes a new model version on every call, and `listObjectVersions` shows a draft entry level with it.** Four node updates took `SO_triageCase` from 18.0 to 22.0. The tool's text says the publish validation runs before the save; it does not say each call is a version. It matters when a session records "the version" of a model it edited node by node. *Trigger: the Dev MCP update procedure's re-check, or the next model edited by node.*
+- **Used again, unchanged:** the leaf comparison of two renders (2026-11-12), here with the reordered rows compared as a set. The `maxResponseSizeBytes` candidates and "empty Text read back as null" are unchanged. The first read after each `updateInterface` was current on all six saves this session (three live screens, three saves of a throwaway copy).
+
+**The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
+
+**Promotion checkpoint: current through this entry.**

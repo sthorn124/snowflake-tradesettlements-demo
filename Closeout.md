@@ -1,135 +1,195 @@
-# Closeout — 2026-11-13 — The console holds its own press and shows "Preparing" from it; no time beside the demo trade ids on the watchlist
+# Closeout — 2026-11-13 — Phase 6.5 session 1: the agent card reads the agent's text, notes show in Activity, event text is fixed at the write, and Needs your action sorts by priority
 
-**Session.** Ran in **Claude Code**, not Kiro, from `prompts/004-console-press-and-batch-tag.md`. The credits step of core §10 is skipped: `CREDITS.md` is built from Kiro's own records. One round. No Prepare was run, by the prompt.
+**Session.** Ran in **Claude Code**, not Kiro, from `prompts/005-phase65-case-record-fixes.md`. The credits step of core §10 is skipped: `CREDITS.md` is built from Kiro's own records. One round. The session ran Prepare twice and finished on the second.
 
-**Scope and identity.** Every Appian call went through the Dev MCP (server `appian`) as `scott.thorn@appian.com`, confirmed by assertion (`loggedInUser()` equal to that name validated clean; the same check with another name failed). Direct member of `SO Supervisors`, `SO Demo Admins` and `SO Users`, so every read below is full-scope. No sail, by the prompt. The runtime server's tools were present and never loaded or called. Three helper agents made read-only `testInterface` renders of the console under the same account.
+**Where NY stands now.** A demo is loaded: "Ready to present. Loaded today at 1:28 PM by Scott Thorn." (18:28:10 UTC). The hero is case 165, Awaiting review, cutoff 21:33:17 UTC. **Ready ends at 2:33 PM Eastern (19:33:17 UTC)**, two hours before that cutoff.
+
+**The hero is not first in Needs your action.** It is 3rd on this load. The prompt said to report that and stop, and nothing was changed to move it. Detail under Part 4.
+
+**Scope and identity.** Every Appian call went through the Dev MCP (server `appian`) as `scott.thorn@appian.com`, confirmed by assertion (`loggedInUser()` equal to that name validated clean; the same check with another name failed). Direct member of `SO Supervisors`, `SO Demo Admins` and `SO Users`, so every read below is full-scope. No sail, by the prompt. The runtime server's tools were present and never loaded or called. One helper agent made read-only reads of six process models under the same account.
 
 ## Preflight
 
-- **Plan:** populated. **Dev MCP:** design surface present; `listRecordTypes` returned the application's 12 record types and User.
-- **Versions:** plugin and server 26.9.5, build `20261026-140102`. The pins describe 26.6.105; sail here is 26.9.5; the App Market has 26.9.15. The update procedure was not run; its plan item is open. Bundle paths for NY: `https://ny.appiancloud.com/suite/plugins/servlet/stateless/downloads` and `https://ny.appiancloud.com/suite/plugins/servlet/stateless/dev-mcp-bundle`.
-- **Skills:** `appian-supplemental` Version 2026-11-10.4, installed copy byte-identical to the repo copy. The pack's manifest, `274ce627`, matches the plugin. Docs-search was consulted for both questions the prompt names.
-- **Groups, by readback (direct members):** unchanged from 2026-11-12. `SO Users` holds `SO Administrators`, `SO Analysts`, `SO Supervisors` and two users; `SO Analysts` holds `alex.analyst`; `SO Supervisors` 11 users; `SO Demo Admins` 9 users.
-- **Personas:** every sail session on the machine is expired. None was needed.
-- **Ritual:** Prepare had run today (Scott, 15:25 UTC), so the re-date was not run.
-- **Git:** the local folder was one commit behind `origin/main` (the prompt's second revision) and was fast-forwarded first.
+- **Plan:** populated. **Dev MCP:** 218 tools, design families present; `listRecordTypes` returned the application's 12 record types and User.
+- **Versions:** plugin and server 26.9.5, build `20261026-140102`. The pins describe 26.6.105; sail here is 26.9.5; the App Market has 26.9.15. The update procedure was not run. Bundle paths for NY: `https://ny.appiancloud.com/suite/plugins/servlet/stateless/downloads` and `https://ny.appiancloud.com/suite/plugins/servlet/stateless/dev-mcp-bundle`.
+- **Skills:** `appian-supplemental` Version 2026-11-10.4; the repo copy and the installed copies are byte-identical. The pack's manifest, `274ce627`, matches the plugin. Pack references read: `process-models.md`, `tools-mcp.md`, `interface-generation-checklist.md`, `layouts/sidebyside-layout-instructions.md`, `expression-rules.md`. Docs-search was consulted on XOR gateways with more than one incoming flow. No layout or styling parameter was added or changed on any screen: a note in Activity reuses the event entry's components as they were, so the layout docs gate had no parameter to settle.
+- **Groups, by readback (direct members):** unchanged. `SO Users` holds `SO Administrators`, `SO Analysts`, `SO Supervisors` and two users; `SO Analysts` holds `alex.analyst`; `SO Supervisors` 11 users; `SO Demo Admins` 9 users.
+- **Personas:** every sail session on the machine is expired. None was used.
+- **Ritual:** Prepare had run today (Scott, 16:03 UTC), so the re-date was not run on its own. Both Prepares of this session ran it.
+- **Git:** the local folder was five commits behind `origin/main` and was fast-forwarded first. The prompt was already banked as `prompts/005`.
 
 ## What changed on NY
 
 | Object | Version | Change |
 |---|---|---|
-| `SO_demoAdminConsole` | 14 → 18 | From a press that started a run, the card shows the Running line and the button is disabled, from a value the press itself sets on the page. Version 15 is the change; 16 and 17 were one-line probes; 18 is the version 15 source restored |
-| `SO_demoRunState` | 4 → 5 | A new output, `whenRunning`: the Running state's line, tone and `isRunning`. The page shows it from its own press. No line changed |
-| `SO_analystWatchlist` | 24 → 25 | The time beside the demo trade ids is gone from the Trade column of both queues |
+| `SO_caseDetail` | 13 → 14 | The agent card reads the newest comment the agent wrote. People's notes are entries in Activity |
+| `SO_analystWatchlist` | 25 → 26 | Needs your action sorts by priority. The preview reads the agent's comment only. Description brought level with the hidden third queue |
+| `SO_supervisorCommand` | 11 → 12 | Both "USD eq." tiles carry the conversion note, which names no currencies |
+| `SO_triageLane` | new, 1 | The one definition of the triage routing |
+| `SO_triageCase` | 18.0 → 22.0 | Nodes 4, 5, 12 and 43: one triage entry on the analyst lane; the fail reason as its display label |
+| `SO_createTriageCase` | 5.0 | Node 7: the fail reason as its display label |
+| `SO_recordDispositionCase` | 6.0 | Node 4: no username tail |
+| `SO_addCommentCase` | 7.0 | Node 4: no username tail |
+| `SO_escalateCase` | 6.0 | Node 4: no username in the text |
+| `SO_assignCase` | 9.0 | Node 3: no username tail |
 
-**Not changed on NY:** `SO_prepareRun`, `SO_prepareRunSteps`, `SO_supervisorCommand`, every record type, group and group membership. **No data written.**
+**Not changed on NY:** `SO_casePriority`, `SO_watchlistPreviewRail`, `SO_remediationForReason`, the agent, `SO_demoAdminConsole`, `SO_demoRunState`, every record type, group and membership, and every standing-case row.
 
-## Part 1: the console after the press
+**Saved copy of `SO_caseDetail`.** The deployed version 13 was byte-identical to the saved copy of 2026-09-24. Nothing differed. The same held for the watchlist, the preview rail and the supervisor screen.
 
-### Why the line did not change
+## Part 1: the agent card shows only the agent's text
 
-**Most likely cause: the page reads `SO_demoRunState` once, when it loads.** The rule is built from plain local variables, its queries and its `now()` among them. The Appian docs say, under Refresh always and under troubleshooting ("Nested rules need refreshAlways"): "If your variable's value comes from an expression rule that contains its own `a!localVariables()`, the inner variables won't re-evaluate when the outer variable refreshes—unless they use `refreshAlways: true`." Nothing those inner variables depend on changes while the page is open. So after the press the console's refresh-always variable did re-evaluate, and the rule handed back what it had read at page load. A new page load read the PREPARING record, which is what Scott saw after refreshing.
+**Reproduced first.** On demo case 159, a disposition with a note through `SO_recordDispositionCase`. The case screen then read "SO Triage Agent · 13 Nov 13:05" over the note, and the note was not in Activity. The watchlist's preview did the same on a throwaway copy of version 25: "SO Triage Agent · 13:13" over a person's comment.
 
-**What the docs rule out.**
+**What tells the two apart.** `author`. `SO_recordDispositionCase` node 5, `SO_addCommentCase` node 3 and `SO_escalateCase` node 5 write `pp!initiator`. `SO_triageCase` writes null. On NY: 15 comments with no author (all 12 standing, 3 from the loaded run) and 1 with one. The query filter was checked by assertion, with a control that failed.
 
-- **The synchronous start.** With `isSynchronous` true, "`onSuccess` is not evaluated until the child process is complete, regardless of any activity chaining"; `onIncomplete` fires after 30 seconds. `SO_prepareRun` writes the run record before it completes. A start that had not completed would have shown a "Not prepared" block, and Scott saw none.
-- **The order of saves and refreshes.** All saves in a `saveInto` are evaluated before any local variable is refreshed, and a `refreshAlways` variable is refreshed after each user interaction.
+**The fix.** Both screens add `author` `is null` to the assessment query.
 
-**What I could not confirm.** That this is what happened in Scott's browser, by measurement. A session renders a page once and cannot press. The cause fits everything he reported, and the docs describe this exact shape.
+**Pass.** On the hero of the fresh run (case 162), after a person's comment and then a disposition note: the agent card read "SO Triage Agent · 13 Nov 13:23" over the agent's assessment, and the preview read "SO Triage Agent · 13:23" over the same. A case with no agent comment (standing case 37) rendered leaf for leaf as before: 3,048 leaves, 0 differences. So did standing case 36, which has one: 3,810 leaves, 0 differences.
 
-### The fix
+## Part 2: a person's note shows in Activity
 
-- **The press sets the value.** The press already saved its answer on the page (`local!prepResult`). A new `local!startedHere` is true when that answer says a run started. From then the card reads `whenRunning` from the rule in place of what the page loaded with: the Running line, its neutral colour, and `isRunning` true.
-- **The button** reads the same value. It stays disabled on the pressing page for as long as the page is open, and on any page loaded while the state is Running. It is enabled only on a refreshed page that reads a state other than Running.
-- **A refusal or a failure** leaves `startedHere` false: the message shows in full and the button stays enabled.
-- **One sentence, one home.** The Running wording stays in `SO_demoRunState`; the console does not carry a copy.
+Activity is one list: the case's events and its comments that have an author, newest first. A note is built the way an event is: a USR chip, the title "Note", the time and the writer's first and last name, and the text.
 
-### Verified (as the design account)
+**Pass.** After Record Disposition with a note and after Add Comment, on case 162:
 
-**The page in the state NY is in.** Version 15 rendered twice at 15:49 and 15:50 UTC, and version 18 twice at 15:52: error null; "Ready to present. Loaded today at 10:25 AM by Scott Thorn." in `#17715B`; button enabled; nothing under the button. The verdict line, "Loaded now", the eight Details rows, the header and the caption match the version 14 render of 15:45.
+- "Disposition Recorded · 13 Nov 13:25 · Scott Thorn" / "Disposition: Settled - Partial Release"
+- "Note · 13 Nov 13:25 · Scott Thorn" / the disposition note
+- "Comment Added · 13 Nov 13:25 · Scott Thorn" / "Comment added"
+- "Note · 13 Nov 13:25 · Scott Thorn" / the comment
 
-**The other states' lines**, through `testRule` on rule version 5:
+**Standing cases that gained entries: none.** All 12 standing comments are the agent's.
 
-| Read | Returned |
-|---|---|
-| now | READY, "Ready to present. Loaded today at 10:25 AM by Scott Thorn." |
-| `asOf` 16:31 UTC | "Not ready. The hero case has under two hours to cutoff. Prepare the demo again." |
-| `asOf` 18:31 UTC | "Not ready. The hero case passed its cutoff at 1:30 PM. Prepare the demo again." |
-| `asOf` tomorrow 14:00 UTC | "Loaded before today. Prepare the demo again for fresh dates." |
-| another run name, 90 seconds after the load | RUNNING, "Preparing the demo. About two minutes. Refresh this page to check.", `isRunning` true |
-| another run name, now | "The last run did not finish. Prepare the demo again." |
+## Part 3: the text of Activity entries
 
-"No demo loaded." and the story line cannot be reached on today's data; their lines are untouched in the source.
+**Every process model that writes event text**, read on NY:
 
-**Both outcomes of a press, on the real page.** The console's default for the press's answer was changed by one line, rendered, and restored:
+| Model, node | Entry | Text now |
+|---|---|---|
+| `SO_createTriageCase` 7 | Case Created | "Case created from feed for trade <trade> (<reason label, lower case>, desk <desk>)" |
+| `SO_triageCase` 5 | Agent Triage Complete, escalate and straight-through lanes | "Agent assessed <reason label, lower case>; proposed <remediation> at confidence 0.00" |
+| `SO_triageCase` 43 | Agent Triage Complete, analyst lane | "Held for analyst review: auto-release score N, releases at 80 — proposed <remediation>." |
+| `SO_triageCase` 23 | Escalated, by the process | "Escalated by policy: <label> — …" or "Escalated by agent: <label> — …" (unchanged) |
+| `SO_triageCase` 33 | Straight-Through Resolution | "Straight-through: <remediation> \| confidence 0.00 >= threshold 0.80 \| disposition <code> \| resolved before cutoff without analyst review" (unchanged) |
+| `SO_recordDispositionCase` 4 | Disposition Recorded | "Disposition: <code>" |
+| `SO_addCommentCase` 4 | Comment Added | "Comment added" |
+| `SO_escalateCase` 4 | Escalated, by a person | "Escalated: <reason typed>" |
+| `SO_assignCase` 3 | Assigned | "Assigned to <assignee>" |
 
-| Probe | Status line | Button | Under the button |
-|---|---|---|---|
-| A: the press started a run | "Preparing the demo. About two minutes. Refresh this page to check.", `#454F5C` | `disabled` true | nothing |
-| B: the press was refused | "Ready to present. …", `#17715B` | enabled | "Not prepared" in `#B3261E`, the time, and the message in full |
+The other six models write no event text (a helper agent read all their nodes). `SO_redateStandingCases` writes an event's id and time only.
 
-The probes were live for about a minute, from just after 15:50:44 UTC to before 15:52:01. The restore was read back twice, byte-identical to the saved source both times.
+**The duplicate.** The pre-route entry (node 5) ran on every lane, so the analyst lane wrote two "Agent Triage Complete" entries. The routing is now the rule `SO_triageLane`, read by the Route gateway and by node 4, which sends an analyst-lane case past node 5. Node 43 writes the lane's one entry, after the lane's writes succeed. The rule returned the same lane as the old conditions on all 972 input combinations tried.
 
-**The page's logic as a truth table**, through `validateExpression`: eight cases held, and the control with one wrong expectation failed.
+**The other two lanes** write two entries with different titles. That is not the duplicate the prompt names. Reported and left.
 
-## Part 2: the time beside the demo trade ids
+**The standing cases' 14 events.** None holds a stored fail-reason code and none ends in "by" and a username. None was updated and none was deleted. Event 113 reads "Assigned to alex.analyst from the EQ_FLOW watchlist."; the username names the assignee and is not a tail, so it was left.
 
-The Trade cell of "Needs your action" and of "Escalated, with supervisor" each had a second item showing the row's batch scoring time. Both are removed, with the row key that fed them.
+**Pass: the three demo cases' entries on the fresh Prepare that NY now holds (cases 165, 166, 167):**
 
-**Pass: no trade id on the page has a time beside it, and apart from that the page renders as before.**
+- Hero, 165: "Case created from feed for trade TRD9DEMO01 (insufficient securities, desk EQ_FLOW)"; "Held for analyst review: auto-release score 68, releases at 80 — proposed Arrange cover borrow / partial release." One "Agent Triage Complete" entry.
+- Escalation, 166: "Case created from feed for trade TRD9DEMO02 (funding gap, desk EQ_FLOW)"; "Agent assessed funding gap; proposed Treasury funding chase at confidence 0.30"; "Escalated by policy: funding gap — broker confirmation lag 26.0h against 2.4h remaining, so the remediation cannot complete inside the window. Agent confidence 0.30; the breached window decides this case whatever the score."
+- Straight-through, 167: "Case created from feed for trade TRD9DEMO03 (operational error, desk EQ_FLOW)"; "Agent assessed operational error; proposed Correct & resubmit at confidence 0.87"; "Straight-through: Correct & resubmit | confidence 0.87 >= threshold 0.80 | disposition Settled - Corrected | resolved before cutoff without analyst review".
 
-- Version 24 at 10:45:41 Eastern against version 25 at 10:50:04, leaf by leaf: 3,815 leaves before, 3,799 after.
-- 16 removed: the two "  10:25" items, on TRD9DEMO01 and TRD9DEMO02. None added.
-- 8 changed, all the clock: "last read", six countdowns, "2.1h to cutoff" to "2.0h".
-- All ten Trade cells now hold the trade id only.
-- The band still reads "10:25 today · 15 trades on your desk".
+No stored fail-reason code and no username tail in any of the eight.
 
-## Decisions
+## Part 4: Needs your action sorts by priority
 
-- **The rule gained an output, though the prompt names only the console.** The alternative was a second copy of the ruled Running sentence inside the console.
-- **The rule's own variables were not made refresh-always.** That would have made an open page re-read the state on each interaction. The ruling is no self-refresh, and the prompt asks for a fix that does not depend on a re-read.
-- **The previous run's failure is hidden once this press starts a run.** Otherwise the pressing page would read "Preparing the demo" above an old "Not prepared".
-- **The hidden branches were rendered on the live console by probe,** as core §4 prescribes, and restored. The probe messages said what they were.
-- **The console's stale comment and description were corrected** in the same edit, as their `TODO.md` item's trigger said.
+**The order.** Rows inside their window first, highest priority first, ties by earliest cutoff; rows past cutoff after them. The caption reads "sorted by priority". The short view reads "showing top 6 by priority", and its link "Show top 6". The Escalated queue's order is unchanged, and `SO_casePriority` was not edited.
+
+- **The short view's cut** is still the first six rows of the queue's order.
+- **The preview has no default row.** It opens on "Select a row to review the case", as before.
+
+**Pass.** Old and new source rendered side by side with view-all on: the same 11 rows as a set, in a different order. Outside the rows, 2 of 2,644 leaves changed: the caption and the link. The tiles, the band and the Escalated queue did not change.
+
+**Where the hero ranks.** Worked out from the cutoffs and probabilities read on NY. A copy of the rule's arithmetic agreed with the rule on 12 of 12 rows, and the queue rendered at 18:25 UTC was in the same order.
+
+| Load | At the load | 65 minutes after it |
+|---|---|---|
+| 18:22 UTC (the verification run) | 3rd, priority 66. Above it: TRD030639 at 75, TRD026551 at 68 | 4th, priority 66. Above it: TRD026551 at 85, TRD005533 at 81, TRD030639 at 75 |
+| 18:28 UTC (the run NY holds now) | 3rd. Above it: the same two | 5th. Above it: TRD026551 at 85, TRD005533 at 81, TRD026800 at 79, TRD030639 at 75 |
+
+It depends on the minute Prepare is pressed. The standing cutoffs are pinned to the hour; the hero's is 3 hours 5 minutes after the load.
+
+- **At the load:** 3rd if Prepare is pressed in minutes 00 to 29 of the hour, 4th in minutes 30 to 59.
+- **At 65 minutes:** 4th or 5th.
+
+The rows above it are standing cases with under two hours to cutoff, which the rule scores at full urgency. **The hero is never first.** Stopped there, as the prompt says.
+
+## Part 5: riders
+
+1. **`SO_supervisorCommand`.** The Value at risk tooltip and the Inside critical window tooltip are the watchlist's note: "Cross-currency total: nothing in the source data carries an FX rate. Converted at indicative static rates (SO_fxToUsd) for aggregation only — not a market feed, not a rate of record." Rendered before and after: 7 of 5,422 leaves changed, the 2 tooltips and 5 clock values.
+2. **The three demo documents.** One sentence added to each prep step: "refresh the page first, since a page left open shows the status it loaded with." One line changed in each file.
+
+## Verification: one run on a fresh Prepare, as the design account
+
+The load of 18:22:31 UTC (cases 162, 163, 164).
+
+1. **The hero's case screen.** Agent card: the agent's assessment, "13 Nov 13:23". Activity: one "Agent Triage Complete" entry ("Held for analyst review: auto-release score 62, releases at 80 — proposed Arrange cover borrow / partial release.") and "Case created from feed for trade TRD9DEMO01 (insufficient securities, desk EQ_FLOW)".
+2. **A disposition on the hero,** Settled - Partial Release, with a note.
+3. **The case screen again.** The agent card unchanged. The note in Activity under "Scott Thorn". The disposition entry reads "Disposition: Settled - Partial Release".
+4. **The watchlist.** The order of Part 4. **The preview for the hero was read before step 2,** because a resolved case leaves the queue and cannot be selected. It showed the agent's assessment, and still did after a person's comment was added to the hero.
+5. **The supervisor screen.** Error null. Two tooltips carry the note. No list of currencies anywhere in the render.
+
+All three lanes ran live on both Prepares, with the three stories in place each time.
 
 ## Not verified
 
-- **The press itself.** The checklist below. In particular, that the page turns to "Preparing" when the press's answer is saved: a session never sees a page re-evaluate.
-- **The cause, by measurement.**
-- **What each persona sees, and geometry.** No layout changed.
+- **What `alex.analyst` and `sam.supervisor` see.** No sail session was live. Every render above is the design account's.
+- **Geometry:** how the longer Activity list and a long note wrap, the hover on the two tiles, the look of the queue.
+- **The forms and the record header's actions.** The tests started the process models directly.
+- **Three written paths that did not run live:** node 43's two other wordings (the score clears the gate and the reason has no straight-through disposition; the score clears the gate and the cutoff has passed), and node 4's failed-write path. The wordings were composed with test values and matched.
+- **The hero's rank at 65 minutes** is worked out, not rendered at that time.
 
 ## Operator's browser checklist (Scott)
 
-1. Press Prepare the demo. Without refreshing, the line reads "Preparing the demo. About two minutes. Refresh this page to check." and the button is disabled.
-2. Refresh after 30 seconds: the same line, and the button is still disabled.
-3. Refresh after two minutes: "Ready to present. Loaded today at <time> by Scott Thorn.", and the button is enabled.
-4. The watchlist: no time beside TRD9DEMO01 or the other demo trades.
+1. Demo Admin: press **Prepare the demo** and wait for "Ready to present".
+2. Watchlist, as `alex.analyst`: the Needs your action caption reads "sorted by priority". SAP GY / Diamond Trust is the **3rd row** if you pressed Prepare in the first half of the hour, and the **4th** if in the second half. Above it: ULVR LN, GBPUSD 1M FWD, and in the second half of the hour GBPSEK 1M FWD.
+3. Open that case. Press Record Disposition, choose Settled - Partial Release, type a note, submit.
+4. The same case: the agent card still shows the agent's reasoning. Activity shows your note as an entry titled "Note" under your name. The disposition entry reads "Disposition: Settled - Partial Release" and does not end in "by" and a username. No entry shows a fail reason as a code, such as insufficient_securities; desk codes such as EQ_FLOW are expected. There is one "Agent Triage Complete" entry.
+5. Supervisor, as `sam.supervisor`: hover the Value at risk tile. The note gives the conversion basis and lists no currencies. The Inside critical window tile has the same note.
+6. Demo Admin: press **Prepare the demo** again.
 
-## Found, not fixed
+## Rulings needed
 
-- **A console page left open shows what it loaded with.** Its Ready line will not turn amber at the two-hour margin until the page is refreshed. Same cause as Part 1. In `TODO.md`.
-- **The watchlist's countdowns may freeze between page loads,** for the same reason: `SO_cutoffDisplay` computes from `now()` inside its own local variables. Not measured. In `TODO.md` as a one-minute browser check: watch a countdown across two 30-second refreshes without reloading.
+1. **The hero's place in the queue.** It is 3rd or 4th at the load. If it should be first, that is a change to the priority rule, to the standing cases or to the hero's cutoff, and the prompt ruled the first two out for this session.
+2. **Add Comment and a person's Escalate show two entries for one act:** the event and the note. The escalation reason reads twice, and "Comment added" repeats its entry's title. Options: hide the Comment Added event on the screen, shorten the event text, or leave both.
+3. **"Assigned to alex.analyst"** still shows the assignee as a username. I dropped the acting person's tail and left the assignee.
+4. **The escalate and straight-through lanes** still write two triage entries with different titles and still say "confidence 0.30", where the analyst lane now says "auto-release score 68, releases at 80".
+5. **One promotion candidate passes the five gates and was not written into the skill.** `getExpressionRule` returns 404 for a rule that does not exist and 403 for a UUID that is another kind of object, which contradicts the supplemental. The merge script the skill names, `.kiro/scripts/skill_merge.py`, is not in this repo, and the three copies of the skill are byte-identical today. Say how a promotion is to be written from this build.
 
-## State of NY
+## Decisions I made
 
-Ready, from Scott's Prepare of 15:25 UTC (10:25 AM Eastern), run record 6. Read at 15:52 UTC: "Ready to present. Loaded today at 10:25 AM by Scott Thorn." The hero case is 156; its cutoff is 18:30:37 UTC (1:30 PM Eastern). Ready ends at 16:30 UTC, 11:30 AM Eastern. No Prepare was run by this session.
+- **The lane logic became a rule, `SO_triageLane`,** because two gateways now need it. Node 4 sends the analyst lane to the lane's first write, not to the Route gateway: the docs say only one path should enter a gateway.
+- **The acting user's name left four event texts, not one.** The prompt names the disposition entry and says to list every write and fix each; three other models wrote the same tail.
+- **The analyst lane's entry uses the screen's vocabulary,** "auto-release score N, releases at 80", and rounds as the screen does.
+- **A note's title is "Note".**
+- **Two things were left though their TODO triggers named these edits:** the watchlist's Value column sort and the case screen's inline risk-tier casing. The prompt kept the rest of both renders unchanged.
+
+## Other findings
+
+- The agent's own assessment can hold a stored code: "Fail reason is insufficient_securities" (hero run of 18:23 UTC). It is the agent's text; its instructions were not in this session.
+- The agent's score for the hero moved between runs: 0.62 at 16:04 and 18:23 UTC, 0.68 at 18:29 UTC. All below the gate.
+- The resolved hero's case screen still shows a live countdown. Already a Phase 6.5 item.
+- `SO_prepareRun` stored state STORY_OUT_OF_PLACE at 18:22 and 18:27 UTC, with the hero resolved by a test and inside the two-hour margin: the story test comes before the margin, as designed.
+- Lint on `SO_triageLane`: no saved test cases, and "Duplicate role map entry detected". Not looked into.
+- This session's tests left 12 more comments in the table, hidden, because their cases are gone. The open Reset item carries it.
+
+## Throwaway objects
+
+Created and deleted this session, on the prompt's yes: interfaces `zz_SO_caseDetail_005`, `zz_SO_analystWatchlist_005` and `zz_SO_analystWatchlist_005_old`, and rule `zz_SO_p005_openRows`. After the deletes both `zz` listings were empty and a get on each UUID returned HTTP 404. Nothing else was deleted.
 
 ## Promotion candidates
 
-One found; none promoted; one listed in `BUILD_LOG.md` with its trigger: a rule's local variables are evaluated once per page, so a page value that must change after the page's own action is saved by that action and never waited for from a re-read of a rule. Documented by Appian, seen once in a browser by the operator, not measured by a session.
+Three considered; none promoted; three listed. One passes the gate and waits on ruling 5. Two are new and staged on one observation each: `testProcessModel` passes a username to a User-typed parameter, and `updateProcessModelNode` publishes a model version on every call. Checkpoint: current through this session's entry.
 
-Promotion checkpoint: current through this session's entry. The header checkpoint line at the top of `BUILD_LOG.md` is still stale; its Blocking item stays open.
+## TODO changes
 
-## BUILD_PLAN.md changes
+Added a section for this session with nine items: the browser checks, the hero's rank, the two-entries ruling, the assignee username, the two other lanes, the agent's stored code, three paths not run live, the `SO_fxToUsd` header comment, and the missing test cases on `SO_triageLane`. Closed four: the supervisor tooltip, the watchlist's description of three queues, the stale `SO_triageCase` description, and the escalate node's raw fail reason. Annotated five: the Reset leftovers, the story-out-of-place check, the Value column sort, the risk-tier casing, and the line numbers in the constants item.
 
-Phase 11: a follow-up block for `prompts/004` with two items done (the console's press, the watchlist's Trade column) and one open (Scott's four-step browser check).
+## BUILD_PLAN changes
 
-## Files
+Six Phase 6.5 items ticked (the five under "Agent card and Activity panel" and the watchlist's sort). The hero-rank item stays open with what was found. Five new items under "Found in session 1". The personas section says what each persona should see from today. Order item 3 notes that session 1 is built and Scott's check is owed.
 
-- `.work/SO_demoAdminConsole.sail`: the console, the version 15 source that version 18 holds.
-- `.work/gen/rule_SO_demoRunState.sailt`, `.work/rule_SO_demoRunState.sail`: the rule, version 5.
-- `.work/SO_analystWatchlist.sail`: version 25.
-- `.kiro/steering/project.md`: a page reads the rule once; the button's rule.
-- `BUILD_PLAN.md`, `BUILD_LOG.md`, `TODO.md`, this file.
+## Files changed in the repo
 
-**TODO changes:** closed one: the console's "other three amber" comment and "six states" description, corrected in this edit. Updated one: the Phase 11 browser checks (step 1 failed in Scott's check and is re-checked by `prompts/004`). Added three: the browser checks owed for `prompts/004`; an open console page showing what it loaded with; whether the watchlist's countdowns move on its 30-second refresh.
+`.work/SO_caseDetail.sail`, `.work/SO_analystWatchlist.sail`, `.work/SO_supervisorCommand.sail`, `.work/rule_SO_triageLane.sail` (new), `.work/pm_SO_triageCase.md`, the three demo documents, `.kiro/steering/project.md` (four rules), `BUILD_PLAN.md`, `BUILD_LOG.md`, `TODO.md`, `Closeout.md`.

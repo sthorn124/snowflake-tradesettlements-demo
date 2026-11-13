@@ -12,6 +12,12 @@ Domain and use case: capital-markets settlement operations — **Pre-Settlement 
 
 The claude.ai Project reads this section when it authors the verification section of each build prompt, so this is where each persona's should and should-not see and do is written. Keep it current at close-out like the rest of the plan: when a build changes what a persona sees or can do, update this section in the same close-out.
 
+**What each persona should see from 2026-11-13** (`prompts/005`). Built and checked as the design account. Not checked as the personas: no sail session was live, so these are Scott's browser checks (TODO).
+- `alex.analyst`, the watchlist: Needs your action reads "sorted by priority". Rows inside their window come first, highest priority first; rows past cutoff come after them. The short view reads "showing top 6 by priority". With a demo loaded, SAP GY / Diamond Trust is 3rd or 4th at the load, never 1st. Should not see: a note a person typed in the preview panel under "SO Triage Agent".
+- `alex.analyst`, a case: the agent card shows the agent's reasoning and its run time, whatever notes were added later. Activity shows each note a person wrote (a disposition note, an added comment, an escalation reason) as an entry titled "Note" under the writer's name. A case held for review has one "Agent Triage Complete" entry. Should not see: a fail reason as a stored code in an Activity entry, or an entry ending "by" and a username.
+- `sam.supervisor`: the Value at risk tile and the Inside critical window tile both carry the conversion note, and it names no currencies.
+- The presenter's own account: the Demo Admin console is unchanged.
+
 ## Data Model (entity level)
 
 Snowflake, direct access, never synced: TRADES, TRADE_PREDICTIONS (1:1), COUNTERPARTIES (N:1), plus INSTRUMENTS and SETTLEMENT_HISTORY. Appian-native: SO Settlement Case (N:1 Trade, session-tagged), SO Case Comment, and record events. Field-level detail: `CLAUDE.md` project sections (Snowflake environment; Appian application).
@@ -25,7 +31,7 @@ Ruled by Scott in the planning chat on 2026-11-11. This section sets the order. 
 **Order**
 1. Phase 10, sync. No build.
 2. Phase 11, demo setup experience.
-3. Phase 6.5, in sessions (chosen by Scott 2026-11-13, on the planning chat's recommendation). Session 1 is the fixes with no new layout: `prompts/005-phase65-case-record-fixes.md`. Then the remediation rule by side of the trade (Phase 6.5, Hero story). Then the resolution card and the "Missed cutoff" line, after a mockup.
+3. Phase 6.5, in sessions (chosen by Scott 2026-11-13, on the planning chat's recommendation). Session 1 is the fixes with no new layout: `prompts/005-phase65-case-record-fixes.md`. **Built 2026-11-13; Scott's browser check is owed.** Then the remediation rule by side of the trade (Phase 6.5, Hero story). Then the resolution card and the "Missed cutoff" line, after a mockup.
 
 **On hold:** Phase 7 (governance layer), Phase 8 (make the AI real), Phase 9 (late-trade live beat).
 
@@ -154,11 +160,11 @@ Ruled by Scott in the planning chat on 2026-11-11. This section sets the order. 
 ### Phase 6.5 — Case outcome and audit trail (added 2026-09-25, found in demo prep; committed to the plan 2026-10-13 from the drafting chat)
 
 Agent card and Activity panel
-- [ ] SEVERE for the governance story: an analyst's disposition note renders inside the agent card, under "SO Triage Agent", replacing the agent's own rationale (observed 2026-09-25, case SO-99). Suspected cause: the card shows the latest case comment rather than the agent-authored one. Confirm before fixing. Fix: the agent card shows only agent-authored rationale.
-- [ ] The disposition note is saved (SO Case Comment, by design) but never appears in the Activity panel, which reads only case events. Merge case comments into the Activity feed in time order, attributed to the analyst.
-- [ ] Event text shows raw stored codes ("insufficient_securities" in the Case Created and agent-assessed entries). Route through SO_failReasonDisplay per the display-vocabulary canon (same class as the open escalate-path item).
-- [ ] "Disposition: ... by scott.thorn@appian.com" shows the username in the body while the entry header already shows the display name. Drop the "by <username>" tail.
-- [ ] Two "Agent Triage Complete" entries at the same minute say nearly the same thing. Consolidate to one entry (decision, confidence vs gate, proposed fix), or give them distinct titles.
+- ✅ 2026-11-13 (`SO_caseDetail` version 14, `SO_analystWatchlist` version 26; reproduced first, cause confirmed) SEVERE for the governance story: an analyst's disposition note renders inside the agent card, under "SO Triage Agent", replacing the agent's own rationale (observed 2026-09-25, case SO-99). Suspected cause: the card shows the latest case comment rather than the agent-authored one. Confirm before fixing. Fix: the agent card shows only agent-authored rationale.
+- ✅ 2026-11-13 (`SO_caseDetail` version 14) The disposition note is saved (SO Case Comment, by design) but never appears in the Activity panel, which reads only case events. Merge case comments into the Activity feed in time order, attributed to the analyst.
+- ✅ 2026-11-13 (fixed at the write: `SO_createTriageCase` node 7, `SO_triageCase` node 5) Event text shows raw stored codes ("insufficient_securities" in the Case Created and agent-assessed entries). Route through SO_failReasonDisplay per the display-vocabulary canon (same class as the open escalate-path item).
+- ✅ 2026-11-13 (`SO_recordDispositionCase` node 4; the same tail dropped in `SO_addCommentCase`, `SO_escalateCase` and `SO_assignCase`) "Disposition: ... by scott.thorn@appian.com" shows the username in the body while the entry header already shows the display name. Drop the "by <username>" tail.
+- ✅ 2026-11-13 (analyst lane: one entry, written by `SO_triageCase` node 43; routing through the new rule `SO_triageLane`) Two "Agent Triage Complete" entries at the same minute say nearly the same thing. Consolidate to one entry (decision, confidence vs gate, proposed fix), or give them distinct titles.
 
 Resolution panel
 - [ ] A resolution card directly under the trade banner, shown only on resolved cases: disposition, resolved by (analyst name, or "the agent" for straight-through), resolved at, and "Resolved <Xh Ym> before cutoff" (the live countdown freezes into this once resolved).
@@ -168,9 +174,16 @@ Resolution panel
 - [ ] Verify on both paths: the hero after Record Disposition with a note, and story 03 straight-through.
 
 Watchlist (added 2026-10-09)
-- [ ] Needs Your Action sorts by time to cutoff only, so low-risk rows with earlier clocks and rows already past cutoff sit above the hero (observed 2026-09-25: hero below the top 6). Sort by risk and time together, as the one-pager promises ("risk × time-to-cutoff"). Do not sort by created date: the batch tag and band already mark new arrivals.
+- ✅ 2026-11-13 (`SO_analystWatchlist` version 26: rows inside their window by priority, past-cutoff rows after them) Needs Your Action sorts by time to cutoff only, so low-risk rows with earlier clocks and rows already past cutoff sit above the hero (observed 2026-09-25: hero below the top 6). Sort by risk and time together, as the one-pager promises ("risk × time-to-cutoff"). Do not sort by created date: the batch tag and band already mark new arrivals.
 - [ ] Rows past their cutoff are realized fails, not prevention work. Move them out of Needs Your Action into a compact "Missed cutoff" line, with a count and view-all.
-- [ ] Verify the hero ranks first with a demo loaded, at two different times of day (fixture cutoffs are fixed clock times, so the order currently shifts through the day).
+- [ ] Verify the hero ranks first with a demo loaded, at two different times of day (fixture cutoffs are fixed clock times, so the order currently shifts through the day). **Checked 2026-11-13: it does not.** With the priority order, the hero is 3rd or 4th at the load and 4th or 5th at 65 minutes, depending on the minute Prepare is pressed. The rows above it are standing cases with under two hours to cutoff (TRD030639, TRD026551, TRD005533, and TRD026800 for some load times). Open: a ruling on whether the hero should be first, and by what change. `prompts/005` ruled out editing `SO_casePriority` or the standing cases in session 1.
+
+Found in session 1 (2026-11-13), each needing a ruling
+- [ ] Add Comment and a person's Escalate now show two Activity entries for one act: the event and the note. The escalation reason reads twice ("Escalated: <reason>" and the note). Rule: hide the Comment Added event on the screen, shorten the event text, or leave both.
+- [ ] The Comment Added entry's body is "Comment added", which repeats its title. It was "Comment added by <username>"; the tail was dropped as ruled for the disposition entry.
+- [ ] "Assigned to alex.analyst" still shows the assignee as a username. The acting person's tail is gone; the assignee was left.
+- [ ] The escalate and straight-through lanes still write two triage entries with different titles (the "Agent assessed …" entry, then "Escalated" or "Straight-Through Resolution"), and both say "confidence 0.35" where the analyst lane now says "auto-release score 62, releases at 80". Reported and left, as `prompts/005` says.
+- [ ] The agent's own assessment can carry a stored code in its prose ("Fail reason is insufficient_securities", hero run of 2026-11-13). It is the agent's text in the agent card; the agent's instructions were not in session 1.
 
 Hero story
 - [ ] The hero's scripted analyst action is now Record Disposition → Settled - Partial Release (ruled 2026-09-25; supersedes Borrow Executed in TODO).
