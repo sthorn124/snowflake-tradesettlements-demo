@@ -30,7 +30,17 @@ Four tools. Three get built; one is deliberately NOT built and the reason matter
 **Type** — expression rule tool.
 **Backing object** — `SO_remediationForReason` `_a-0000f04a-c437-8000-9c47-011c48011c48_561387`.
 
-**Input** — `failReason` (Text), one of the four canon values.
+**Inputs** — three, from 2026-11-13 (`prompts/006`). Until then the tool took `failReason` alone.
+
+| input | type | what the agent copies from the caseContext |
+|---|---|---|
+| `failReason` | Text | The fail reason code on the CASE line, one of the four canon values. The code, not the plain words. |
+| `direction` | Text | `BUY` or `SELL`, the third item on the TRADE line. |
+| `onwardDeliveries` | Number (Integer) | The number that begins the ONWARD DELIVERIES line. `SO_caseContext` writes `0` there when there are none; until 2026-11-13 that line began "no onward deliveries" and gave the agent no number to copy. |
+
+`direction` and `onwardDeliveries` are optional on the rule. With no direction the rule returns what it returned before they existed.
+
+**The tool takes its inputs from the rule as it stands.** Measured once, 2026-11-13: the two inputs were added to `SO_remediationForReason` over the Dev MCP and nothing was changed in Agent Studio. On the next run the agent, still on version 6 of its instructions, returned "Chase counterparty for funding" for a funding gap on a SELL. Only a call that passed `direction` can return that text. So a change to this rule's inputs reaches the deployed agent at once, and the input descriptions on the rule are what the agent reads. Whether the agent fills an optional input on every run is the agent's choice until its instructions say so (version 7, step 5).
 
 **Output** — a map with three keys:
 
@@ -40,7 +50,22 @@ Four tools. Three get built; one is deliberately NOT built and the reason matter
 | urgency | HIGH / CRITICAL / MEDIUM |
 | stDisposition | the disposition code to stamp on a straight-through resolution, or null where straight-through is forbidden |
 
-`stDisposition` was added to this rule on 2026-08-28 (this pass). It is null for `counterparty_default` — which is what makes "never straight-through a credit case" a property of the data rather than a rule the agent has to remember. Any input outside the canon four, including null, returns `Manual review` / `MEDIUM` / null and never errors.
+**What it returns, by whose fail it is** (`SO_failSide`; texts and codes ruled by Scott, 2026-11-13):
+
+| failReason | direction | onwardDeliveries | remediation | urgency | stDisposition |
+|---|---|---|---|---|---|
+| insufficient_securities | SELL, or none passed | any | Arrange cover borrow / partial release | HIGH | Settled - Borrow Executed |
+| insufficient_securities | BUY | 1 or more | Arrange cover borrow for onward deliveries / accept partial delivery | HIGH | Settled - Borrow Executed |
+| insufficient_securities | BUY | 0, or none passed | Accept partial delivery / chase counterparty | HIGH | Settled - Partial Release |
+| funding_gap | BUY, or none passed | any | Treasury funding chase | HIGH | Settled - Funding Received |
+| funding_gap | SELL | any | Chase counterparty for funding | HIGH | Settled - Funding Received |
+| counterparty_default | any | any | Credit-risk escalation | CRITICAL | *(null)* |
+| operational_error | any | any | Correct & resubmit | MEDIUM | Settled - Corrected |
+| anything else, including null | any | any | Manual review | MEDIUM | *(null)* |
+
+`stDisposition` was added to this rule on 2026-08-28. It is null for `counterparty_default` — which is what makes "never straight-through a credit case" a property of the data rather than a rule the agent has to remember. Any input outside the canon four, including null, returns `Manual review` / `MEDIUM` / null and never errors.
+
+**The process is the authority for the text a case stores.** `SO_triageCase` node 11 reads the trade's direction and its onward deliveries itself and calls the same rule; the agent's tool call gives the agent the same text to reason about. *(Node 11 changes in round 2 of `prompts/006`. Until it does, the case stores the text the agent returned.)*
 
 **Grants** — the agent identity needs Viewer on the rule.
 

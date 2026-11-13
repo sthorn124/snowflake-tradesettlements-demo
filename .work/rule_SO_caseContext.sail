@@ -122,14 +122,17 @@ a!localVariables(
 
   /* ONWARD DELIVERIES — whether a fail here stops at this settlement or cascades
      into our own sells of the same line. Rendered as a plain statement because
-     the agent should reason about the consequence, not re-derive the count. */
+     the agent should reason about the consequence, not re-derive the count.
+     THE LINE ALWAYS BEGINS WITH THE COUNT AS A NUMBER, 0 included (2026-11-13:
+     it read "no onward deliveries" until then). The agent copies that number
+     into its propose_remediation call, and "no" is not a number to copy. */
   local!onward: rule!SO_onwardDeliveries(
     instrumentId: local!c[local!fInstr],
     settlementDate: local!c[local!fEsd]
   ),
   local!onwardLine: "ONWARD DELIVERIES: " & if(
     a!defaultValue(local!onward, 0) = 0,
-    "no onward deliveries of this instrument in the next 2 settlement cycles — a fail here would be contained to this settlement",
+    "0 onward deliveries of this instrument in the next 2 settlement cycles — a fail here would be contained to this settlement",
     local!onward & " onward deliver" & if(local!onward = 1, "y", "ies")
       & " of this instrument settle in the next 2 settlement cycles — a fail may cascade"
   ),
