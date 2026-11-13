@@ -6,6 +6,16 @@
  * WHAT v5 CHANGED. The flat open-queue grid became THREE stacked queues —
  * NEEDS YOUR ACTION, ESCALATED, CLEARED THIS BATCH — with a Latest scoring
  * batch band between the KPI strip and the queues. The rail is unchanged.
+ * TWO QUEUES SHOW. The third, CLEARED THIS BATCH, is still in this source and
+ * hidden (showWhen "false", saved by hand 2026-10-23; ruled 2026-11-12 that it
+ * stays hidden). The band's "cleared by Snowflake" count carries that fact.
+ *
+ * NEEDS YOUR ACTION IS ORDERED BY PRIORITY (2026-11-13). Rows still inside
+ * their window come first, highest SO_casePriority first, ties by the earliest
+ * cutoff. Rows already past cutoff come after them: SO_casePriority gives a
+ * past row the highest urgency, so a plain priority sort would put realized
+ * fails above the work that can still be prevented. The Escalated queue keeps
+ * its cutoff order.
  *
  * DESK SCOPING IS NOT IMPLEMENTED HERE AND MUST NOT BE. Record-level security
  * on SO Trade and SO Settlement Case already restricts SO Analysts to their
@@ -61,7 +71,9 @@ a!localVariables(
      partition below rather than as a second literal list, so the two queues
      cannot drift apart or double-count a status. */
   local!resolvedStatuses: {"Resolved - Straight Through", "Resolved - Analyst"},
-  /* How many rows NEEDS YOUR ACTION shows before the view-all footer. The
+  /* How many rows NEEDS YOUR ACTION shows before the view-all footer: the
+     first rows of the queue's order, which from 2026-11-13 is priority, not
+     nearest cutoff (the local keeps its name from the cutoff order). The
      mockup showed four nearest cutoffs of twelve; SIX was ruled on 2026-09-24
      after the persona pass measured the demo hero landing 4th of 9 by cutoff —
      visible, but the last row before the footer, with three standing fixtures
@@ -302,6 +314,9 @@ a!localVariables(
         /* 99999 keeps a null cutoff at the BOTTOM of a cutoff-ascending sort
            instead of the top, where a null would read as most urgent. */
         cutoffSortKey: todecimal(a!defaultValue(local!hrsLeft, 99999)),
+        /* 0 inside the window, 1 past cutoff. NEEDS YOUR ACTION sorts on this
+           first, so a past row never outranks one that can still be worked. */
+        pastSortKey: if(a!defaultValue(local!isPast, false), 1, 0),
         priority: local!pri,
         priorityLabel: index(local!band, "label", ""),
         priorityColor: index(local!band, "color", "#4A5462"),
@@ -522,7 +537,11 @@ a!localVariables(
      --------------------------------------------------------------------------- */
   local!needsAll: todatasubset(
     a!flatten(a!forEach(items: local!rows, expression: if(index(fv!item, "isEscalated", false), {}, { fv!item }))),
-    a!pagingInfo(startIndex: 1, batchSize: 500, sort: a!sortInfo(field: "cutoffSortKey", ascending: true))
+    a!pagingInfo(startIndex: 1, batchSize: 500, sort: {
+      a!sortInfo(field: "pastSortKey", ascending: true),
+      a!sortInfo(field: "priority", ascending: false),
+      a!sortInfo(field: "cutoffSortKey", ascending: true)
+    })
   ).data,
   local!escalated: todatasubset(
     a!flatten(a!forEach(items: local!rows, expression: if(index(fv!item, "isEscalated", false), { fv!item }, {}))),
@@ -631,8 +650,11 @@ a!localVariables(
     )
   ),
 
-  /* The selected case's stored agent assessment. Written by the triage lane as
-     an SO Case Comment; the most recent one is the assessment for this case. */
+  /* The selected case's stored agent assessment. The triage lane writes it as
+     an SO Case Comment with NO author; a person's note (a disposition note, an
+     added comment, an escalation reason) carries its author. The preview reads
+     the newest comment with no author, so a later note never replaces the
+     agent's reasoning (the case screen makes the same choice). */
   local!assessment: if(
     a!isNullOrEmpty(local!selectedCaseId),
     null,
@@ -640,7 +662,10 @@ a!localVariables(
       a!queryRecordType(
         recordType: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment',
         fields: { 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{2bb72559-6a2b-4624-b156-efc8237287ce}commentText', 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{4143f703-c044-40d9-a2fd-927d6a67795d}createdOn' },
-        filters: a!queryFilter(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{387260a3-561d-4cd3-9df7-d65a5cc775b6}caseId', operator: "=", value: local!selectedCaseId),
+        filters: a!queryLogicalExpression(operator: "AND", filters: {
+          a!queryFilter(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{387260a3-561d-4cd3-9df7-d65a5cc775b6}caseId', operator: "=", value: local!selectedCaseId),
+          a!queryFilter(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{ffa2f4eb-64b5-4a09-9f05-85fcd3f24d04}author', operator: "is null")
+        }),
         pagingInfo: a!pagingInfo(
           startIndex: 1, batchSize: 1,
           sort: a!sortInfo(field: 'recordType!{c8cdbb02-1f27-4a90-933b-752f65b0f617}SO Case Comment.fields.{4143f703-c044-40d9-a2fd-927d6a67795d}createdOn', ascending: false)
@@ -810,7 +835,7 @@ a!localVariables(
                         a!richTextIcon(icon: "circle", size: "SMALL", color: "#B3261E"),
                         a!richTextItem(text: "  NEEDS YOUR ACTION ", size: "SMALL", color: "#454F5C", style: "STRONG"),
                         a!richTextItem(text: "(" & local!needsCount & ")", size: "SMALL", color: "#6E7885", style: "STRONG"),
-                        a!richTextItem(text: "  ·  sorted by time to cutoff", size: "SMALL", color: "#6E7885")
+                        a!richTextItem(text: "  ·  sorted by priority", size: "SMALL", color: "#6E7885")
                       }
                     ),
                     style: "#FAFBFC",
@@ -976,7 +1001,7 @@ a!localVariables(
                   ),
                   /* THE FOOTER IS THE PAGER. A grid pageSize of four would page
                      the whole queue four rows at a time; what the queue wants is
-                     a short default view of the nearest cutoffs with everything
+                     a short default view of the top of the queue with everything
                      one click away, which is a toggle over the assembled list,
                      not a page control. Hidden entirely when everything fits. */
                   a!cardLayout(
@@ -984,13 +1009,13 @@ a!localVariables(
                       labelPosition: "COLLAPSED",
                       value: {
                         a!richTextItem(
-                          text: if(local!showAllNeeds, "showing all " & local!needsCount, "showing " & local!nearest & " nearest cutoffs"),
+                          text: if(local!showAllNeeds, "showing all " & local!needsCount, "showing top " & local!nearest & " by priority"),
                           size: "SMALL",
                           color: "#4A5462"
                         ),
                         a!richTextItem(text: "     ", size: "SMALL"),
                         a!richTextItem(
-                          text: if(local!showAllNeeds, "Show nearest " & local!nearest, "View all " & local!needsCount),
+                          text: if(local!showAllNeeds, "Show top " & local!nearest, "View all " & local!needsCount),
                           link: a!dynamicLink(
                             value: not(local!showAllNeeds),
                             saveInto: local!showAllNeeds
