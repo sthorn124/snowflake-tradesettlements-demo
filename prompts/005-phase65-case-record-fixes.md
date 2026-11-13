@@ -81,7 +81,7 @@ What each persona should see after this build. A session cannot check these with
 1. Demo Admin: press Prepare the demo and wait for "Ready to present".
 2. Watchlist: the Needs your action caption reads "sorted by priority", and SAP GY / Diamond Trust sits where the close-out says it will.
 3. Open that case. Press Record Disposition, choose Settled - Partial Release, type a note, submit.
-4. The same case: the agent card still shows the agent's reasoning. Activity shows your note under your name, and the disposition entry does not end in "by" and a username. No entry shows a code with an underscore in it. There is one "Agent Triage Complete" entry.
+4. The same case: the agent card still shows the agent's reasoning. Activity shows your note under your name, and the disposition entry does not end in "by" and a username. No entry shows a fail reason as a code, such as insufficient_securities. Desk codes such as EQ_FLOW are expected. There is one "Agent Triage Complete" entry.
 5. Supervisor: hover the Value at risk tile. The note gives the conversion basis and lists no currencies.
 6. Demo Admin: press Prepare the demo again.
 
