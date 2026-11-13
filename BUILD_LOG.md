@@ -4890,3 +4890,126 @@ Three considered, none promoted, three listed.
 **Promotion candidates:** none found; the three listed in the entry above are unchanged.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-11-13 — Phase 6.5 session 2, round 1: the action models chain to End, the remediation rule reads the side of the trade, every lane states the score one way, agent version 7 written (four action models, `SO_triageCase` 25.0, `SO_remediationForReason` version 4, new rule `SO_failSide`, `SO_caseContext` version 5; Claude Code session, stopped for Scott's Agent Studio step)
+
+**Scope.** A Claude Code session from `prompts/006-phase65-refresh-and-remediation-by-side.md`, round 1 of 2. Every Appian call went through the Dev MCP (server `appian`, 218 tools counted, plugin and server 26.9.5, build `20261026-140102`) as `scott.thorn@appian.com`: `loggedInUser()` asserted equal to that account through `validateExpression`, and the control with `scott.thorn` failed. Direct member of `SO Supervisors` (full scope), `SO Demo Admins` and `SO Users`, read back this session; `SO Analysts` holds `alex.analyst` only; `SO Supervisors` holds no group. No sail, by the prompt; every persona session on the machine is expired. The runtime server's tools were listed and never loaded or called. One helper agent made two read-only `listProcessModelNodes` calls under the same account. The local folder was two commits behind `origin/main` (the prompt and the planning chat's records) and was fast-forwarded first. Prepare had run today (Scott, 22:00:38 UTC, run record 11, cases 171 to 173), so the re-date was not run on its own. This round ran no Prepare, by the prompt.
+
+**Preflight flags, unchanged from the open TODO items:** the Dev MCP is 26.9.5 against the `toolchain.md` pin 26.6.105, the App Market has 26.9.15, and sail is 26.9.5 against its pin. The vendor skill's manifest matches the plugin's `composerCommit` (`274ce627`). The repo copy of `appian-supplemental` and the copies in `~/.claude/skills` and `~/.kiro/skills` are byte-identical (Version 2026-11-10.4). Pack references read before the first write: `references/process-models.md`, `references/tools-mcp.md`, `references/expression-rules.md`.
+
+### Part 1: Activity after a record action
+
+**Evidence, in the order read.**
+
+1. `SO_recordDispositionCase` on NY, version 6.0, every node and connection: Start (1) to Write Disposition (3) is activity-chained. Every flow after it is not: 3 to "Note provided?" (6), 6 to Write Resolution Note Comment (5) or to "Writes succeeded?" (7), 5 to 7, 7 to Write Disposition Recorded Event (4) or End, 4 to End. The order of writes is the case (3), the note (5, when there is one), the event (4).
+2. Version 5.0, the version before session 1, read through `getProcessModel` with its version token: the same connections with the same flags. The two versions differ in one place, node 4's text (" by " and the initiator, dropped in session 1). **Session 1 did not cause this.**
+3. The Dev MCP's own text on `activityChained`: "on form submit the engine follows this connection and runs the next node synchronously while the user waits … until the process ends, a non-chained connection is reached, or another attended node is encountered".
+4. Appian docs, Autoscale patterns, "Activity chaining in autoscaled processes": a user who starts a process from a record action or related action "is held on a loading screen until the end of all configured activity chains from the start node". Process Model Recipes: chaining is enabled per flow, "for each intermediary flow". Four accepted community answers returned by the docs search give the same remedy for data that shows only after a refresh: chain every flow from the start form through the last write.
+5. The record view: `rule!SO_caseDetail(caseId: rv!record[caseID])`, with the four actions as header shortcuts opening in a dialog. `SO_caseDetail` version 14 (byte-identical to the saved copy) reads the case, the events and the notes in plain local variables keyed on `ri!caseId`; it has no `a!refreshVariable`.
+
+**Cause the evidence supports.** The page gets control back when the chain ends, which is after node 3. The note and the Disposition Recorded event are written by nodes that run after that. A page that redraws at that moment cannot show rows that do not exist yet. The entry Scott had to refresh for is the one written last.
+
+**How sure.** That the chain ended before the two writes: certain, it is read from the model. That this is why the entry was missing: likely, not proven. A session cannot watch the page. One other reading fits the docs: the Write Records page ("Automatic refresh on record views") says the automatic refresh "only applies to data supplied by rv!record", and this view supplies its data from local variables. If the view did not re-read those at all, the status and disposition would also have stayed stale, and Scott reported only the Activity entry. If his check still fails after this fix, that is the next cause to test: refresh variables on the view's queries.
+
+**The same cause holds for the other three**, read on NY (two by the helper agent): `SO_addCommentCase` chained to its comment write and not to its event; `SO_escalateCase` chained to its status write and not to its comment or event; `SO_assignCase` chained only to its script node, so neither the assignment nor its event was inside the chain.
+
+**Fix.** Every flow in the four models is now activity-chained, through both ways out of each gateway and into End. 17 node updates, `connections` only; each response returned the node with its `data` unchanged.
+
+| Model | UUID | Version |
+|---|---|---|
+| `SO_recordDispositionCase` | `0000f04e-7fcc-8000-233d-7f0000014e7a` | 6.0 → 11.0 (nodes 3, 6, 5, 7, 4) |
+| `SO_addCommentCase` | `0000f04e-7fca-8000-233c-7f0000014e7a` | 7.0 → 10.0 (nodes 3, 5, 4) |
+| `SO_escalateCase` | `0000f04e-7fce-8000-233f-7f0000014e7a` | 6.0 → 10.0 (nodes 3, 5, 7, 4) |
+| `SO_assignCase` | `0000f04e-7ef7-8000-2336-7f0000014e7a` | 9.0 → 13.0 (nodes 3, 4, 6, 5) |
+
+### Part 2: the remediation by side of the trade
+
+- **New rule `SO_failSide`** (`_a-0000f0af-7210-8000-9c5d-011c48011c48_614312`, version 1): "ours", "theirs" or null from the fail reason and the direction. `operational_error` and `counterparty_default` answer without a direction; the other two return null without one.
+- **`SO_remediationForReason`** (`_a-0000f04a-c437-8000-9c47-011c48011c48_561387`) 3 → 4: two optional inputs, `direction` (Text) and `onwardDeliveries` (Number (Integer)). It calls `SO_failSide`, so "whose fail" has one home. A null onward count is read as 0. Texts and codes as ruled.
+- **Who calls it on NY** (`getObjectDependents`): `SO_triageCase` node 11, the agent `SO_TriageAgent` as its tool, and `SO_caseDetail` line 1004 for the urgency only. The case screen shows the stored remediation; it was not edited.
+
+### Part 3: one wording for the score
+
+**Who reads event text** (`getObjectDependents` on the Event History record type, then each source): `SO_caseDetail` prints it as stored (line 919) and compares nothing; `SO_demoAdminConsole` reads `recordId` only; `SO_standingCaseRedate` reads and writes ids and timestamps. The watchlist, the preview rail and the supervisor screen do not read event text: the supervisor's escalations card composes its own sentence from the case's fields. No screen depends on the old wording.
+
+`SO_triageCase` (`0000f04e-ff8f-8000-2381-7f0000014e7a`) 22.0 → 25.0, nodes 5, 23 and 33. The three texts come from `.work/gen/triage_event_text.py`, which writes each node's `data` block and the same three expressions onto rule inputs for a throwaway test rule.
+
+| Node | Before | Now |
+|---|---|---|
+| 5 | "… at confidence 0.35" | "… at auto-release score 35, releases at 80" |
+| 23, breached window | "… Agent confidence 0.35; the breached window decides this case whatever the score." | "… Auto-release score 35, releases at 80; the breached window decides this case whatever the score." |
+| 33 | "… \| confidence 0.88 >= threshold 0.80 \| disposition …" | "… \| auto-release score 88, releases at 80 \| disposition …" |
+
+Node 23's other two wordings (the credit decision; "Escalated by agent") state no score and are unchanged.
+
+### Part 4: the agent's two changes
+
+- `agent/instructions.md` holds version 7. Against version 6 (commit `bba5aa5`) the verbatim block differs in two places and nowhere else: one paragraph added after the list of fail reasons, and step 5 replaced. `agent/instructions-v7-paste.txt` is that block alone, cut from the file by script.
+- `SO_caseContext` (`_a-0000f04a-c437-8000-9c47-011c48011c48_561804`) 4 → 5: the onward-deliveries line begins "0 onward deliveries" where it began "no onward deliveries". One word. The direction was already on the TRADE line as BUY or SELL and was left.
+- `agent/tools.md`: the tool's three inputs and the table of what it returns.
+
+### Decisions
+
+- **Chained to End, not to the last write.** The Dev MCP's text says the wait ends at the first flow that is not chained. Chaining every flow leaves no flow to argue about.
+- **The four models were changed one node at a time** with `connections` alone, so no `data` block was resent.
+- **`SO_remediationForReason` calls `SO_failSide`** in place of repeating the buy and sell table.
+- **A direction that is not BUY or SELL is treated as no direction**, so the rule falls back to what it returned before.
+- **"Auto-release score" takes a capital at the start of node 23's sentence.** The prompt's wording is lower case; the sentence begins there.
+- **The context changed by one word, not a new labelled field.** The prompt asks for the least change that lets the agent copy the count.
+- **Round 1's two test cases were deleted before the stop**, so no test row sits on the watchlist while Scott works in Agent Studio. Round 2 creates its own.
+
+### Verified (as `scott.thorn@appian.com`, full scope)
+
+- **The four models after the change.** Each node update returned the stored node; `listObjectVersions` shows each draft level with its newest published version; `validateDesignObjects` reports no error and no warning on all four and on `SO_triageCase`. Run through `testProcessModel` on the two test cases, each completed in about half a second and wrote everything: Add Comment (comment 182, event "Comment added"), Assign (assignee `alex.analyst`, event "Assigned to alex.analyst"), Escalate (status Escalated, comment 183, event "Escalated: …"), Record Disposition (status Resolved - Analyst, the disposition, comment 184, event "Disposition: Settled - Funding Received").
+- **The rule, on a throwaway copy first.** 41 rows through `testRule` on a harness rule: every row of the ruled table with several onward counts, lower-case and padded directions, a direction of "HOLD", six no-direction rows compared key for key with the live rule as it then stood (version 3), and 14 rows of `SO_failSide`. 0 fails; with one expectation made wrong on purpose, 1 fail. Then the live rule was updated and the harness pointed at it, with the old rule's body held inline for the no-direction rows: 0 fails, and 1 with the control. Four direct `testRule` calls on the live rule returned the ruled maps: (insufficient_securities, BUY, 0), (insufficient_securities, BUY, 2), (funding_gap, SELL), and insufficient_securities alone. The three live rules were read back and are byte-identical to the saved files.
+- **The three entries, composed with test values** through `testRule` on a throwaway rule holding the same expressions:
+  - "Agent assessed funding gap; proposed Treasury funding chase at auto-release score 35, releases at 80"
+  - "Escalated by policy: funding gap — broker confirmation lag 26.0h against 2.4h remaining, so the remediation cannot complete inside the window. Auto-release score 35, releases at 80; the breached window decides this case whatever the score."
+  - "Straight-through: Correct & resubmit | auto-release score 88, releases at 80 | disposition Settled - Corrected | resolved before cutoff without analyst review"
+  - Rounding: 0.679 gave 68 and 0.875 gave 88. A past cutoff gave "against a cutoff already 1.5h past". The credit and "Escalated by agent" wordings came out as before.
+- **Two live triage runs on `ZZ-P006` cases, the agent on version 6.**
+  - Case 174, TRD016924 (the clean specimen: funding gap, a BUY, lag 1.71h against 23 hours): score 0.88, Resolved - Straight Through, "Treasury funding chase", Settled - Funding Received. Events: "Agent assessed funding gap; proposed Treasury funding chase at auto-release score 88, releases at 80" and "Straight-through: Treasury funding chase | auto-release score 88, releases at 80 | disposition Settled - Funding Received | resolved before cutoff without analyst review". The context's last line read "0 onward deliveries …" and the assessment said "0 onward deliveries mean any fail is fully contained".
+  - Case 175, TRD044567 (the concerning specimen: funding gap, a SELL, lag 26.07h against 23 hours): score 0.38, Escalated. Events: "Agent assessed funding gap; proposed Chase counterparty for funding at auto-release score 38, releases at 80" and "Escalated by policy: funding gap — broker confirmation lag 26.0h against 23.9h remaining, so the remediation cannot complete inside the window. Auto-release score 38, releases at 80; the breached window decides this case whatever the score." The assessment stated 26.07h against 23h.
+- **The demo run was not touched.** Cases 171 to 173 and their comments and events read the same after the tests as before.
+
+### Not verified
+
+- **Whether Activity now shows the new entries without a refresh.** It is Scott's browser check, step 3 of the prompt's checklist.
+- **What `alex.analyst` and `sam.supervisor` see.** No sail. Every read above is the design account's.
+- **The forms.** The four models were started through `testProcessModel`, which skips the start form.
+- **Node 23's and node 33's new sentences on a demo case.** They ran live on the two test cases; the loaded run predates them.
+
+### Findings
+
+- **The agent already receives the rule's two new inputs.** Nothing was changed in Agent Studio, and on case 175 the agent, on version 6, returned "Chase counterparty for funding". Only a call that passed the direction returns that text. So the tool takes its inputs from the rule as it stands. **This breaks the prompt's statement that at the stop NY behaves as before apart from Parts 1 and 3:** `SO_triageCase` node 11 stores the remediation the agent returns, so from now a new case can store the side-aware text, when the agent passes the direction. Whether it does on every run is not known (one run in one showed it; on case 174 the text is the same either way). Node 11 still takes the straight-through code from the fail reason alone, so an insufficient-securities BUY that cleared the gate would store "Accept partial delivery / chase counterparty" with the code "Settled - Borrow Executed". The packet has no such case: the hero is held, story 02 is escalated, story 03 is an operational error.
+- **Node 11 takes the remediation text from the agent's output, not from the rule.** The rule is called there only for the code. Round 2 changes that.
+- **Under version 6 the assessment does not name the remediation.** Four read today (cases 171, 173, 174, 175): each says "the remediation" or "remediation" and none gives its text. Round 2's pass condition is that every assessment names the remediation its case stores. The two ruled changes do not ask the agent to. Put to Scott at the stop.
+- **Assessments under version 6 hold codes**, as session 1 found: "funding_gap fail reason" (174, 175), "predicted reason insufficient_securities" (171), "the operational_error fail reason" (173).
+- **`SO_caseContext` reports an error under `validateDesignObjects`**: `a!queryRecordByIdentifier` with a null identifier, which is the check running with no case id. Its saved test case passes. Not caused by this session's one-word change; the call has been there since the rule was written.
+- **Node 23 prints the lag and the hours with `text(x, "0.0")`, which truncates**: 26.07 printed "26.0" and 23.99 printed "23.9". Left, because the prompt says nothing else in the entries changes.
+- **The demo documents do not say "borrow".** The three scripts narrate the hero's fix as "a partial release", which fits the new text. `hero-trade-spec.md` line 24 does say borrow; it is in round 2's list.
+- **A Write Records `Records` expression sent without a leading "=" is stored without one and runs.** Nodes 5, 23 and 33 now read back that way; the nodes written earlier read back with one.
+
+### What changed on NY, by object
+
+The four action models in the table above; `SO_triageCase` 25.0; `SO_remediationForReason` version 4; `SO_failSide` version 1 (new); `SO_caseContext` version 5.
+
+**Not changed on NY:** `SO_triageCase` node 11, every interface, the agent, every record type and group, the 17 standing cases, the loaded run.
+
+**Throwaway objects, created and deleted this round (Scott's yes in the prompt):** rules `zz_SO_p006_remediation` (`…_614318`), `zz_SO_p006_check` (`…_614324`, two versions), `zz_SO_p006_eventText` (`…_614338`) and `zz_SO_p006_rows` (`…_614348`). After the deletes a listing for "zz" in the application is empty and a get on each UUID returns HTTP 404. The reader's and the harness's sources are kept in `.work/gen/` (`zz_caseRows.sail`, `zz_remediationCheck.sail`).
+
+**Test data, created and deleted this round:** cases 174 and 175 (session `ZZ-P006`), comments 180 to 184, events 484 to 493. The events and comments were deleted first and read as absent while their cases still existed; then the cases, which read back NOT FOUND.
+
+### Promotion candidates (staging)
+
+Four found, none promoted, four listed.
+
+- **NEW, STAGED (gate 1, one observation): an agent's rule tool takes its inputs from the rule as it stands.** Two optional inputs were added to a rule over the Dev MCP; with no change in Agent Studio the deployed agent passed one of them on its next run. The trap: "add an optional input, existing callers keep working" holds for expression callers and not for an agent, which reads the new input's description and starts filling it. Working form: treat a change to a tool rule's inputs as a change to the agent, and test the agent in the same change. *Trigger: what Scott finds on the tool in Agent Studio at this stop, and the next rule behind an agent tool that gains an input.*
+- **NEW, STAGED (gate 1, four models on one site, not yet seen in a browser): a related action's page waits only as far as the flows are activity-chained, so a write after the last chained flow is missing from the page that follows the submit.** The pack's `references/process-models.md` says to set `activityChained` true "only where the next attended node should open for the same user straight after a form submit", which reads as a rule about forms; the server's own tool text and the docs say it also sets how long the submit waits. *Trigger: Scott's browser check of step 3.*
+- **NEW, STAGED (gate 1, one rule, two calls): `testRule` honours `maxResponseSizeBytes`.** 400 was asked and the result came back cut, with `truncated: true`. The earlier candidates record that `testProcessModel` and `testInterface` do not honour it. *Trigger: the next long `testRule` result on another rule.*
+- **NEW, STAGED (gate 1, one model, three nodes): `updateProcessModelNode` stores an input expression as sent, with or without a leading "=", and both forms run.** *Trigger: the Dev MCP update procedure's re-check.*
+- **Seen again:** a get on a deleted rule returns HTTP 404 "Expression rule … not found" (four more today). The ruled candidate stays staged, as Scott ruled.
+
+**The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
+
+**Promotion checkpoint: current through this entry.**
