@@ -331,13 +331,45 @@ a!localVariables(
       refreshAlways: true
     ),
     local!demoCases: tointeger(a!defaultValue(index(local!runState, "demoCases", 0), 0)),
+
+    /* ================= THE PRESS, HELD ON THE PAGE (2026-11-13) =================
+       local!runState IS WHAT THE RULE READ WHEN THIS PAGE LOADED, AND IT STAYS
+       THAT. refreshAlways above does not re-read it: the rule's own local
+       variables (its queries, its now()) re-evaluate only when something they
+       depend on changes, and nothing does while the page is open. The docs say
+       so under "Nested rules need refreshAlways". Found when Scott pressed
+       Prepare and the line and the button did not change until he refreshed.
+
+       So the page does not wait on a re-read. This press's own answer says a
+       run has started (prepResult.ok), and from then the card shows the rule's
+       Running view (whenRunning: its line, its tone, isRunning true) in place of
+       what the page loaded with. The button therefore stays disabled on this
+       page for as long as it is open. It is enabled again only on a refreshed
+       page that reads a state other than Running. A press that was refused or
+       failed leaves startedHere false: the message shows and the button stays
+       enabled. */
+    local!startedHere: and(
+      not(a!isNullOrEmpty(local!prepResult)),
+      a!defaultValue(index(local!prepResult, "ok", false), false)
+    ),
+    local!shownState: if(
+      local!startedHere,
+      index(local!runState, "whenRunning", local!runState),
+      local!runState
+    ),
     /* what to show when Prepare did not go through: this press's refusal first,
        otherwise the failed step recorded by the background half */
     local!pressRefused: and(
       not(a!isNullOrEmpty(local!prepResult)),
       not(a!defaultValue(index(local!prepResult, "ok", false), false))
     ),
-    local!prepFailed: or(local!pressRefused, a!defaultValue(index(local!runState, "lastFailed", false), false)),
+    /* the failed step on the run record is the LAST run's. Once this press has
+       started a new one it is no longer the last, and the page cannot re-read
+       the record, so it stops showing it ("until the next press", below) */
+    local!prepFailed: or(
+      local!pressRefused,
+      and(not(local!startedHere), a!defaultValue(index(local!runState, "lastFailed", false), false))
+    ),
     local!prepFailedMessage: if(
       local!pressRefused,
       tostring(index(local!prepResult, "message", "")),
@@ -473,9 +505,10 @@ a!localVariables(
            in the background: clear the last run, re-date the standing cases, load a
            fresh packet, start intake. The line and its colour come from
            SO_demoRunState, which the process reads too, so the page and the process
-           cannot disagree about a run in progress, and the line reads Running from
-           the press. No progress bar and no self-refresh, by ruling: the presenter
-           refreshes. */
+           cannot disagree about a run in progress. The line reads Running from the
+           press because the page holds the press (local!startedHere, above), not
+           because it re-reads the rule. No progress bar and no self-refresh, by
+           ruling: the presenter refreshes. */
         a!cardLayout(
           padding: "LESS", shape: "SEMI_ROUNDED", showBorder: true,
           contents: {
@@ -491,10 +524,10 @@ a!localVariables(
               value: {
                 a!richTextItem(text: "Status:  ", color: "#6E7885", size: "SMALL"),
                 a!richTextItem(
-                  text: tostring(index(local!runState, "line", "")),
-                  /* READY green; nothing loaded and running neutral; the other three amber */
+                  text: tostring(index(local!shownState, "line", "")),
+                  /* READY green; nothing loaded and running neutral; every other state amber */
                   color: a!match(
-                    value: tostring(index(local!runState, "tone", "NEUTRAL")),
+                    value: tostring(index(local!shownState, "tone", "NEUTRAL")),
                     equals: "POSITIVE", then: "#17715B",
                     equals: "WARN", then: "#96590A",
                     default: "#454F5C"
@@ -508,10 +541,12 @@ a!localVariables(
               buttons: a!buttonWidget(
                 label: "Prepare the demo",
                 style: "SOLID",
-                /* DISABLED ONLY WHILE A RUN IS IN PROGRESS, from the press until every
-                   story has its decision. A run that died unlocks itself: after 5
-                   minutes SO_demoRunState stops calling it running. */
-                disabled: a!defaultValue(index(local!runState, "isRunning", false), false),
+                /* DISABLED WHILE A RUN IS IN PROGRESS: from this page's own press for as
+                   long as the page is open, and on a page loaded during a run. A
+                   refreshed page that reads a state other than Running enables it. A
+                   run that died unlocks itself: after 5 minutes SO_demoRunState stops
+                   calling it running, and a refresh then shows the button enabled. */
+                disabled: a!defaultValue(index(local!shownState, "isRunning", false), false),
                 saveInto: {
                   a!save(local!prepResult, null),
                   a!startProcess(
