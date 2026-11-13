@@ -68,7 +68,7 @@
 
 ## 4:20 to 5:05 · The decision and the record
 
-**Screen: scroll to the top. Click Record Disposition. Choose Settled - Partial Release. The note is optional. Submit. Refresh the page (trim it afterwards), then scroll to Activity and move the cursor down the entries.**
+**Screen: scroll to the top. Click Record Disposition. Choose Settled - Partial Release. The note is optional. Submit. Scroll to Activity and move the cursor down the entries.**
 
 > "Record the disposition. Done. And here's the record: the prediction, what the agent recommended and why it held, and what the analyst decided, each with a time and a name. Nobody assembles this afterwards. That's the audit trail compliance asks for, written as the work happened."
 

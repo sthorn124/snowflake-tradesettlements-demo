@@ -21,8 +21,11 @@ mockup edit. If a number changes here, it changes in both mockups too.
 
 The story: a large SAP buy, predicted to fail on a deliver-side shortfall,
 against a high-risk APAC counterparty, with a broker confirmation that fits
-inside the window — the agent should propose a borrow but hold it for a human
-because of position size.
+inside the window — the agent should propose accepting a partial delivery and
+chasing the counterparty, but hold it for a human because of position size.
+(Until 2026-11-13 this said "propose a borrow". The hero is a buy, so the seller
+is the one short; `SO_remediationForReason` now reads the side of the trade and
+returns "Accept partial delivery / chase counterparty" for it.)
 
 ### TRADES row
 

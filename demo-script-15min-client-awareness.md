@@ -120,7 +120,7 @@ When the answer lands, read the two fail rates off the screen (Diamond Trust's a
 3. **Resolution note** is optional. A note you type appears in Activity under your name.
 4. Click **Record Disposition** to submit.
 
-Refresh the page, then scroll down to **Activity**. The new entries show only after a refresh.
+Scroll down to **Activity**.
 
 > "Done. And here's the record: the prediction, what the agent recommended and why it held, and what the analyst decided, each with a time and a name. Nobody assembles this afterwards. It's the audit trail compliance asks for, written as the work happened."
 
