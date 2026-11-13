@@ -1,6 +1,6 @@
 # SO Triage Agent — system instructions
 
-Build spec for Agent Studio. The block under "Instructions (verbatim)" is version 7, written 2026-11-13 (`prompts/006`) for Scott to paste into Agent Studio. Until he has, the agent runs version 6, which is this file as of commit `bba5aa5`. Everything outside that block is commentary for the person maintaining it.
+Build spec for Agent Studio. The block under "Instructions (verbatim)" is what is currently deployed (v7): written 2026-11-13 (`prompts/006`) and pasted into Agent Studio by Scott the same day. Version 6 is this file as of commit `bba5aa5`. Everything outside that block is commentary for the person maintaining it.
 
 ---
 

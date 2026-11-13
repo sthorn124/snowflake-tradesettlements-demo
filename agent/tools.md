@@ -40,7 +40,7 @@ Four tools. Three get built; one is deliberately NOT built and the reason matter
 
 `direction` and `onwardDeliveries` are optional on the rule. With no direction the rule returns what it returned before they existed.
 
-**The tool takes its inputs from the rule as it stands.** Measured once, 2026-11-13: the two inputs were added to `SO_remediationForReason` over the Dev MCP and nothing was changed in Agent Studio. On the next run the agent, still on version 6 of its instructions, returned "Chase counterparty for funding" for a funding gap on a SELL. Only a call that passed `direction` can return that text. So a change to this rule's inputs reaches the deployed agent at once, and the input descriptions on the rule are what the agent reads. Whether the agent fills an optional input on every run is the agent's choice until its instructions say so (version 7, step 5).
+**The tool takes its inputs from the rule as it stands.** Measured 2026-11-13, and confirmed by Scott in Agent Studio the same day ("the two inputs were already on the tool"): the two inputs were added to `SO_remediationForReason` over the Dev MCP and nothing was changed in Agent Studio. On the next run the agent, still on version 6 of its instructions, returned "Chase counterparty for funding" for a funding gap on a SELL. Only a call that passed `direction` can return that text. So a change to this rule's inputs reaches the deployed agent at once, and the input descriptions on the rule are what the agent reads. Whether the agent fills an optional input on every run is the agent's choice until its instructions say so (version 7, step 5).
 
 **Output** — a map with three keys:
 
@@ -65,7 +65,7 @@ Four tools. Three get built; one is deliberately NOT built and the reason matter
 
 `stDisposition` was added to this rule on 2026-08-28. It is null for `counterparty_default` — which is what makes "never straight-through a credit case" a property of the data rather than a rule the agent has to remember. Any input outside the canon four, including null, returns `Manual review` / `MEDIUM` / null and never errors.
 
-**The process is the authority for the text a case stores.** `SO_triageCase` node 11 reads the trade's direction and its onward deliveries itself and calls the same rule; the agent's tool call gives the agent the same text to reason about. *(Node 11 changes in round 2 of `prompts/006`. Until it does, the case stores the text the agent returned.)*
+**The process is the authority for the text a case stores.** From 2026-11-13 `SO_triageCase` node 11 takes the remediation text and the straight-through code from `SO_remediationForCase`, which reads the case's fail reason, its trade's direction and its onward deliveries and calls the same rule. The agent's tool call gives the agent the same text to reason about; what the agent returns as `remediation` is no longer what is stored. Before that day the node stored the agent's text and asked the rule only for the code.
 
 **Grants** — the agent identity needs Viewer on the rule.
 

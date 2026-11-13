@@ -10,17 +10,22 @@ Seed cases for the Agent Studio eval tab. Grows as tools are built (Phase 3) and
 
 A1 is also the canary for the network policy: if it fails, check the bypass before debugging the agent.
 
-## B. Remediation derivation — one per fail reason
+## B. Remediation derivation — by fail reason and by whose fail it is
 
-Each case: a single predicted-fail trade with the stated reason. Expected values come from `SO_remediationForReason`, which is the only source of remediation text.
+Each case: a single predicted-fail trade with the stated reason and direction. Expected values come from `SO_remediationForReason`, which is the only source of remediation text. From 2026-11-13 the rule also reads the trade's direction and its count of onward deliveries (`SO_failSide` says whose fail it is); the agent passes all three to `propose_remediation`, and `SO_triageCase` reads the same rule for what the case stores.
 
-| # | failReason | expected remediation | urgency | stDisposition | escalate |
-|---|---|---|---|---|---|
-| B1 | insufficient_securities | Arrange cover borrow / partial release | HIGH | Settled - Borrow Executed | false | *(string changed 2026-09-02; was "Initiate borrow / partial release". All five branches re-verified by `testRule` that day.)*
-| B2 | funding_gap | Treasury funding chase | HIGH | Settled - Funding Received | false |
-| B3 | counterparty_default | Credit-risk escalation | CRITICAL | *(null)* | **true** |
-| B4 | operational_error | Correct & resubmit | MEDIUM | Settled - Corrected | false |
-| B5 | *(garbage or null reason)* | Manual review | MEDIUM | *(null)* | false |
+| # | failReason | direction | onward deliveries | expected remediation | urgency | stDisposition | escalate |
+|---|---|---|---|---|---|---|---|
+| B1a | insufficient_securities | SELL | any | Arrange cover borrow / partial release | HIGH | Settled - Borrow Executed | false |
+| B1b | insufficient_securities | BUY | 1 or more | Arrange cover borrow for onward deliveries / accept partial delivery | HIGH | Settled - Borrow Executed | false |
+| B1c | insufficient_securities | BUY | 0 | Accept partial delivery / chase counterparty | HIGH | Settled - Partial Release | false |
+| B2a | funding_gap | BUY | any | Treasury funding chase | HIGH | Settled - Funding Received | false |
+| B2b | funding_gap | SELL | any | Chase counterparty for funding | HIGH | Settled - Funding Received | false |
+| B3 | counterparty_default | any | any | Credit-risk escalation | CRITICAL | *(null)* | **true** |
+| B4 | operational_error | any | any | Correct & resubmit | MEDIUM | Settled - Corrected | false |
+| B5 | *(garbage or null reason)* | any | any | Manual review | MEDIUM | *(null)* | false |
+
+With no direction passed, the rule returns B1a for insufficient_securities and B2a for funding_gap, which is what it returned for every case before 2026-11-13. All rows verified by `testRule` that day (41 rows with the no-direction and `SO_failSide` rows; 0 fails; 1 fail with a wrong expectation on purpose). History: the B1a string changed 2026-09-02 from "Initiate borrow / partial release".
 
 **B3 is the load-bearing case.** Run it at a high confidence value (0.95). The agent must still set `escalate: true`, and the process must still route to the escalate lane. If a high-confidence counterparty_default ever resolves straight-through, that is a demo-stopping defect, not a tuning issue.
 
@@ -55,6 +60,38 @@ Deployed 2026-09-01. Four changes: (a) mandatory timing arithmetic as decision s
 **Pass condition for the concerning case is the arithmetic, not the score.** A low confidence reached without stating lag-against-remaining would be luck, not discrimination — the assessment must contain the number-against-number comparison.
 
 **Riding on the same probe: the RunSummary instruction test.** Change (d) is the first attempt to steer that field. Twelve runs of identical boilerplate then one fabrication established that it ignored everything upstream. If v4's runs produce run-descriptive summaries, instructions reach the field and the never-surface rule can relax to display-with-caution; if boilerplate or fabrication returns, the field ignores instructions and never-surface stands on closed evidence.
+
+### v7 — two changes, the three specimens re-run, all conditions met. 2026-11-13
+
+*Threshold unchanged at 0.80. Step 5 and one new paragraph; every other line of v6 word for word. Pasted into Agent Studio by Scott. Run through the Dev MCP (`testProcessModel`, initiator `scott.thorn@appian.com`) on `SO_triageCase` 26.0, whose node 11 now takes the stored remediation and the code from the rule.*
+
+**What changed.** Step 5: the agent calls `propose_remediation` with the fail reason, the trade's direction and the number of onward deliveries, each copied from the caseContext. New paragraph: in its assessment the agent writes the fail reason in plain words; the code is for the tool call only. The caseContext's onward line begins with the count ("0 onward deliveries …") so there is a number to copy.
+
+**Pass conditions, stated before the run** (the last one as Scott ruled it on 2026-11-13, replacing "every assessment names the remediation its case stores"): clean, resolved straight through both times; concerning, escalated with the confirmation lag against the hours remaining, number against number; hero, held for analyst review with a score below 80; every case stores the remediation the rule returns for its trade, and no assessment holds a fail-reason code or argues for a different remediation.
+
+| specimen | facts | v6 (2026-09-02) | **v7** | lane | stored remediation |
+|---|---|---|---|---|---|
+| clean — TRD016924 ×2 | funding gap, BUY; lag 1.71h vs 23h; 88,001.91 EUR; Zephyr medium 9.55%; matched; 0 onward | 0.87 / 0.88 / 0.88 | **0.87 / 0.87** | **Resolved - Straight Through** ×2 | Treasury funding chase |
+| concerning — TRD044567 | funding gap, SELL; lag **26.07h** vs 23h; 30,415,081.02 EUR; Liberty Trust high 21.58% | 0.35 | **0.42** | **Escalated** | Chase counterparty for funding |
+| hero — TRD9DEMO01, from a Prepare | insufficient securities, BUY; lag 1.15h vs 3h; 18,700,500.00 EUR; Diamond Trust high 19.89%; matched; 0 onward | 0.62 | **0.65** | **Pending Analyst** (held for review) | Accept partial delivery / chase counterparty |
+
+All four conditions met on the first run of each; no wrong-side result, so nothing was replicated beyond the second clean run. The other two cases of the same Prepare: the escalation story (funding gap, BUY) 0.45, Escalated, Treasury funding chase; the straight-through story (operational error, SELL) 0.88, Resolved - Straight Through, Correct & resubmit.
+
+*The plain words are in the output, and the code is not*
+- Clean: *"with a predicted fail reason of funding gap"*; second run *"predicted to fail due to a funding gap"*.
+- Concerning: *"carries a funding gap fail reason with 23 hours to cutoff, but the broker confirmation lag is 26.07 hours — exceeding the available window by roughly 3 hours"*.
+- Hero: *"fail reason insufficient securities. Timing is workable — broker confirmation lag of 1.15h against 3h remaining to cutoff."*
+- Straight-through story: *"The fail reason is operational error"*.
+
+*The agent passed the direction.* Its own `remediation` output matched the rule's side-aware text on both runs where the two could differ: "Chase counterparty for funding" on the SELL, and "Accept partial delivery / chase counterparty" on the hero (read from the hero's process instance). The process no longer stores the agent's text, so a run where the agent leaves the direction out would still store the right one.
+
+*No assessment names the remediation, under v6 or v7.* They say "the remediation" or "the proposed remediation". Scott ruled on 2026-11-13 that the instructions do not ask for the name: the case shows it beside the assessment.
+
+*Two v6 baselines taken the same day, before v7,* with the changed rule and the changed context line: clean 0.88, straight through; concerning 0.38, escalated. Both assessments held the code ("funding_gap fail reason"). The concerning run returned "Chase counterparty for funding" on v6, which is how the finding below was made.
+
+*The tool takes its inputs from the rule as it stands.* The rule gained its two inputs over the Dev MCP and the v6 agent passed the direction on its next run with nothing changed in Agent Studio. Scott found both inputs already on the tool. A change to the rule's inputs is a change to the agent.
+
+*RunSummary — NEVER SURFACE stands.* On these runs it called a 30.4M EUR FX forward "an ETF Market-Making position", said the notional was "within normal range" where the assessment said the opposite, and twice answered as though asked to summarise an empty conversation.
 
 ### v6 — FINAL. Straddle eliminated; three specimens, five runs, all correct. 2026-09-02
 
