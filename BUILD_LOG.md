@@ -4863,3 +4863,30 @@ Three considered, none promoted, three listed.
 **The header checkpoint line at the top of this file is still stale.** Unchanged; the Blocking item in `TODO.md` stays open.
 
 **Promotion checkpoint: current through this entry.**
+
+## 2026-11-13 — Ruling: the hero stays where the priority order puts it; its rank stated per account (same Claude Code session; two Appian reads)
+
+**Scope.** The same session as the entry above, second round. Two reads on NY through the Dev MCP as `scott.thorn@appian.com` (full scope): the 20 case rows, and an assertion on the desk of each open case's trade. Nothing was written to NY. The local folder was one commit behind `origin/main` (`1e14c30`, the planning chat's TODO note on the browser check and a new item for the demo documents) and was fast-forwarded first.
+
+**The ruling.** Asked "Should the hero be first in Needs your action?", Scott answered **"Leave it 3rd"**. Nothing is changed to move the hero: not `SO_casePriority`, not the standing cases, not the hero's cutoff.
+
+**This corrects the entry above.** Its Part 4 table and "the hero is never first" are right for an account that sees every desk. The entry did not say so, and the close-out's browser checklist put that rank under `alex.analyst`'s name. The planning chat's note in `TODO.md` raised it. The queue is desk-scoped by record-level security on the trade.
+
+**Read on NY.** Of the 12 open, not-escalated rows, 9 have a trade on desk EQ_FLOW: cases 36, 37, 38, 47, 48, 49, 51, 52 and the hero (165). Three do not: 44 (FI_TRADING), 45 (FX_DESK), 46 (ETF_MM). Checked by assertion through `validateExpression` on the trade's `desk`, the field the security rule reads; a control with case 44 added to the EQ_FLOW list failed. The cases' own `desk` field reads the same way. Nine rows is also what the persona pass of 2026-09-24 counted as `alex.analyst`.
+
+**The rank per account, worked out with the same mirror of `SO_casePriority`:**
+
+| Account | At the load | 65 minutes after it |
+|---|---|---|
+| Sees every desk (the presenter's own, `sam.supervisor`, the design account): 12 rows | 3rd for a load in minutes 00 to 29 of the hour, 4th in minutes 30 to 59 | 4th or 5th |
+| `alex.analyst`, EQ_FLOW only: 9 rows | 2nd on any load, below TRD030639 (priority 75) | 2nd for a load in minutes 00 to 24 and 55 to 59; 3rd in minutes 25 to 54, when TRD026800 (79) joins above |
+
+**Not verified.** The `alex.analyst` rows are worked out from the security rule as `project.md` describes it and from the data. Nobody has looked at the queue as `alex.analyst` since the order changed. It is step 2 of Scott's browser checklist.
+
+**Found in the documents, not changed.** `video-script-5min.md` line 47 narrates "sorted by time to cutoff"; the caption now reads "sorted by priority". The planning chat's new TODO item already lists it, to change after Scott's check.
+
+**Records.** `.kiro/steering/project.md` (the priority-order rule carries the ruling and both ranks), `BUILD_PLAN.md` (the hero-rank item is ticked as ruled; the personas section gives `alex.analyst`'s rank), `TODO.md` (the hero item struck through with a pointer; the browser check's step 2 corrected; a note for the documents item), `Closeout.md` rewritten whole.
+
+**Promotion candidates:** none found; the three listed in the entry above are unchanged.
+
+**Promotion checkpoint: current through this entry.**
